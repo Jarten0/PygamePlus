@@ -280,11 +280,12 @@ def inPlatScene():
             mousedown = False
 
 #Movement/Collisions =========================================================================================================
+#Gravity --------------------------------------------
         if char.yv < 9 and char.gr == False:
             char.yv += 1
             if char.yv > 8:
                 char.yv = 8
-
+#Collide with platforms -----------------------------
         for i in range(len(scene1platforms)):
             if char.y + char.yl >= scene1platforms[
                     i].y and char.y + char.yl <= scene1platforms[
@@ -294,7 +295,7 @@ def inPlatScene():
                 char.y = scene1platforms[i].y - char.yl
             else:
                 char.gr = False
-
+#Player Movement ------------------------------------
         if Boards.getP('left') and not Boards.getP('right'):
             char.xv -= 1
         elif Boards.getP('right'):
@@ -306,13 +307,13 @@ def inPlatScene():
                 char.xv -= 2
             else:
                 char.xv = 0
-
+#Jump -
         if Boards.getP("jump") and char.gr:
             print("Jump!")
             char.yv -= 15
             char.gr = False
             Boards.apP(0, "jumpbuffer")
-
+#Velocity to position -
         char.x += char.xv
         char.y += char.yv
         if char.y > 500:
@@ -364,6 +365,7 @@ def inPlatScene():
         p.game_timer += ((1 * p.fps) / 60) / 60
 
 inPlatScene()
+#Junk from replit, will take care of later
 """
 pygame.init()
 DISPLAYSURF = pygame.display.set_mode((400, 300))
