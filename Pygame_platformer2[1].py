@@ -118,6 +118,36 @@ class Boards():
     def getP(key):
         return Boards.perm[key]
 
+class Timers():
+    UpList = {}
+    DownList = {}
+
+    def tick():
+        for i in Timers.UpList:
+            Timers.UpList[i] += 1
+        for i in Timers.DownList:
+            if not Timers.DownList[i]:
+                Timers.DownList[i] -= 1
+            if Timers.Downlist[i] == 0:
+                Timers.DownList[i] = True
+
+    def set(name = False, value = None, up = False):
+        if value == None or up:
+            if name == False:
+                keylist = Timers.UpList.keys()
+                for i in Timers.UpList:
+                    if not keylist[Timers.UpList.index(i)] == i:
+                        name = Timers.UpList[i]
+                        print(name)
+            Timers.UpList[name] = 0
+        else:
+            Timers.DownList[name] = value
+
+    def get(name, up = False):
+        if up:
+            return Timers.UpList[name]
+        return Timers.DownList[name] 
+
 class character():
     def __init__(self, x, y, xl, yl, xv = 0, yv = 0, gr = False, st = 0):
         self.x = x
@@ -222,6 +252,8 @@ def inPlatScene():
     placestage = 0
     mousedown = False
     p = FileManager.load('prop.dat')
+    
+    Timers.set("dashcool", 20)
     while p.SceneType == "main":
         pyg.display.flip()
         mousepos = pyg.mouse.get_pos()
