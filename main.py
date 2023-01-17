@@ -152,7 +152,7 @@ def inPlatScene():
 
 #Input From Player =========================================================================================================
         input = ["up", "left", "right", "down", "jump", "dash", "dash", "LEFT", "RIGHT", "UP", "DOWN"]
-        letter = ["w", "a", "d", "s", "SPACE", "SHIFT", "o",            "LEFT", "RIGHT", "UP", "DOWN"]    
+        letter = ["w", "a", "d", "s", "k", "k", "o",            "LEFT", "RIGHT", "UP", "DOWN"]    
         for i in range(len(input)):
             if InputManager.kh(letter[i], Evh):
                 Boards.apP(True, input[i])
@@ -195,11 +195,19 @@ def inPlatScene():
         if mouselist[0]:
             if not mousedown:
                 print("Click!")
-                if placestage == 0:
+                if select == 0:
+                    for i in level.plat:
+                        if platform.collision.check(mouseposx, mouseposy, 1, 1, level.plat[i].x, level.plat[i].y, level.plat[i].xl, level.plat[i].yl):
+                            del level.plat[i]
+                            break
+                
+                elif placestage == 0:
                     placestage = 1
                     tempx = mouseposx
                     tempy = mouseposy
                     print(f"({tempx}, {tempy})")
+                    
+                
                 elif placestage == 1:
                     tempx2 = mouseposx
                     tempy2 = mouseposy
@@ -211,8 +219,17 @@ def inPlatScene():
                         ystate = tempy2
                     else:
                         ystate = tempy
+                    
+                    if platform.placeprop[select]["#HasPlaceReq"]:
+                        if not platform.placeprop["xl"] == False:
+                            tempx2 = platform.placeprop["xl"]
+                            tempx = 0
+                        if not platform.placeprop["yl"] == False:
+                            tempy2 = platform.placeprop["yl"]
+                            tempy = 0
+
                     if not abs(tempx2 - tempx) == 0 and not abs(tempy2 - tempy) == 0:
-                        level.plat[len(level.plat)] = platform.create(xstate, ystate, abs(tempx2 - tempx), abs(tempy2 - tempy), select)  
+                        level.plat[platform.NextID(level.plat)] = platform.create(xstate, ystate, abs(tempx2 - tempx), abs(tempy2 - tempy), select)  
                     placestage = 0
                 mousedown = True
         else:
@@ -324,66 +341,32 @@ def inPlatScene():
         for platformToBeChecked in range(len(level.plat)):
             pTBC = level.plat[platformToBeChecked]
             wallcheck = platform.collision.check(char.x, char.y, char.xl, char.yl, pTBC.x, pTBC.y, pTBC.xl, pTBC.yl)
-            if pTBC.type == 0:
-                platform.types.wall(char, wallcheck, pTBC),
             if pTBC.type == 1:
-                platform.types.passthrough(char, wallcheck, pTBC),
+                platform.types.wall(char, wallcheck, pTBC),
             if pTBC.type == 2:
-                platform.types.lava(char, wallcheck, pTBC),
+                platform.types.passthrough(char, wallcheck, pTBC),
             if pTBC.type == 3:
+                platform.types.lava(char, wallcheck, pTBC),
+            if pTBC.type == 4:
                 platform.types.bounce(char, wallcheck, pTBC)
-
-
-            """
-            #Top
-            if pTBC.yl <= 10 and Boards.getP("down"):
-                continue  
-            
-            if wallcheck[1]:
-                if not pTBC.yl <= 10 or char.yv >= 0:           
-                    char.gr = True
-                    char.y = pTBC.y - char.yl  
-                    char.yv = 0
-                    #Timer.set("dashcool", True)
-                    Timer.set("CoyoteTime", 0, True)
-            #If small make it passthrough, perhaps remove later
-            if pTBC.yl <= 10:
-                continue       
-            #Left
-            if wallcheck[2]:
-                char.x = pTBC.x - char.yl
-                if Timer.get("grace", True) > 5:
-                    char.xv = 0
-            else:
-                Timer.set("grace", 0, True)
-            #Bottom
-            if wallcheck[3]:
-                char.yv = 0
-                char.y = pTBC.y + pTBC.yl
-            #Right
-            if wallcheck[4]:
-                char.x = pTBC.x + pTBC.xl                
-                if Timer.get("grace", True) > 5:
-                    char.xv = 0
-            else:
-                Timer.set("grace", 0, True) 
-            """
 
     #Render Scene ===============================================================================================================
         if renderFrame:
             if Boards.getP("LEFT"):
-                cam.xpos -= 10
+                cam.xoffset -= 10
             elif Boards.getP("RIGHT"):
-                cam.xpos += 10
+                cam.xoffset += 10
 
 
             if char.x > p.screen_width / 2 and char.x < level.length - p.screen_width / 2 :
-                cam.xpos = char.x - p.screen_width / 2    
+                cam.xdefault = char.x - p.screen_width / 2    
             else:
                 if char.x < p.screen_width:
                     cam.x = 0
                 else:
                     cam.x = level.length
+            
+            cam.xpos = cam.xdefault + cam.xoffset
             #print(level.length, cam.xpos, char.x)
             #print(char.x > p.screen_width / 2 , char.x < level.length - p.screen_width / 2)
 
@@ -419,6 +402,15 @@ def inPlatScene():
                     temptype = 1
                 else:
                     temptype = 0
+
+                if platform.placeprop[select]["#HasPlaceReq"]:
+                        if not platform.placeprop[select]["xl"] == False:
+                            LTempx = platform.placeprop[select]["xl"]
+                            STempx = 0
+                        if not platform.placeprop[select]["yl"] == False:
+                            LTempy = platform.placeprop[select]["yl"]
+                            STempy = 0
+
                 pyg.draw.rect(screen, platform.platcolors[select], (STempx - cam.xpos, STempy - cam.ypos, LTempx - STempx, LTempy - STempy))
             #Indicator Dot for Grid Placment
             pyg.draw.rect(screen, p.red, (mouseposx - 2 - cam.xpos, mouseposy - 2 - cam.ypos, 4, 4))

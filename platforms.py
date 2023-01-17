@@ -1,12 +1,37 @@
 from timer import Timer
 import boards as Boards
 platcolors = {
-    0: (0, 255, 0),
-    1: (50, 50, 0),
-    2: (255, 0, 0),
-    3: (255, 150, 0),
+    0: (0,   0,   0),
+    1: (0,   255, 0),
+    2: (50,  50,  0),
+    3: (255, 0,   0),
+    4: (255, 150, 0),
     
 }
+
+placeprop = {
+    0: {
+        "#HasPlaceReq": False},
+    1: {
+        "#HasPlaceReq": False},
+    2: {
+        "#HasPlaceReq": True,
+        "xl": False,
+        "yl": 5},
+    3: {
+        "#HasPlaceReq": True,
+        "xl": False,
+        "yl": 10},
+}
+
+def NextID(platformList):
+    keylist = platformList.keys()
+    print(keylist, platformList)
+    for i in platformList:
+        if not keylist[platformList.index(i)] == i:
+            name = platformList[i]
+            return name
+    return len(platformList)
 
 class create():
     def __init__(self, x, y, xl, yl, type = 0):
@@ -16,6 +41,8 @@ class create():
         self.yl = yl
         self.type = type
         self.color = platcolors[self.type]
+    
+    
 
 class collision():
     #C = Character, P = Platform, L = Length

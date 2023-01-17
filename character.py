@@ -74,6 +74,7 @@ class create():
             if self.dashlist[0]:
                 print("Dash Cancel")
                 self.yv *= 1.2
+                self.xv *= 1.5
                 
            
     def dash(self):
