@@ -3,11 +3,11 @@ import pygame as pyg, EZPickle as FileManager, input as InputManager
 import platforms as platform, character, boards as Boards, cameramanager as cam
 from timer import Timer
 from sys import exit
+import dev
 pyg.init()
 
 #Add names of files here: -----------------------------
 platformfilename = 'PgPlatforms.dat'
-
 
 lis = {
 "scwd": 1000,
@@ -19,26 +19,12 @@ lis = {
 "Coyote Time": 10,
 }
 
+
 #Setup ====================================================================================================================
 #Main Functions =========================================
 #Get Input --------------------------------------------
     
     
-class dev():
-    def cmd():
-        while True:
-            ans = input(">")
-            if ans == "cv":
-                ans = input("Name>")
-                if ans in lis:
-                    lis[ans] = int(input("Value>"))
-                    p = defaultPropereties(lis)
-                    FileManager.save(p, 'prop.dat')
-            if ans == "cf":
-                ans = input("File:")
-                    
-            if ans == "exit" or ans == "" or ans == "z":
-                return p
 
 class defaultPropereties(): 
     def __init__(self, lis):
@@ -49,6 +35,7 @@ class defaultPropereties():
         self.screen_height = lis["schi"]
         self.bg_color = lis["bgcol"]
         self.grid = lis["grid"]
+        
         
         #Clock ------------------------------------------------
         self.fps = lis["fps"]
@@ -77,7 +64,7 @@ if p == False:
 FileManager.save(p, 'prop.dat')
 
 char = character.create(p.screen_width/2, 0, 20, 20)
-
+font = pyg.font.Font('freesansbold.ttf', 32)
 clock = pyg.time.Clock()
 # - Screen init -
 screen = pyg.display.set_mode((p.screen_width, p.screen_height))
@@ -103,6 +90,44 @@ platData = {
 
 #---------------------------------------------------------------------------------------------------------------------------
 #Platforming Mode ==========================================================================================================
+def drawCurrentFrame(placestage, level,mousepos, mouseposx, mouseposy, tempx, tempy, select):
+    if Boards.getP("LEFT"):
+                
+        cam.xoffset -= 10
+    elif Boards.getP("RIGHT"):
+        cam.xoffset += 10
+
+
+    if char.x > p.screen_width / 2 and char.x < level.length - p.screen_width / 2 :
+        cam.xdefault = char.x - p.screen_width / 2    
+    else:
+        if char.x < p.screen_width:
+            cam.x = 0
+        else:
+            cam.x = level.length
+            
+    cam.xpos = cam.xdefault + cam.xoffset
+            #print(level.length, cam.xpos, char.x)
+            #print(char.x > p.screen_width / 2 , char.x < level.length - p.screen_width / 2)
+
+    screen.fill(p.bg_color)
+
+    #Render Player ------------------------------------
+    pyg.draw.rect(screen, char.color, (char.x - cam.xpos, char.y - cam.ypos, char.xl, char.yl))
+
+    #Render Platforms ---------------------------------
+    for platID in range(len(level.plat)):
+        pyg.draw.rect(screen, level.plat[platID].color , (level.plat[platID].x - cam.xpos, level.plat[platID].y - cam.ypos, level.plat[platID].xl, level.plat[platID].yl))
+
+    #Render Temporary Platform ------------------------
+    if placestage > 0:
+        dev.renderTempPlat(mousepos, mouseposx, mouseposy, tempx, tempy, select)
+            #Indicator Dot for Grid Placment
+    pyg.draw.rect(screen, p.red, (mouseposx - 2 - cam.xpos, mouseposy - 2 - cam.ypos, 4, 4))
+            
+            
+    pyg.display.flip()
+
 def inPlatScene():
     placestage = 0
     mousedown = False
@@ -121,9 +146,28 @@ def inPlatScene():
 
     data = FileManager.load(platformfilename)
     level = Level(data[100], data[100])
+    tempx = 0
+    tempy = 0 
 
     while p.SceneType == "main":
-        
+        if dev.devpause:
+            textRect = p.font.get_rect()
+            inputFromKeyboard = 0
+            letter = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "BACKSPACE", "TAB"]    
+            for i in range(len(input)):
+                if InputManager.k(letter[i], Ev):
+                    if letter[i] == "BACKSPACE":
+                        inputFromKeyboard.pop()
+                    elif letter[i] == "TAB":
+                        dev.devpause = False
+                    else:
+                        inputFromKeyboard.append(letter[i])
+            text = font.render(inputFromKeyboard, True, p.white)
+            screen.blit(text, textRect)
+            renderFrame(placestage, level,mousepos, mouseposx, mouseposy, tempx, tempy, select)
+            pyg.display.flip()
+            clock.tick(60)
+            continue
         renderframeavg = p.fps / p.renderfps
         #print(renderframeavg, p.fps, p.renderfps, p.total_ticks, p.total_ticks % round(renderframeavg) )
         if p.total_ticks % renderframeavg == 0:
@@ -187,7 +231,8 @@ def inPlatScene():
         if InputManager.k("d", Ev):
             Boards.apP(True, "left")
         if InputManager.k("TAB", Ev):
-            p = dev.cmd()
+            devpause = True
+            #p = dev.cmd()
         if InputManager.k("`", Ev):
             FileManager.save(p, "prop.dat")
             print("Saved Propereites")
@@ -352,71 +397,7 @@ def inPlatScene():
 
     #Render Scene ===============================================================================================================
         if renderFrame:
-            if Boards.getP("LEFT"):
-                cam.xoffset -= 10
-            elif Boards.getP("RIGHT"):
-                cam.xoffset += 10
-
-
-            if char.x > p.screen_width / 2 and char.x < level.length - p.screen_width / 2 :
-                cam.xdefault = char.x - p.screen_width / 2    
-            else:
-                if char.x < p.screen_width:
-                    cam.x = 0
-                else:
-                    cam.x = level.length
-            
-            cam.xpos = cam.xdefault + cam.xoffset
-            #print(level.length, cam.xpos, char.x)
-            #print(char.x > p.screen_width / 2 , char.x < level.length - p.screen_width / 2)
-
-            screen.fill(p.bg_color)
-
-    #Render Player ------------------------------------
-            pyg.draw.rect(screen, char.color, (char.x - cam.xpos, char.y - cam.ypos, char.xl, char.yl))
-
-    #Render Platforms ---------------------------------
-            for platID in range(len(level.plat)):
-                pyg.draw.rect(screen, level.plat[platID].color , (level.plat[platID].x - cam.xpos, level.plat[platID].y - cam.ypos, level.plat[platID].xl, level.plat[platID].yl))
-
-    #Render Temporary Platform ------------------------
-            if placestage > 0:
-                (abs(mousepos[0]) + mousepos[0])/2
-                tempx2 = mouseposx
-                tempy2 = mouseposy
-                
-                #Find the values that are closer to the origin
-                if tempx < tempx2:
-                    LTempx = tempx2
-                    STempx = tempx
-                else:
-                    LTempx = tempx
-                    STempx = tempx2
-                if tempy < tempy2:
-                    LTempy = tempy2
-                    STempy = tempy
-                else:
-                    LTempy = tempy
-                    STempy = tempy2
-                if LTempy - STempy < 10:
-                    temptype = 1
-                else:
-                    temptype = 0
-
-                if platform.placeprop[select]["#HasPlaceReq"]:
-                        if not platform.placeprop[select]["xl"] == False:
-                            LTempx = platform.placeprop[select]["xl"]
-                            STempx = 0
-                        if not platform.placeprop[select]["yl"] == False:
-                            LTempy = platform.placeprop[select]["yl"]
-                            STempy = 0
-
-                pyg.draw.rect(screen, platform.platcolors[select], (STempx - cam.xpos, STempy - cam.ypos, LTempx - STempx, LTempy - STempy))
-            #Indicator Dot for Grid Placment
-            pyg.draw.rect(screen, p.red, (mouseposx - 2 - cam.xpos, mouseposy - 2 - cam.ypos, 4, 4))
-            
-            
-            pyg.display.flip()
+            drawCurrentFrame(placestage, level ,mousepos, mouseposx, mouseposy, tempx, tempy, select)
         #print(char.dashlist, Timer.get("dashleave"), Timer.getvalue("dashleave", False))
 
         Timer.tick()
