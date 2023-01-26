@@ -24,12 +24,14 @@ placeprop = {
         "yl": 10},
 }
 
+#Finds next available ID for platform listing, so that when a platform gets
+#deleted, that spot is detected and used instead of never getting used
 def NextID(platformList):
     keylist = platformList.keys()
     print(keylist, platformList)
-    for i in platformList:
-        if not keylist[platformList.index(i)] == i:
-            name = platformList[i]
+    for i in range(len(platformList)):
+        if not i in keylist:
+            name = i
             return name
     return len(platformList)
 

@@ -2,6 +2,9 @@ from pickle import dump as pkd
 from pickle import load as pkl
 
 for i in range(1):
+    #Used to easily pickle/save a single variable in a particular file
+    #Use by calling EZPickle.save([variable you wish to save], [file you wish to save it in])
+    #If you want to save multiple variables, then learn to get creative with lists/dictionaries
     def save(value, file):
         try:    
             with open(file, "wb") as filename:
@@ -9,6 +12,9 @@ for i in range(1):
         except FileNotFoundError:
             file = open(file, "x")
             pkd(value, file)
+    
+    #Used to easily fetch a single pickled variable in a specified file
+    #Use by calling EZPickle.load([name of the file where data is stored])
     def load(file):
         try:
             with open(file, "rb") as filename:

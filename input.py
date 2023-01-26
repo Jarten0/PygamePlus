@@ -1,18 +1,28 @@
 import pygame as pyg
-kbl = {
-        "z": pyg.K_z,
-        "x": pyg.K_x,
-        "c": pyg.K_c,
-        "q": pyg.K_q,
-        "r": pyg.K_r,
-        "w": pyg.K_w,
-        "a": pyg.K_a,
-        "s": pyg.K_s,
-        "d": pyg.K_d,
-        "k": pyg.K_k,
-        "o": pyg.K_o,
-        "e": pyg.K_e,
+input = {
+#To add or modify an input, simply add or modify a string in the array
+#Keybinds for dev tools (save, load, etc.) are currently not modifiable
+#If your keybind does not have an entry in the keybindlist, add it in the next list below
+#Example line: 
+#  "action": ["input", "optional input", "optional input"]
+    "up":    ["w",     ], 
+    "left":  ["a",     ], 
+    "right": ["d",     ],
+    "down":  ["s",     ], 
+    "jump":  ["k",     ], 
+    "dash":  ["o",     ], 
+    "LEFT":  ["LEFT",  ], 
+    "RIGHT": ["RIGHT", ], 
+    "UP":    ["UP",    ], 
+    "DOWN":  ["DOWN",  ],
+    }
+inputKeys = input.keys()   
+        
 
+
+keyBindList = {
+    #If you wish to use a button not displayed here, add it by following the examples shown
+    #Use pygame documentation if you need to add a unique button
         "a": pyg.K_a,
         "b": pyg.K_b,
         "c": pyg.K_c,
@@ -62,19 +72,21 @@ kbl = {
         "`": pyg.K_RALT
         
         }
-
-def k(input, events, keybindlist = kbl):
+#================================================================================================
+#===== FURTHER CODE SHOULD NOT BE MODIFIED IF YOU ONLY WISH TO CHANGE KEYBINDS ==================
+#================================================================================================
+def k(input, events):
     for event in events:
         if event.type == pyg.KEYDOWN:
-            if event.key == keybindlist[input]:
+            if event.key == keyBindList[input]:
                 return True
             else:
                 return False
         else:
             return False
 
-def kh(input, events, keybindlist = kbl):
-    if events[kbl[input]]:
+def kh(input, events):
+    if events[keyBindList[input]]:
         return True
     else:
         return False

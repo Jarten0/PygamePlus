@@ -1,12 +1,13 @@
 #Import And Initialize ===========================================================================================================
 import pygame as pyg, EZPickle as FileManager, input as InputManager
-import platforms as platform, character, boards as Boards, cameramanager as cam
+import platforms as platform, character, boards as Boards, cameramanager as cam, os
 from timer import Timer
 from sys import exit
 import dev
 pyg.init()
 
 #Add names of files here: -----------------------------
+programPath = os.getcwd()
 platformfilename = 'PgPlatforms.dat'
 
 lis = {
@@ -57,9 +58,9 @@ class defaultPropereties():
         self.SceneType = "main"
         
 #Load propereties ---------------------------------------------
-p = FileManager.load('prop.dat')
-p = False
-if p == False: 
+try:
+    p = FileManager.load('prop.dat')
+except AttributeError as ae:
     p = defaultPropereties(lis)
 FileManager.save(p, 'prop.dat')
 
@@ -71,11 +72,11 @@ screen = pyg.display.set_mode((p.screen_width, p.screen_height))
 pyg.display.set_caption('Platformer')
 
 class Level():
-    def __init__(self, name, plat, length = 200, width = 200):
+    def __init__(self, name, plat, length = 200, height = 200):
         self.name = name
         self.plat = plat
         self.length = length * 20
-        self.width = width * 5
+        self.height = height * 20
 
 
 #Platforms ----------------------------------------------------
@@ -86,44 +87,65 @@ platData = {
 #200 - 299 are names of the levels
     200: "Level 0",
 }
+sky = pyg.image.load(programPath+r"\Images\SkyBox.png").convert()
 
 
 #---------------------------------------------------------------------------------------------------------------------------
 #Platforming Mode ==========================================================================================================
+def drawRect(color, x, y, xl, yl):
+    pyg.draw.rect(screen, color, (x - cam.xpos, y - cam.ypos, xl, yl))
+
+def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0):
+    screen.blit(imageObject, (x - xOffset - cam.xpos, y - yOffset - cam.ypos))
+
 def drawCurrentFrame(placestage, level,mousepos, mouseposx, mouseposy, tempx, tempy, select):
     if Boards.getP("LEFT"):
-                
         cam.xoffset -= 10
     elif Boards.getP("RIGHT"):
         cam.xoffset += 10
+    if Boards.getP("UP"):
+        cam.yoffset -= 10
+    elif Boards.getP("DOWN"):
+        cam.yoffset += 10
 
 
-    if char.x > p.screen_width / 2 and char.x < level.length - p.screen_width / 2 :
+    if char.x + 1 >= p.screen_width / 2 and char.x < level.length - p.screen_width / 2:
         cam.xdefault = char.x - p.screen_width / 2    
     else:
-        if char.x < p.screen_width:
-            cam.x = 0
+        if char.x <= p.screen_width / 2:
+            cam.xpos = 0
         else:
-            cam.x = level.length
+            cam.xpos = level.length
+
+    if char.y +1 >= p.screen_height / 2 and char.y < level.height - p.screen_height / 2:
+        cam.ydefault = char.y - p.screen_height / 2    
+    else:
+        if char.y < p.screen_height / 2:
+            cam.ypos = 0
+        else:
+            cam.ypos = level.height
             
     cam.xpos = cam.xdefault + cam.xoffset
+    cam.ypos = cam.ydefault + cam.yoffset
             #print(level.length, cam.xpos, char.x)
-            #print(char.x > p.screen_width / 2 , char.x < level.length - p.screen_width / 2)
+            #print(char.x > p.screen_height / 2 , char.x < level.length - p.screen_width / 2)
 
     screen.fill(p.bg_color)
+    drawImage(sky, 0, 0)
 
     #Render Player ------------------------------------
-    pyg.draw.rect(screen, char.color, (char.x - cam.xpos, char.y - cam.ypos, char.xl, char.yl))
-
+    drawRect(char.color, char.x, char.y, char.xl, char.yl)
+    
     #Render Platforms ---------------------------------
     for platID in range(len(level.plat)):
-        pyg.draw.rect(screen, level.plat[platID].color , (level.plat[platID].x - cam.xpos, level.plat[platID].y - cam.ypos, level.plat[platID].xl, level.plat[platID].yl))
+        drawRect(level.plat[platID].color, level.plat[platID].x, level.plat[platID].y, level.plat[platID].xl, level.plat[platID].yl)
 
     #Render Temporary Platform ------------------------
     if placestage > 0:
-        dev.renderTempPlat(mousepos, mouseposx, mouseposy, tempx, tempy, select)
+        tempPlat = dev.createTempPlat(mousepos, mouseposx, mouseposy, tempx, tempy, select)
+        drawRect(tempPlat[0],tempPlat[1],tempPlat[2],tempPlat[3],tempPlat[4])
             #Indicator Dot for Grid Placment
-    pyg.draw.rect(screen, p.red, (mouseposx - 2 - cam.xpos, mouseposy - 2 - cam.ypos, 4, 4))
+    drawRect(p.red, mouseposx - 2, mouseposy - 2, 4, 4)
             
             
     pyg.display.flip()
@@ -131,7 +153,7 @@ def drawCurrentFrame(placestage, level,mousepos, mouseposx, mouseposy, tempx, te
 def inPlatScene():
     placestage = 0
     mousedown = False
-    select = 0
+    select = 1
     p = FileManager.load('prop.dat')
     level = Level("Level 0", platData[100], 500, 500)
     Timer.set("dashcool", 20)
@@ -155,7 +177,7 @@ def inPlatScene():
             inputFromKeyboard = 0
             letter = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "BACKSPACE", "TAB"]    
             for i in range(len(input)):
-                if InputManager.k(letter[i], Ev):
+                if InputManager.k(letter[i], eventsGet):
                     if letter[i] == "BACKSPACE":
                         inputFromKeyboard.pop()
                     elif letter[i] == "TAB":
@@ -189,51 +211,52 @@ def inPlatScene():
         mouseposx = round((mousepos[0]/p.grid), 0)*p.grid
         mouseposy = round((mousepos[1]/p.grid), 0)*p.grid
         mouselist = pyg.mouse.get_pressed(num_buttons=5)
-        Ev = pyg.event.get()
-        Evh = pyg.key.get_pressed()
+        eventsGet = pyg.event.get()
+        eventsGetHeld = pyg.key.get_pressed()
+        print(Boards.perm)
 
 
 
 #Input From Player =========================================================================================================
-        input = ["up", "left", "right", "down", "jump", "dash", "dash", "LEFT", "RIGHT", "UP", "DOWN"]
-        letter = ["w", "a", "d", "s", "k", "k", "o",            "LEFT", "RIGHT", "UP", "DOWN"]    
-        for i in range(len(input)):
-            if InputManager.kh(letter[i], Evh):
-                Boards.apP(True, input[i])
-            else:
-                Boards.apP(False, input[i])
+        for actionToCheck in InputManager.inputKeys:
+            for keyToCheck in range(len(InputManager.input[actionToCheck])):
+                if InputManager.kh(InputManager.input[actionToCheck][keyToCheck], eventsGetHeld):
+                    Boards.apP(True, actionToCheck)
+                    break
+                else:
+                    Boards.apP(False, actionToCheck)
 
-        if InputManager.k("z", Ev):
+        if InputManager.k("z", eventsGet):
             platData[100] = level.plat
             FileManager.save(platData, platformfilename)
             print("Saved Platform Data")
-        if InputManager.k("x", Ev):
+        if InputManager.k("x", eventsGet):
             data = FileManager.load(platformfilename)
             level = Level(data[100], data[100])
-        if InputManager.k("c", Ev):
+        if InputManager.k("c", eventsGet):
             level.plat = {}
-        if InputManager.k("q", Ev):
+        if InputManager.k("q", eventsGet):
             pyg.quit()
             exit()
-        if InputManager.k("r", Ev):
+        if InputManager.k("r", eventsGet):
             p = defaultPropereties(lis)
             FileManager.save(p, 'prop.dat')
             print("Saved Propereties")        
-        #if InputManager.k("e", Ev):
+        #if InputManager.k("e", eventsGet):
 
         for i in range(10):
-            if InputManager.k(str(i), Ev):
+            if InputManager.k(str(i), eventsGet):
                 select = i
             
 
-        if InputManager.k("a", Ev):
+        if InputManager.k("a", eventsGet):
             Boards.apP(True, "left")
-        if InputManager.k("d", Ev):
+        if InputManager.k("d", eventsGet):
             Boards.apP(True, "left")
-        if InputManager.k("TAB", Ev):
+        if InputManager.k("TAB", eventsGet):
             devpause = True
             #p = dev.cmd()
-        if InputManager.k("`", Ev):
+        if InputManager.k("`", eventsGet):
             FileManager.save(p, "prop.dat")
             print("Saved Propereites")
 
@@ -318,11 +341,16 @@ def inPlatScene():
             fREEZEFRAMES += 2
             char.dash()            
 
-        
+        if Boards.getP("down"):
+            char.gravity = 14
+        else:
+            char.gravity = 7
 
         if char.yv < char.gravity and char.gr == False:
             char.yv += 1 /( p.fps * delta)
-        
+        elif char.gr == False and char.yv > char.gravity + 1:
+            char.yv -= 1
+
         #print("Speed: ", char.speed)
         #print("Dash: ",Timer.getvalue("dash", False), "   Dashcool: ", Timer.getvalue("dashcool", False))
         if not Timer.get("dash") and char.dashstate:
@@ -372,8 +400,10 @@ def inPlatScene():
         
         
         
-        if char.y > p.screen_height:
-            char.die()
+        if char.y > level.height:
+            char.die(level)
+            cam.xpos = 0
+            cam.ypos = 0
         if char.x < 0:
             char.x = p.screen_width
         elif char.x > p.screen_width + level.length:

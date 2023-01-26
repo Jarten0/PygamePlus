@@ -34,12 +34,10 @@ class create():
         self.dashslow = 1
         self.color = colors["red"]
 
-    def die(self):
+    def die(self, level):
         self.x = 500
-        cam.xpos = 0
-        #cam.ypos = 0
         self.x = 1000 / 2
-        self.y = 1000
+        self.y = level.height
         self.yv = -30
         self.xv = 0
         self.dashes = 1
