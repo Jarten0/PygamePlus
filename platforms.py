@@ -1,5 +1,7 @@
+print(__name__, "Platforms")
 from timer import Timer
 import boards as Boards
+#from main import kill
 platcolors = {
     0: (0,   0,   0),
     1: (0,   255, 0),
@@ -17,11 +19,11 @@ placeprop = {
     2: {
         "#HasPlaceReq": True,
         "xl": False,
-        "yl": 5},
+        "yl": 7},
     3: {
         "#HasPlaceReq": True,
         "xl": False,
-        "yl": 10},
+        "yl": False},
 }
 
 #Finds next available ID for platform listing, so that when a platform gets

@@ -1,7 +1,8 @@
+print(__name__, "Dev")
 import EZPickle as FileManager
 import platforms as platform
 import pygame as pyg
-
+from main import drawRect
 lis = {
 "scwd": 1000,
 "schi": 1000,
@@ -33,6 +34,7 @@ def cmd():
 
 def createTempPlat(mousepos, mouseposx, mouseposy, tempx, tempy, select):
     (abs(mousepos[0]) + mousepos[0])/2
+    print(mousepos, mouseposx, mouseposy, tempx, tempy, select)
     tempx2 = mouseposx
     tempy2 = mouseposy
     if tempx < tempx2:
@@ -50,11 +52,14 @@ def createTempPlat(mousepos, mouseposx, mouseposy, tempx, tempy, select):
 
     if platform.placeprop[select]["#HasPlaceReq"]:
         if not platform.placeprop[select]["xl"] == False:
-            LTempx = platform.placeprop[select]["xl"]
-            STempx = 0
+            LTempx = platform.placeprop[select]["xl"] + STempx
+
+            
         if not platform.placeprop[select]["yl"] == False:
-            LTempy = platform.placeprop[select]["yl"]
-            STempy = 0
+            LTempy = platform.placeprop[select]["yl"] + STempy
+
+
+    print(platform.platcolors[select], STempx, STempy, LTempx - STempx, LTempy - STempy)
     return (platform.platcolors[select], STempx, STempy, LTempx - STempx, LTempy - STempy)
             
-from main import drawRect
+ 

@@ -1,6 +1,7 @@
 import boards as Boards
 import cameramanager as cam
-from timer import Timer
+from timer import Timer 
+#import main
 colors = {
     "red":   (255,0,  0  ),
     "green": (0,  255,0  ),
@@ -28,19 +29,20 @@ class create():
         self.dashstate = False
         self.dashleave = True
         self.dashlength = 10
-        self.dashcooldown = 2
+        self.dashcooldown = 8
         self.dashspeed = 18
         self.dashlist = [False, False, False, False]
         self.dashslow = 1
         self.color = colors["red"]
 
-    def die(self, level):
-        self.x = 500
-        self.x = 1000 / 2
-        self.y = level.height
-        self.yv = -30
+    def die(self, yspawn = 10000, jumpOnSpawn = True, xspawn = 500):
+        self.x = xspawn        
+        self.y = yspawn
         self.xv = 0
         self.dashes = 1
+
+        if jumpOnSpawn:
+            self.yv = -30
         
 
     def jump(self):
@@ -74,7 +76,7 @@ class create():
                 self.yv *= 1.2
                 self.xv *= 1.5
                 
-           
+#Run on the first frame of a check
     def dash(self):
         input = ["up", "left", "right", "down", "jump", "dash"]
         self.dashes -= 1
@@ -84,7 +86,50 @@ class create():
                 self.dashlist[i] = True
         if self.dashlist == [False, False, False, False]:
             self.dashlist[2] = True
+
+#Run every frame, to run checks and blocks of code for all dash related stuff
+    def dashManager(char):
+        if not Timer.get("dash") and char.dashstate:
+            char.color = colors["green"]
+            if char.dashlist[0]:
+                if char.yv > -char.dashspeed:
+                    char.yv = -char.dashspeed
+            if char.dashlist[1]:
+                if char.xv > -char.dashspeed:
+                    char.xv = -char.dashspeed
+            if char.dashlist[2]:
+                if char.xv < char.dashspeed:
+                    char.xv = char.dashspeed
+            if char.dashlist[3]:
+                if char.yv < char.dashspeed:
+                    char.yv = char.dashspeed
+            if char.dashlist[3]:
+                if char.dashlist[0]:
+                    char.yv = 0
+#                    char.xv *= 1.2
+        elif char.dashstate:
+            char.dashstate = False
+            char.dashleave = True
+            char.color = (200, 200, 200)
+            Timer.set("dashleave", char.dashcooldown)
+        if Timer.get("dashleave") == False:
+            if char.gr:
+                char.dashes = 1   
+
+        if Timer.get("dashleave") == True:
+            char.dashlist = [False, False, False, False]
+            char.dashleave = False
+            char.color = colors["blue"]
+
+        if char.dashes > 0:
+            char.color = colors["red"]
         
+        if char.dashslow > 1:
+            char.dashslow / 1.066
+        if char.dashslow < 1:
+            char.dashslow = 1
+        #print(char.dashlist, Timer.get("dash"))
+
     def resetDash(self):
         self.dashes = 1
         self.dashstate = False

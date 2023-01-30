@@ -1,3 +1,9 @@
+global xpos
+global ypos
+global xdefault
+global ydefault
+global xoffset
+global yoffset
 xpos = 0
 ypos = 0
 xdefault = 0
