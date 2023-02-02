@@ -1,7 +1,7 @@
 print(__name__, "Main")
 #Import And Initialize ===========================================================================================================
 import pygame as pyg, EZPickle as FileManager, input as InputManager
-import platforms as platform, character, boards as Boards, cameramanager as cam, os
+import platforms as platform, character, boards as Boards, cameramanager as cam, os, cutsceneManager
 from timer import Timer
 from defaultPropereties import defaultPropereties
 from sys import exit
@@ -165,6 +165,14 @@ def startPlatformingScene():
         eventsGetHeld = pyg.key.get_pressed()
         #print(Boards.perm)
 
+
+#Cutscene Handler =================================================
+        #NOT CURRENTLY PROPERLY IMPLEMENTED
+        """ 
+        if cutsceneManager.cutsceneActive:
+            if cutsceneManager.cutsceneID == 1:
+                cutsceneManager.platformingInitializeCutscene
+        """
 
 #Input From Player =========================================================================================================
         for actionToCheck in InputManager.defaultInputKeys:

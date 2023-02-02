@@ -6,6 +6,7 @@ colors = {
     "red":   (255,0,  0  ),
     "green": (0,  255,0  ),
     "blue":  (0,  0,  255),
+    "gray":  (30, 30, 30 ),
 }
 class create():
     def __init__(self, x, y, xl, yl, xv = 0, yv = 0, gr = False, st = 0, wj = False):
