@@ -13,17 +13,26 @@ platcolors = {
 
 placeprop = {
     0: {
-        "#HasPlaceReq": False},
+        "#HasPlaceReq": False,
+        "#object": False,},
     1: {
-        "#HasPlaceReq": False},
+        "#HasPlaceReq": False,
+        "#object": False,},
     2: {
         "#HasPlaceReq": True,
         "xl": False,
-        "yl": 7},
+        "yl": 7,
+        "#object": False,},
     3: {
         "#HasPlaceReq": True,
         "xl": False,
-        "yl": False},
+        "yl": False,
+        "#object": False,},
+    4: {
+        "#HasPlaceReq": True,
+        "xl": 30,
+        "yl": 10,
+        "#object": True},
 }
 
 #Finds next available ID for platform listing, so that when a platform gets

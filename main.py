@@ -248,7 +248,9 @@ def startPlatformingScene():
                         if not platform.placeprop[select]["yl"] == False:
                             tempy2 = platform.placeprop[select]["yl"]
                             tempy = 0
-                    if not abs(tempx2 - tempx) == 0 and not abs(tempy2 - tempy) == 0:
+                    if platform.placeprop[select]["#object"]:
+                        level.plat[platform.NextID(level.plat)] = platform.create(mouseposx, mouseposy, tempx2, tempy2, select)
+                    elif not abs(tempx2 - tempx) == 0 and not abs(tempy2 - tempy) == 0:
                         level.plat[platform.NextID(level.plat)] = platform.create(xstate, ystate, abs(tempx2 - tempx), abs(tempy2 - tempy), select)  
                     placestage = 0
                 mousedown = True

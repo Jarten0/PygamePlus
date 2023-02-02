@@ -57,7 +57,10 @@ def createTempPlat(mousepos, mouseposx, mouseposy, tempx, tempy, select):
             
         if not platform.placeprop[select]["yl"] == False:
             LTempy = platform.placeprop[select]["yl"] + STempy
-
+        
+    if platform.placeprop[select]["#object"]:
+        STempx = mouseposx
+        STempy = mouseposy
 
     print(platform.platcolors[select], STempx, STempy, LTempx - STempx, LTempy - STempy)
     return (platform.platcolors[select], STempx, STempy, LTempx - STempx, LTempy - STempy)
