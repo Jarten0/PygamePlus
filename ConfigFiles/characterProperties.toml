@@ -1,0 +1,33 @@
+#Notice: Pygame uses a flipped Y-Axis, so for all y-movement
+#related properties, remember that the origin is in the
+#top left corner instead of the bottom left corner
+
+#Also, the game runs at 240 physics updates per second
+#So one frame is 1/240th of a second
+
+#Initial position and size of character
+[body]
+xpos = 500
+ypos = 0
+xlength = 20
+ylength = 20
+
+#Basic movement stats to tweak
+[run]
+runSpeed = 6
+runAcceleration = 1
+runDeceleration = 0.5
+
+#Basic vertical movement stats
+#(Read top notice)
+[jump]
+gravityStrength = 7
+jumpPower = -18
+
+#Dash stats
+[dash]
+dashCount = 1
+dashLength = 10
+dashCooldownLength = 12
+dashSpeed = 18
+dashDeceleration = 1

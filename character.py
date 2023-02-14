@@ -1,6 +1,7 @@
 import boards as Boards
 import cameramanager as cam
 from timer import Timer 
+import tomllib, os
 #import main
 colors = {
     "red":   (255,0,  0  ),
@@ -9,32 +10,38 @@ colors = {
     "gray":  (30, 30, 30 ),
 }
 class create():
-    def __init__(self, x, y, xl, yl, xv = 0, yv = 0, gr = False, st = 0, wj = False):
-        self.x = x
-        self.y = y
-        self.xl = xl
-        self.yl = yl
-        self.xv = xv
-        self.yv = yv
-        self.gr = gr
-        self.st = st
-        self.wj = wj
+    def __init__(self):
+        with open(os.getcwd()+'\ConfigFiles\characterProperties.toml', "rb") as f:
+            configFile = tomllib.load(f)
+            print(configFile)
+        self.x = configFile['body']['xpos']
+        self.y = configFile['body']['ypos']
+        self.xl = configFile['body']['xlength']
+        self.yl = configFile['body']['ylength']
+        self.xv = 0
+        self.yv = 0
+        self.gr = False
+        self.st = False
+        self.wj = False
         self.w = None
-        self.speed = 6
-        self.acc = 1
-        self.decel = 0.5
+        self.speed = configFile['run']['runSpeed']
+        self.acc = configFile['run']['runAcceleration']
+        self.decel = configFile['run']['runDeceleration']
         self.dyndecel = 1
-        self.jumppower = -18
-        self.gravity = 7
-        self.dashes = 1
+        self.jumppower = configFile['jump']['jumpPower']
+        self.gravity = configFile['jump']['gravityStrength']
+        self.dashes = configFile['dash']['dashCount']
         self.dashstate = False
         self.dashleave = True
-        self.dashlength = 10
-        self.dashcooldown = 8
-        self.dashspeed = 18
+        self.dashlength = configFile['dash']['dashLength']
+        self.dashcooldown = configFile['dash']['dashCooldownLength']
+        self.dashspeed = configFile['dash']['dashSpeed']
         self.dashlist = [False, False, False, False]
-        self.dashslow = 1
+        self.dashslow = configFile['dash']['dashDeceleration']
         self.color = colors["red"]
+        self.DCsuper = 0
+        self.DChyper = 0
+
 
     def die(self, yspawn = 10000, jumpOnSpawn = True, xspawn = 500):
         self.x = xspawn        
@@ -50,7 +57,7 @@ class create():
         self.yv = self.jumppower
         self.gr = False
         self.dashslow = 1
-        self.xv * 1.2
+        self.xv * 2
         self.dashslow = 1
         if self.dashleave or self.dashstate:
             print("Dash Cancel")

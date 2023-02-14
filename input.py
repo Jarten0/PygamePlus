@@ -92,11 +92,10 @@ def kh(input, events):
 
 
 def main():
-    import EZPickle as FileManager
-    mappedInputs = FileManager.load('Save Data/input mappings.dat')
-    if mappedInputs== False:
-        mappedInputs = defaultInputs
-    
+    import os, tomllib
+    with open(os.getcwd()+'\ConfigFiles\characterProperties.toml', "rb") as f:
+            configFile = tomllib.load(f)
+            print(configFile)
     stop = False
     Info = """
     This program is a script intended on being used to adjust what keybinds are to correlate to whichever actions are best suited in the user's preference
@@ -151,7 +150,7 @@ def main():
                     word += " "
                 print(word)
                 print(f"Current action: {i}")
-                print(f"Current keybinds set to {i}: {mappedInputs[i]}")
+                print(f"Current keybinds set to {i}: {configFile[i]}")
                 print("Leave input blank and press enter to select next action")
                 print("Type in a command or the number correlating to the below command")
                 inputFromUser = input("Add: 1, Remove: 2, Pop: 3, Reset: 4, Save: 5, Exit: 6, Help: 7 \n> ")
@@ -166,7 +165,7 @@ def main():
                             print("Available input options: ", keyBindListKeys)
                         elif inputFromUser in keyBindListKeys:
                             print(f"Binded {inputFromUser} to {i}")
-                            mappedInputs[i].append(inputFromUser)
+                            configFile[i].append(inputFromUser)
                             break
                 elif inputFromUser.lower() == "remove" or inputFromUser == "2":
                     while True:
@@ -175,28 +174,34 @@ def main():
                         if inputFromUser == 'cancel':
                             break
                         elif inputFromUser == 'list':
-                            print(f"Current mapped buttons to {i}: {mappedInputs[i]}")
-                        elif inputFromUser in mappedInputs[i]:
+                            print(f"Current mapped buttons to {i}: {configFile[i]}")
+                        elif inputFromUser in configFile[i]:
                             print(f"Removed {inputFromUser} from {i}")
-                            mappedInputs[i].remove(inputFromUser)
+                            configFile[i].remove(inputFromUser)
                             break
                 elif inputFromUser.lower() == "pop" or inputFromUser == "3":
-                    if len(mappedInputs[i]) > 0:
-                        print(f"Removed {mappedInputs[i]} from the top of the list")
-                        mappedInputs[i].pop()
+                    if len(configFile[i]) > 0:
+                        print(f"Removed {configFile[i]} from the top of the list")
+                        configFile[i].pop()
                     else:
                         print(f"No buttons currently mapped to {i}")
                 elif inputFromUser.lower() == "reset" or inputFromUser == "4":
                     print(f"Reset {i} to default bindings")
-                    mappedInputs[i] = defaultInputKeys[i]
+                    configFile[i] = defaultInputKeys[i]
                 elif inputFromUser.lower() == "save" or inputFromUser == "5":
                     print(f"Saving current progress...")
-                    FileManager.save(mappedInputs, 'Save Data/input mappings.dat')
-                    if mappedInputs == FileManager.load('Save Data/input mappings.dat'):
+                    
+
+
+                    """
+FileManager.save(configFile, 'Save Data/input mappings.dat')
+                    if configFile == FileManager.load('Save Data/input mappings.dat'):
                         print("Saved successfully.")
                     else:
                         print("Save failure! Panic!")
-                        print(mappedInputs, FileManager.load('Save Data/input mappings.dat'))
+                        print(configFile, FileManager.load('Save Data/input mappings.dat'))
+"""
+
                 elif inputFromUser.lower() == "exit" or inputFromUser == "6":
                     inputFromUser = input("Are you sure? [Y/n]> ")
                     if inputFromUser.upper() == "Y":

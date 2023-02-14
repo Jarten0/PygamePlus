@@ -37,7 +37,7 @@ placeprop = {
 
 #Finds next available ID for platform listing, so that when a platform gets
 #deleted, that spot is detected and used instead of never getting used
-def NextID(platformList):
+def NextID(platformList) -> int:
     keylist = platformList.keys()
     print(keylist, platformList)
     for i in range(len(platformList)):
@@ -47,7 +47,7 @@ def NextID(platformList):
     return len(platformList)
 
 class create():
-    def __init__(self, x, y, xl, yl, type = 0):
+    def __init__(self, x, y, xl, yl, type = 0) -> None:
         self.x = x
         self.y = y
         self.xl = xl
@@ -59,7 +59,7 @@ class create():
 
 class collision():
     #C = Character, P = Platform, L = Length
-    def check(cx, cy, cxl, cyl, px, py, pxl, pyl):
+    def check(cx, cy, cxl, cyl, px, py, pxl, pyl) -> list[bool]: #Checks
         lis = [False, False, False, False, False]
         if cy + cyl >= py and cy <= py + pyl:
             if cx + cxl >= px and cx <= px + pxl:
@@ -76,7 +76,7 @@ class collision():
         return lis
 
 class types():
-    def wall(char, wallcheck, pTBC):
+    def wall(char, wallcheck, pTBC) -> None:
         if wallcheck[1]:       
             char.gr = True
             char.y = pTBC.y - char.yl  
@@ -107,7 +107,7 @@ class types():
                 char.wj = True
                 char.w = [wallcheck[2], wallcheck[4]]
     
-    def passthrough(char, wallcheck, pTBC):
+    def passthrough(char, wallcheck, pTBC) -> None:
         if wallcheck[1]:
             if char.yv >= 0 and not Boards.getP("down"):           
                 char.gr = True
@@ -116,11 +116,11 @@ class types():
                 #Timer.set("dashcool", True)
                 Timer.set("CoyoteTime", 0, True)
 
-    def lava(char, wallcheck, pTBC):
+    def lava(char, wallcheck, pTBC) -> None:
         if wallcheck[0]:
             char.die()
     
-    def bounce(char, wallcheck, pTBH):
+    def bounce(char, wallcheck, pTBC) -> None:
         if wallcheck[0]:
             char.resetDash()
             char.yv = -22
@@ -129,5 +129,10 @@ class types():
             elif char.xv < -char.speed:
                 char.xv = -char.speed     
             
-
+    functionList = {
+        1: wall,
+        2: passthrough,
+        3: lava,
+        4: bounce,
+    }
                    

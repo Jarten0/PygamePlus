@@ -34,8 +34,8 @@ def drawCurrentFrame(placestage, level,mousepos, mouseposx, mouseposy, tempx, te
     drawRect(char.color, char.x, char.y, char.xl, char.yl)
     
 #Render Platforms ---------------------------------
-    for platID in range(len(level.plat)):
-        drawRect(level.plat[platID].color, level.plat[platID].x, level.plat[platID].y, level.plat[platID].xl, level.plat[platID].yl)
+    for platformToBeDrawn in level.plat.values():
+        drawRect(platformToBeDrawn.color, platformToBeDrawn.x, platformToBeDrawn.y, platformToBeDrawn.xl, platformToBeDrawn.yl)
 
 #Render Temporary Platform ------------------------
     if placestage > 0:
@@ -217,9 +217,10 @@ def startPlatformingScene():
             if not mousedown:
                 print("Click!")
                 if select == 0:
-                    for i in level.plat:
-                        if platform.collision.check(mouseposx, mouseposy, 1, 1, level.plat[i].x, level.plat[i].y, level.plat[i].xl, level.plat[i].yl):
-                            del level.plat[i]
+                    for platformThing in level.plat:
+                        platformToBeDeleted = level.plat[platformThing]
+                        if platform.collision.check(mouseposx, mouseposy, 1, 1, platformToBeDeleted.x, platformToBeDeleted.y, platformToBeDeleted.xl, platformToBeDeleted.yl)[0]:
+                            del level.plat[platformThing]
                             break
                 
                 elif placestage == 0:
@@ -335,18 +336,11 @@ def startPlatformingScene():
 #Platform checker, uses pre-determined checking of which parts of the wall have been collided with
         
 #Run functions
-        for platformToBeChecked in range(len(level.plat)):
-            pTBC = level.plat[platformToBeChecked]
-            wallcheck = platform.collision.check(char.x, char.y, char.xl, char.yl, pTBC.x, pTBC.y, pTBC.xl, pTBC.yl)
-            if pTBC.type == 1:
-                platform.types.wall(char, wallcheck, pTBC),
-            if pTBC.type == 2:
-                platform.types.passthrough(char, wallcheck, pTBC),
-            if pTBC.type == 3:
-                platform.types.lava(char, wallcheck, pTBC),
-            if pTBC.type == 4:
-                platform.types.bounce(char, wallcheck, pTBC)
+        for platformToBeChecked in level.plat.values():
+            wallcheck = platform.collision.check(char.x, char.y, char.xl, char.yl, platformToBeChecked.x, platformToBeChecked.y, platformToBeChecked.xl, platformToBeChecked.yl)
+            platform.types.functionList[platformToBeChecked.type](char, wallcheck, platformToBeChecked)
 
+            
     #Render Scene ===============================================================================================================
         if renderFrame:
             drawCurrentFrame(placestage, level ,mousepos, mouseposx, mouseposy, tempx, tempy, select)
@@ -377,7 +371,7 @@ def main():
     FileManager.save(p, properetiesFileName)
 
 
-    char = character.create(p.screen_width/2, 0, 20, 20)
+    char = character.create()
     font = pyg.font.Font('freesansbold.ttf', 32)
     
     clock = pyg.time.Clock()
