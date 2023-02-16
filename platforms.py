@@ -39,7 +39,7 @@ placeprop = {
 #deleted, that spot is detected and used instead of never getting used
 def NextID(platformList) -> int:
     keylist = platformList.keys()
-    print(keylist, platformList)
+    #print(keylist, platformList)
     for i in range(len(platformList)):
         if not i in keylist:
             name = i
@@ -76,7 +76,10 @@ class collision():
         return lis
 
 class types():
-    def wall(char, wallcheck, pTBC) -> None:
+    def wall(prop) -> None:
+        wallcheck = prop["wallcheck"]
+        char = prop["char"]
+        pTBC = prop["platformToBeChecked"]
         if wallcheck[1]:       
             char.gr = True
             char.y = pTBC.y - char.yl  
@@ -107,7 +110,10 @@ class types():
                 char.wj = True
                 char.w = [wallcheck[2], wallcheck[4]]
     
-    def passthrough(char, wallcheck, pTBC) -> None:
+    def passthrough(prop) -> None:
+        wallcheck = prop["wallcheck"]
+        char = prop["char"]
+        pTBC = prop["platformToBeChecked"]
         if wallcheck[1]:
             if char.yv >= 0 and not Boards.getP("down"):           
                 char.gr = True
@@ -116,12 +122,13 @@ class types():
                 #Timer.set("dashcool", True)
                 Timer.set("CoyoteTime", 0, True)
 
-    def lava(char, wallcheck, pTBC) -> None:
-        if wallcheck[0]:
-            char.die()
+    def lava(prop) -> None:
+        if prop["wallcheck"][0]:
+            prop["char"].die()
     
-    def bounce(char, wallcheck, pTBC) -> None:
-        if wallcheck[0]:
+    def bounce(prop) -> None:
+        char = prop["char"]
+        if prop["wallcheck"][0]:
             char.resetDash()
             char.yv = -22
             if char.xv > char.speed:

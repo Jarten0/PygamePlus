@@ -1,12 +1,8 @@
-global xpos
-global ypos
-global xdefault
-global ydefault
-global xoffset
-global yoffset
-xpos = 0
-ypos = 0
-xdefault = 0
-ydefault = 0
-xoffset = 0
-yoffset = 0
+class Camera():
+    def __init__(self) -> None:
+        self.xpos = 0
+        self.ypos = 0
+        self.xdefault = 0
+        self.ydefault = 0
+        self.xoffset = 0
+        self.yoffset = 0

@@ -1,12 +1,26 @@
-length = 5
-startCondition = False
+length = 10
 
-def start():
+
+def start(prop) -> None:
     print("Hello World!")
+    prop["cam"].ypos = 0
+    prop["char"].dead = False
 
-def update():
-    from main import char
-    char.xv = 5
+def update(prop) -> None:
+    prop["char"].yv = 50
+    
 
-def end():
+def end(prop) -> None:
+    prop["char"].allowControl = True
     print("Ended")
+
+def startCheck(prop) -> bool or dict:
+    if prop["char"].dead == True:
+        return True
+    return False
+
+
+def endCheck(prop) -> bool:
+    if prop["char"].y > 3500:
+        return True
+    return False

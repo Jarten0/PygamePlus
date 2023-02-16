@@ -1,8 +1,9 @@
 print(__name__, "Main")
 #Import And Initialize ===========================================================================================================
 import pygame as pyg, EZPickle as FileManager, input as InputManager
-import platforms as platform, character, boards as Boards, cameramanager as cam, os, cutsceneManager
+import platforms as platform, character, boards as Boards, os, cutsceneManager
 from timer import Timer
+from cameramanager import Camera
 from defaultPropereties import defaultPropereties
 from sys import exit
 import dev
@@ -21,6 +22,13 @@ class Level():
         self.plat = plat
         self.length = length * 20
         self.height = height * 20
+
+
+
+
+
+
+
 
 #---------------------------------------------------------------------------------------------------------------------------
 #Platforming Mode ==========================================================================================================
@@ -56,21 +64,25 @@ def getCameraPosition():
     elif Boards.getP("DOWN"):
         cam.yoffset += 10
 
+    if Boards.getP("up") or Boards.getP("down") or Boards.getP("left") or Boards.getP("right"):
+        cam.xoffset = 0
+        cam.yoffset = 0
+
     if char.x + 1 >= p.screen_width / 2 and char.x < level.length - p.screen_width / 2:
         cam.xdefault = char.x - p.screen_width / 2    
     else:
         if char.x <= p.screen_width / 2:
-            cam.xpos = 0
+            cam.xdefault = 0
         else:
-            cam.xpos = level.length
+            cam.xdefault = level.length - p.screen_width
 
     if char.y +1 >= p.screen_height / 2 and char.y < level.height - p.screen_height / 2:
         cam.ydefault = char.y - p.screen_height / 2    
     else:
         if char.y < p.screen_height / 2:
-            cam.ypos = 0
+            cam.ydefault = 0
         else:
-            cam.ypos = level.height
+            cam.ydefault = level.height - p.screen_height   
             
     cam.xpos = cam.xdefault + cam.xoffset
     cam.ypos = cam.ydefault + cam.yoffset
@@ -80,6 +92,23 @@ def drawRect(color, x, y, xl, yl):
 
 def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0):
     screen.blit(imageObject, (x - xOffset - cam.xpos, y - yOffset - cam.ypos))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ===== ===== ===== ===== =====
@@ -113,6 +142,25 @@ def startPlatformingScene():
     input = FileManager.load(inputsFileName)
     if input == False:
         input = InputManager.defaultInputs
+    currentInputs = {
+            "up":    False, 
+            "left":  False, 
+            "down":  False,
+            "right": False,
+            "jump":  False,
+            "dash":  False, 
+            "UP":    False, 
+            "LEFT":  False,
+            "DOWN":  False,
+            "RIGHT": False,
+        }
+
+    cutsceneManager.init()
+    cutscenePropRefDict = {
+        "char": char,
+        "plat": level.plat,
+        "input": currentInputs,
+    }
 
     data = FileManager.load(platformfilename)
     if data == False:
@@ -120,6 +168,21 @@ def startPlatformingScene():
     level = Level(data[100], data[100])
     tempx = 0
     tempy = 0 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     while p.SceneType == "main":
         if dev.devpause:
@@ -166,19 +229,33 @@ def startPlatformingScene():
         #print(Boards.perm)
 
 
-#Cutscene Handler =================================================
-        #NOT CURRENTLY PROPERLY IMPLEMENTED
-        """ 
-        if cutsceneManager.cutsceneActive:
-            if cutsceneManager.cutsceneID == 1:
-                cutsceneManager.platformingInitializeCutscene
-        """
 
-#Input From Player =========================================================================================================
+
+
+
+
+
+
+
+
+#Extra Input From Player (For dev use) =========================================================================================================
+        currentInputs = {
+            "up":    False, 
+            "left":  False, 
+            "down":  False,
+            "right": False,
+            "jump":  False,
+            "dash":  False, 
+            "UP":    False, 
+            "LEFT":  False,
+            "DOWN":  False,
+            "RIGHT": False,
+        }
         for actionToCheck in InputManager.defaultInputKeys:
             for keyToCheck in range(len(input[actionToCheck])):
                 if InputManager.kh(input[actionToCheck][keyToCheck], eventsGetHeld):
                     Boards.apP(True, actionToCheck)
+                    currentInputs[actionToCheck] = True
                     break
                 else:
                     Boards.apP(False, actionToCheck)
@@ -258,6 +335,67 @@ def startPlatformingScene():
         else:
             mousedown = False
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Cutscene Handler =================================================
+        for cutscene in cutsceneManager.cutsceneList.values():
+            
+            cutsceneStartResult = cutscene.startCheck(cutscenePropRefDict)
+            
+            if cutsceneStartResult is bool:
+                if cutsceneStartResult:
+                    cutsceneManager.cutsceneActive = True
+                    cutscene.start(cutscenePropRefDict)
+            
+            elif cutsceneStartResult is dict:
+                if cutsceneStartResult["trigger"]:
+                    if platform.collision.check(char.x, char.y, char.xl, char.yl, cutsceneStartResult["triggerHitbox"]["x"], cutsceneStartResult["triggerHitbox"]["y"], cutsceneStartResult["triggerHitbox"]["xl"], cutsceneStartResult["triggerHitbox"]["yl"])[0]:
+                        cutsceneManager.cutsceneActive = True
+                        cutscene.start(cutscenePropRefDict)
+        
+        if cutsceneManager.cutsceneActive:
+            cutscene = cutsceneManager.cutsceneList[cutsceneManager.cutsceneID]
+            
+            cutscene.update(cutscenePropRefDict)
+            if cutscene.endCheck(cutscenePropRefDict):
+                cutsceneManager.cutsceneActive = False
+                cutscene.end(cutscenePropRefDict)
+
+
+
+
+
+
+
+
+
+        if char.allowControl == False:
+            for actionToCheck in InputManager.defaultInputKeys:
+                Boards.apP(False, actionToCheck)
+
+
+
+
+
+
+
+
+
+
 #Movement/Collisions =========================================================================================================
 #Ideally the best course of action is to have all of the movements before
 # the collisions so that the player's momentum doesn't push the character
@@ -324,9 +462,8 @@ def startPlatformingScene():
         
 #Death from void        
         if char.y > level.height:
-            char.die(level.height)
-            cam.xpos = 0
-            cam.ypos = 0
+            char.die()
+
         if char.x < 0:
             char.x = 0
         elif char.x > p.screen_width + level.length:
@@ -338,7 +475,12 @@ def startPlatformingScene():
 #Run functions
         for platformToBeChecked in level.plat.values():
             wallcheck = platform.collision.check(char.x, char.y, char.xl, char.yl, platformToBeChecked.x, platformToBeChecked.y, platformToBeChecked.xl, platformToBeChecked.yl)
-            platform.types.functionList[platformToBeChecked.type](char, wallcheck, platformToBeChecked)
+            platform.types.functionList[platformToBeChecked.type]({
+                "char": char, 
+                "wallcheck": wallcheck, 
+                "platformToBeChecked": platformToBeChecked, 
+                "cam": cam}
+                )
 
             
     #Render Scene ===============================================================================================================
@@ -364,7 +506,9 @@ def main():
     global font
     global platData
     global sky
+    global cam
 
+    cam = Camera()
     p = FileManager.load(properetiesFileName)
     if p == False:
         p = defaultPropereties(dev.lis)
@@ -373,12 +517,13 @@ def main():
 
     char = character.create()
     font = pyg.font.Font('freesansbold.ttf', 32)
-    
     clock = pyg.time.Clock()
-    # - Screen init -
     screen = pyg.display.set_mode((p.screen_width, p.screen_height))
     pyg.display.set_caption('Platformer')
-    #Platforms ----------------------------------------------------
+    sky = pyg.image.load(programPath+r"\Images\SkyBox.png").convert()
+    
+    
+    
     platData = {
         0: None,
     #100 - 199 are levels in the game
@@ -386,8 +531,15 @@ def main():
     #200 - 299 are names of the levels
         200: "Level 0",
     }
-    sky = pyg.image.load(programPath+r"\Images\SkyBox.png").convert()
+    
+
+
     startPlatformingScene()
+
+        
+
+
+
 
 if __name__ == "__main__":
     main()

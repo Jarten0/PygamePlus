@@ -20,10 +20,12 @@ class create():
         self.yl = configFile['body']['ylength']
         self.xv = 0
         self.yv = 0
+        self.allowControl = True
         self.gr = False
         self.st = False
         self.wj = False
         self.w = None
+        self.dead = False
         self.speed = configFile['run']['runSpeed']
         self.acc = configFile['run']['runAcceleration']
         self.decel = configFile['run']['runDeceleration']
@@ -43,15 +45,12 @@ class create():
         self.DChyper = 0
 
 
-    def die(self, yspawn = 10000, jumpOnSpawn = True, xspawn = 500):
-        self.x = xspawn        
-        self.y = yspawn
+    def die(self):
+        self.x = 500        
+        self.y = 0
         self.xv = 0
         self.dashes = 1
-
-        if jumpOnSpawn:
-            self.yv = -30
-        
+        self.dead = True
 
     def jump(self):
         self.yv = self.jumppower
