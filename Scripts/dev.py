@@ -1,6 +1,6 @@
 print(__name__, "Dev")
-import EZPickle as FileManager
-import platforms as platform
+import Scripts.EZPickle as FileManager
+import Scripts.platforms as platform
 import pygame as pyg
 from main import drawRect
 lis = {

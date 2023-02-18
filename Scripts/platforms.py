@@ -1,6 +1,6 @@
 print(__name__, "Platforms")
-from timer import Timer
-import boards as Boards
+from Scripts.timer import Timer
+import Scripts.boards as Boards
 #from main import kill
 platcolors = {
     0: (0,   0,   0),
@@ -54,12 +54,28 @@ class create():
         self.yl = yl
         self.type = type
         self.color = platcolors[self.type]
-    
+
+
+    def collider(self, item) -> list[bool, bool, bool, bool, bool]:
+        lis = [False, False, False, False, False]
+        if item.y + item.yl >= self.y and item.y <= self.y + self.yl:
+            if item.x + item.xl >= self.x and item.x <= self.x + self.xl:
+                lis[0] = True
+                if item.y + item.yl < self.y + 10 and item.x + item.xl > self.x and item.x < self.x + self.xl:
+                    lis[1] = True
+                if item.x + item.xl < self.x + 20 and item.y + item.yl - 5 > self.y and item.y < self.y + self.yl:
+                    lis[2] = True
+                if item.y > self.y + self.yl - 10 and item.x + item.xl > self.x and item.x < self.x + self.xl:
+                    lis[3] = True
+                if item.x > self.x + self.xl - 20 and item.y + item.yl - 5> self.y and item.y < self.y + self.yl:
+                    lis[4] = True         
+        return lis
+
     
 
 class collision():
     #C = Character, P = Platform, L = Length
-    def check(cx, cy, cxl, cyl, px, py, pxl, pyl) -> list[bool]: #Checks
+    def check(cx, cy, cxl, cyl, px, py, pxl, pyl) -> list[bool, bool, bool, bool, bool]: #Checks
         lis = [False, False, False, False, False]
         if cy + cyl >= py and cy <= py + pyl:
             if cx + cxl >= px and cx <= px + pxl:

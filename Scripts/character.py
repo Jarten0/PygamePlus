@@ -1,6 +1,6 @@
-import boards as Boards
-import cameramanager as cam
-from timer import Timer 
+import Scripts.boards as Boards
+import Scripts.cameramanager as cam
+from Scripts.timer import Timer 
 import tomllib, os
 #import main
 colors = {

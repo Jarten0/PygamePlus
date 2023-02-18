@@ -1,13 +1,51 @@
 print(__name__, "Main")
+from datetime import datetime as DT
+import datetime
+class BenchMark():
+    start = DT.now()
+    laps = {}
+    avgLis = []
+    def lap():
+        BenchMark.laps[len(BenchMark.laps)] = DT.now()
+    def getLap():
+        print(BenchMark.laps[len(BenchMark.laps) - 1].strftime("%S:%f"))        
+    def gpl():
+        BenchMark.lap()
+        BenchMark.getLap()
+    def getavg():
+        if len(BenchMark.avgLis) >= 10:
+            del BenchMark.avgLis[0]
+        BenchMark.avgLis.append(DT.now() - BenchMark.start)
+        n = DT.now() - DT.now()
+        print("\n"*100)
+        for i in range(len(BenchMark.avgLis)):
+            #print(BenchMark.avgLis[i], BenchMark.laps)
+            n += BenchMark.avgLis[i]
+        print(n)
+BenchMark.lap()
+BenchMark.getLap()
 #Import And Initialize ===========================================================================================================
-import pygame as pyg, EZPickle as FileManager, input as InputManager
-import platforms as platform, character, boards as Boards, os, cutsceneManager
-from timer import Timer
-from cameramanager import Camera
-from defaultPropereties import defaultPropereties
+import Scripts.EZPickle as FileManager
+import Scripts.input as InputManager
+import Scripts.cutsceneManager as CutsceneManager
+
+import os
+import pygame as pyg
+import Scripts.dev as dev
+
+import Scripts.platforms as platform
+import Scripts.character as character
+
+import Scripts.boards as Boards
+import Scripts.defaultPropereties as defaultProperties
+
+from Scripts.timer import Timer
+from Scripts.cameramanager import Camera
 from sys import exit
-import dev
+
 pyg.init()
+
+
 
 #Add names of files here: -----------------------------
 programPath = os.getcwd()
@@ -23,7 +61,14 @@ class Level():
         self.length = length * 20
         self.height = height * 20
 
-
+def NextID(platformList) -> int:
+    keylist = platformList.keys()
+    #print(keylist, platformList)
+    for i in range(len(platformList)):
+        if not i in keylist:
+            name = i
+            return name
+    return len(platformList)
 
 
 
@@ -155,7 +200,7 @@ def startPlatformingScene():
             "RIGHT": False,
         }
 
-    cutsceneManager.init()
+    CutsceneManager.init()
     cutscenePropRefDict = {
         "char": char,
         "plat": level.plat,
@@ -185,6 +230,9 @@ def startPlatformingScene():
 
 
     while p.SceneType == "main":
+        print("\n")
+        BenchMark.getavg()
+
         if dev.devpause:
             textRect = p.font.get_rect()
             inputFromKeyboard = 0
@@ -274,7 +322,7 @@ def startPlatformingScene():
                 pyg.quit()
                 exit()
             if InputManager.k("r", eventsGet):
-                p = defaultPropereties(defaultPropereties.lis)
+                p = defaultProperties(defaultProperties.lis)
                 FileManager.save(p, properetiesFileName)
                 print("Saved Propereties")        
             if InputManager.k("`", eventsGet):
@@ -352,27 +400,27 @@ def startPlatformingScene():
 
 
 #Cutscene Handler =================================================
-        for cutscene in cutsceneManager.cutsceneList.values():
+        for cutscene in CutsceneManager.cutsceneList.values():
             
             cutsceneStartResult = cutscene.startCheck(cutscenePropRefDict)
             
             if cutsceneStartResult is bool:
                 if cutsceneStartResult:
-                    cutsceneManager.cutsceneActive = True
+                    CutsceneManager.cutsceneActive = True
                     cutscene.start(cutscenePropRefDict)
             
             elif cutsceneStartResult is dict:
                 if cutsceneStartResult["trigger"]:
                     if platform.collision.check(char.x, char.y, char.xl, char.yl, cutsceneStartResult["triggerHitbox"]["x"], cutsceneStartResult["triggerHitbox"]["y"], cutsceneStartResult["triggerHitbox"]["xl"], cutsceneStartResult["triggerHitbox"]["yl"])[0]:
-                        cutsceneManager.cutsceneActive = True
+                        CutsceneManager.cutsceneActive = True
                         cutscene.start(cutscenePropRefDict)
         
-        if cutsceneManager.cutsceneActive:
-            cutscene = cutsceneManager.cutsceneList[cutsceneManager.cutsceneID]
+        if CutsceneManager.cutsceneActive:
+            cutscene = CutsceneManager.cutsceneList[CutsceneManager.cutsceneID]
             
             cutscene.update(cutscenePropRefDict)
             if cutscene.endCheck(cutscenePropRefDict):
-                cutsceneManager.cutsceneActive = False
+                CutsceneManager.cutsceneActive = False
                 cutscene.end(cutscenePropRefDict)
 
 
@@ -494,9 +542,13 @@ def startPlatformingScene():
         p.game_timer += ((1 * p.fps) / 60) / 60
         p.total_ticks += 1
         delta = (((1 * p.fps) / 60) / 60) / renderframeavg 
-    
-#def kill(char, jumpOnSpawn = True, xspawn = 500):
-    #char.die(level.height, jumpOnSpawn, xspawn)
+
+
+
+
+
+
+
 
 def main():
     global p    
@@ -511,7 +563,7 @@ def main():
     cam = Camera()
     p = FileManager.load(properetiesFileName)
     if p == False:
-        p = defaultPropereties(dev.lis)
+        p = defaultProperties(dev.lis)
     FileManager.save(p, properetiesFileName)
 
 
@@ -520,7 +572,7 @@ def main():
     clock = pyg.time.Clock()
     screen = pyg.display.set_mode((p.screen_width, p.screen_height))
     pyg.display.set_caption('Platformer')
-    sky = pyg.image.load(programPath+r"\Images\SkyBox.png").convert()
+    sky = pyg.image.load(programPath+r"\Assets\Images\SkyBox.png").convert()
     
     
     
@@ -542,4 +594,6 @@ def main():
 
 
 if __name__ == "__main__":
+    BenchMark.lap()
+    BenchMark.getLap()
     main()
