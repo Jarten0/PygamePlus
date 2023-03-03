@@ -1,12 +1,11 @@
 print(__name__, "Main")
-from datetime import datetime as DT
-import datetime
+import time
 class BenchMark():
-    start = DT.now()
+    start = time.perf_counter()
     laps = {}
     avgLis = []
     def lap():
-        BenchMark.laps[len(BenchMark.laps)] = DT.now()
+        BenchMark.laps[len(BenchMark.laps)] = time.perf_counter() - BenchMark.start
     def getLap():
         print(BenchMark.laps[len(BenchMark.laps) - 1].strftime("%S:%f"))        
     def gpl():
@@ -15,8 +14,8 @@ class BenchMark():
     def getavg():
         if len(BenchMark.avgLis) >= 10:
             del BenchMark.avgLis[0]
-        BenchMark.avgLis.append(DT.now() - BenchMark.start)
-        n = DT.now() - DT.now()
+        BenchMark.avgLis.append(time.now() - BenchMark.start)
+        n = time.now() - time.now()
         print("\n"*100)
         for i in range(len(BenchMark.avgLis)):
             #print(BenchMark.avgLis[i], BenchMark.laps)
