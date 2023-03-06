@@ -1,34 +1,21 @@
 print(__name__, "Main")
 import time
-class BenchMark():
-    start = time.perf_counter()
-    laps = {}
-    avgLis = []
-    def lap():
-        BenchMark.laps[len(BenchMark.laps)] = time.perf_counter() - BenchMark.start
-    def getLap():
-        print(BenchMark.laps[len(BenchMark.laps) - 1].strftime("%S:%f"))        
-    def gpl():
-        BenchMark.lap()
-        BenchMark.getLap()
-    def getavg():
-        if len(BenchMark.avgLis) >= 10:
-            del BenchMark.avgLis[0]
-        BenchMark.avgLis.append(time.now() - BenchMark.start)
-        n = time.now() - time.now()
-        print("\n"*100)
-        for i in range(len(BenchMark.avgLis)):
-            #print(BenchMark.avgLis[i], BenchMark.laps)
-            n += BenchMark.avgLis[i]
-        print(n)
-BenchMark.lap()
-BenchMark.getLap()
+
+def timeFunction(func):
+    def timerWrapper():
+        start = time.now()
+        func()
+        end = time.now()
+        print(f"{func.__name__} took {start - end} seconds to run")
+    return func
+
 #Import And Initialize ===========================================================================================================
 import Scripts.EZPickle as FileManager
 import Scripts.input as InputManager
 import Scripts.cutsceneManager as CutsceneManager
 
 import os
+import asyncio
 import pygame as pyg
 import Scripts.dev as dev
 
@@ -76,7 +63,17 @@ def NextID(platformList) -> int:
 
 #---------------------------------------------------------------------------------------------------------------------------
 #Platforming Mode ==========================================================================================================
-def drawCurrentFrame(placestage, level,mousepos, mouseposx, mouseposy, tempx, tempy, select):
+@timeFunction
+def drawCurrentFrame(renderQueue, **kwargs):
+    placestage = kwargs["placestage"]
+    level = kwargs["level"]
+    mousepos = kwargs["mousepos"]
+    mouseposx = kwargs["mouseposx"]
+    mouseposy = kwargs["mouseposy"]
+    tempx = kwargs["tempx"]
+    tempy = kwargs["tempy"] 
+    select = kwargs["select"] 
+
     getCameraPosition()
 #Render Background
     screen.fill(p.bg_color)
@@ -161,23 +158,23 @@ def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0):
 #     =   =   =   = = =     =
 # =====   =   =   = =   =   =
 
-def startPlatformingScene():
+def startPlatformingScene() -> str:
     global level
     global p
     global delta
-    global renderframeavg
     global devMode
+    global input
+    global currentInputs
     devMode = False
     placestage = 0
     mousedown = False
     select = 1
     p = FileManager.load(properetiesFileName)
     level = Level("Level 0", platData[100], 500, 500)
-    Timer.set("dashcool", 20)
-    Timer.set("grace", 0, True)
-    Timer.set("CoyoteTime", 0, True)
-    Timer.set("dash", True)
-    Timer.set("dashleave", 4)
+    #Initialize several timers 
+    for i in {("dashcool", 20, False),("grace", 0, True),("CoyoteTime", 0, True),("dash", 0, False),("dashleave", 4, False)}:
+        (name, value, up) = i
+        Timer.set(name, value, up)
     Timer.__str__()
     print(Timer.get("CoyoteTime", True))
     delta = ((1 * p.fps) / 60) * 4
@@ -214,24 +211,9 @@ def startPlatformingScene():
     tempy = 0 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    while p.SceneType == "main":
+    global platformingStart
+    def platformingStart() -> str:
         print("\n")
-        BenchMark.getavg()
-
         if dev.devpause:
             textRect = p.font.get_rect()
             inputFromKeyboard = 0
@@ -249,22 +231,16 @@ def startPlatformingScene():
             renderFrame(placestage, level,mousepos, mouseposx, mouseposy, tempx, tempy, select)
             pyg.display.flip()
             clock.tick(60)
-            continue
+            exit
         renderframeavg = p.fps / p.renderfps
         #print(renderframeavg, p.fps, p.renderfps, p.total_ticks, p.total_ticks % round(renderframeavg) )
-        if p.total_ticks % renderframeavg == 0:
-            renderFrame = True
-            
-            #print("rendered")
-        else:
-            renderFrame = False
             #print("not rendered")
 #        print(renderFrame)
         if fREEZEFRAMES > 0:
             fREEZEFRAMES -= 1
             pyg.display.flip()
             clock.tick(p.fps)
-            continue
+            return "early"
 
         mousepos = pyg.mouse.get_pos()
         mousepos = (mousepos[0] + cam.xpos, mousepos[1] + cam.ypos)
@@ -273,7 +249,6 @@ def startPlatformingScene():
         mouselist = pyg.mouse.get_pressed(num_buttons=5)
         eventsGet = pyg.event.get()
         eventsGetHeld = pyg.key.get_pressed()
-        #print(Boards.perm)
 
 
 
@@ -472,6 +447,8 @@ def startPlatformingScene():
             else:
                 char.xv = 0
 
+        
+
 #Gravity
         if Boards.getP("down"):
             char.gravity = 14
@@ -532,7 +509,7 @@ def startPlatformingScene():
             
     #Render Scene ===============================================================================================================
         if renderFrame:
-            drawCurrentFrame(placestage, level ,mousepos, mouseposx, mouseposy, tempx, tempy, select)
+            drawCurrentFrame({}, placestage, level ,mousepos, mouseposx, mouseposy, tempx, tempy, select)
         #print(char.dashlist, Timer.get("dashleave"), Timer.getvalue("dashleave", False))
 
         Timer.tick()
@@ -582,17 +559,36 @@ def main():
     #200 - 299 are names of the levels
         200: "Level 0",
     }
+
+
+
+
+    global renderQueue
+    renderQueue = {
+        "template1": {
+            "x": 100,
+            "y": 100,
+            "path": programPath+r"\Assets\Images\hehe.png",
+            "xspeed": 1,
+            "yspeed": 1,
+        },
+        "template2": {
+            "x": 200,
+            "y": 200,
+            "path": None,
+            "xl": 100,
+            "yl": 100,
+        },
+
+    }
+
     
-
-
-    startPlatformingScene()
+    #Run physics 20 times per second
+    while True:
+        physicErrorList = startPlatformingScene()
+        drawErrorList = drawCurrentFrame(renderQueue, placestage, level, mousepos,mouseposx,mouseposy,tempx,tempy,select)
 
         
 
-
-
-
 if __name__ == "__main__":
-    BenchMark.lap()
-    BenchMark.getLap()
     main()

@@ -1,6 +1,7 @@
 import Scripts.boards as Boards
 import Scripts.cameramanager as cam
 from Scripts.timer import Timer 
+import Scripts.components as Component
 import tomllib, os
 #import main
 colors = {
@@ -14,6 +15,17 @@ class create():
         with open(os.getcwd()+'\ConfigFiles\characterProperties.toml', "rb") as f:
             configFile = tomllib.load(f)
             print(configFile)
+        self.transform = Component.Transform(
+            x = configFile['body']['xpos'],
+            y = configFile['body']['ypos'],
+            z = 0,
+            xVelocity = 0,
+            yVelocity = 0,
+            zVelocity = 0,
+        )
+        self.collider = Component.Collider()
+        self.collider.check()
+
         self.x = configFile['body']['xpos']
         self.y = configFile['body']['ypos']
         self.xl = configFile['body']['xlength']
