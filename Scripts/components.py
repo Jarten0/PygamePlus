@@ -81,6 +81,13 @@ class Renderer():
     }
 
     def __init__(self, **kwargs) -> None:
-        self.xLength = kwargs["xLength"]
-        self.yLength = kwargs["yLength"]
-        self.xOffset
+        self.log = []
+        try:
+            self.xLength = kwargs["xLength"]
+            self.yLength = kwargs["yLength"]
+        except KeyError as ke:
+            self.log.append("length variables missing. add length variable to paramaters of the initializer")
+
+        self.xOffset = kwargs["xOffset"]
+        self.yOffset = kwargs["yOffset"]
+        self.path = kwargs["path"]

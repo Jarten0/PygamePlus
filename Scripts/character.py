@@ -15,6 +15,7 @@ class create():
         with open(os.getcwd()+'\ConfigFiles\characterProperties.toml', "rb") as f:
             configFile = tomllib.load(f)
             print(configFile)
+
         self.transform = Component.Transform(
             x = configFile['body']['xpos'],
             y = configFile['body']['ypos'],
@@ -23,8 +24,23 @@ class create():
             yVelocity = 0,
             zVelocity = 0,
         )
-        self.collider = Component.Collider()
-        self.collider.check()
+        self.collider = Component.Collider(
+            xLength=0,
+            yLength=0,
+            xOffset=0,
+            yOffset=0,
+        )
+        self.rigidBody = Component.RigidBody(
+            mass=0,
+        )
+        self.renderer = Component.Renderer(
+            xLength=0,
+            yLength=0,
+            xOffset=0,
+            yOffset=0,
+            path=os.getcwd()+r"\Assets\Images\hehe.png",
+        )
+
 
         self.x = configFile['body']['xpos']
         self.y = configFile['body']['ypos']
