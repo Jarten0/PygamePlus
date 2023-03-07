@@ -3,9 +3,9 @@ import time
 
 def timeFunction(func):
     def timerWrapper():
-        start = time.now()
+        start = time.time()
         func()
-        end = time.now()
+        end = time.time()
         print(f"{func.__name__} took {start - end} seconds to run")
     return timerWrapper
 
@@ -206,11 +206,8 @@ def startPlatformingScene() -> str:
     tempy = 0 
 
 
-    global platformingStart
 
-
-
-    async def platformingStart() -> str:
+async def platformingTick():
         print("\n")
         if dev.devpause:
             textRect = p.font.get_rect()
@@ -516,7 +513,7 @@ def startPlatformingScene() -> str:
         p.game_timer += ((1 * p.fps) / 60) / 60
         p.total_ticks += 1
         delta = (((1 * p.fps) / 60) / 60) / renderframeavg 
-    return platformingStart
+
 
 
 
@@ -590,14 +587,13 @@ async def main():
 
     }
 
-    platformingTick = startPlatformingScene()
+    startPlatformingScene()
     #Run physics 20 times per second
-    global asyncioTasks
-    asyncioTasks = []
+
     while True:
-        asyncioTasks[0] = asyncio.create_task(platformingTick())
-        asyncioTasks[1] = asyncio.create_task(drawCurrentFrame(renderQueue, 
-        placestage,level,mousepos,mouseposx,mouseposy,tempx,tempy,select))
+        asyncioTasks = [asyncio.create_task(platformingTick()), 
+            asyncio.create_task(drawCurrentFrame(renderQueue, 
+            placestage,level,mousepos,mouseposx,mouseposy,tempx,tempy,select))]
         done, pending = await asyncio.wait(asyncioTasks)
         for task in done:
             if not task.result() == None:

@@ -1,11 +1,13 @@
 # self. = kwargs[""]
+from Scripts.timer import Timer
+import Scripts.boards as Boards
 
 #Handles all positioning aspects of an object in world space
 class Transform():
     def __init__(self, **kwargs) -> None:
-        self.xPosition = kwargs["x"]
-        self.yPosition    = kwargs["y"]
-        self.z = kwargs["z"]
+        self.xPosition = kwargs["xPosition"]
+        self.yPosition = kwargs["yPosition"]
+        self.zPosition = kwargs["zPosition"]
         self.xVelocity = kwargs["xVelocity"]
         self.yVelocity = kwargs["yVelocity"]
         self.zVelocity = kwargs["zVelocity"]
@@ -15,27 +17,35 @@ class Transform():
 #This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
 #activation area. If you want to add collisions, use this in tangent with RigidBody
 class Collider():
-    def __init__(self, **kwargs) -> None:
+
+    componentDependencies = {
+        "Transform": None,
+    }
+
+    def __init__(self, dependencies = componentDependencies, **kwargs) -> None:
+        
+        for i in dependencies.keys(): 
+            if dependencies[i] == None:
+                print(f"Missing {dependencies[i]} in {self.__str__}!")
+        
+        self.Transform = dependencies["Transform"]
+
+
         self.xLength = kwargs["xLength"]
         self.yLength = kwargs["yLength"]
 
-    def check(self, item) -> list[bool, bool, bool, bool, bool]:
+    def check(self, item) -> list[bool]:
         lis = [False, False, False, False, False]
-        if not item.yPosition    + item.yLength >= self.yPosition and item.yPosition <= self.yPosition + self.yLength and item.xPosition + item.xLength >= self.xPosition and item.xPosition <= self.xPosition + self.xl:
+        if item.Transform.yPosition + item.yLength >= self.Transform.yPosition and item.Transform.yPosition <= self.Transform.yPosition + self.yLength and item.Transform.xPosition + item.xLength >= self.Transform.xPosition and item.Transform.xPosition <= self.Transform.xPosition + self.xLength:
             return lis
-        
         lis[0] = True
-        #
-        if item.yPosition + item.yLength   < self.yPosition + 10 and item.xPosition + item.xLength     > self.xPosition and item.xPosition < self.xPosition + self.xl:
+        if item.Transform.yPosition + item.yLength   < self.Transform.yPosition + 10 and item.Transform.xPosition + item.xLength     > self.Transform.xPosition and item.Transform.xPosition < self.Transform.xPosition + self.xLength:
             lis[1] = True
-        #
-        if item.xPosition + item.xLength   < self.xPosition + 20 and item.yPosition + item.yLength - 5 > self.yPosition and item.yPosition < self.yPosition + self.yl:
+        if item.Transform.xPosition + item.xLength   < self.Transform.xPosition + 20 and item.Transform.yPosition + item.yLength - 5 > self.Transform.yPosition and item.Transform.yPosition < self.Transform.yPosition + self.yLength:
             lis[2] = True
-        #
-        if item.yPosition > self.yPosition + self.yLength - 10   and item.xPosition + item.xLength     > self.xPosition and item.xPosition < self.xPosition + self.xl:
+        if item.Transform.yPosition > self.Transform.yPosition + self.yLength - 10   and item.Transform.xPosition + item.xLength     > self.Transform.xPosition and item.Transform.xPosition < self.Transform.xPosition + self.xLength:
             lis[3] = True
-        #
-        if item.xPosition > self.xPosition + self.xLength - 20   and item.yPosition + item.yLength - 5 > self.yPosition and item.yPosition < self.yPosition + self.yl:
+        if item.Transform.xPosition > self.Transform.xPosition + self.xLength - 20   and item.Transform.yPosition + item.yLength - 5 > self.Transform.yPosition and item.Transform.yPosition < self.Transform.yPosition + self.yLength:
             lis[4] = True         
         
         return lis
@@ -51,33 +61,19 @@ class RigidBody():
     def __init__(self, **kwargs) -> None:
         self.mass = kwargs["mass"]
         
-    
-    def check(self, item) -> list[bool, bool, bool, bool, bool]:
-        lis = [False, False, False, False, False]
-        if not item.yPosition    + item.yLength >= self.yPosition and item.yPosition <= self.yPosition + self.yLength and item.xPosition + item.xLength >= self.xPosition and item.xPosition <= self.xPosition + self.xl:
-            return lis
-        
-        lis[0] = True
-        #
-        if item.yPosition + item.yLength   < self.yPosition + 10 and item.xPosition + item.xLength     > self.xPosition and item.xPosition < self.xPosition + self.xl:
-            lis[1] = True
-        #
-        if item.xPosition + item.xLength   < self.xPosition + 20 and item.yPosition + item.yLength - 5 > self.yPosition and item.yPosition < self.yPosition + self.yl:
-            lis[2] = True
-        #
-        if item.yPosition > self.yPosition + self.yLength - 10   and item.xPosition + item.xLength     > self.xPosition and item.xPosition < self.xPosition + self.xl:
-            lis[3] = True
-        #
-        if item.xPosition > self.xPosition + self.xLength - 20   and item.yPosition + item.yLength - 5 > self.yPosition and item.yPosition < self.yPosition + self.yl:
-            lis[4] = True         
-        
-        return lis
-        
 
 #Renders an object either via image or rectangle
 class Renderer():
+
     dependencies = {
         "Transform",
+    }
+
+    colors = {
+    "red":   (255, 0,   0  ),
+    "green": (0,   255, 0  ),
+    "blue":  (0,   0,   255),
+    "gray":  (30,  30,  30 ),
     }
 
     def __init__(self, **kwargs) -> None:
@@ -120,34 +116,39 @@ class Controller():
 
 
 
+class ConfigData():
+    def __init__(self, filename) -> None:
+        from os import getcwd
+        from tomllib import load
+        
+        with open(getcwd()+r"\ConfigFiles" + fr"\{filename}" + r'.toml', "rb" ) as f:
+            self.configFile = load(f)
+            
 
 
 
 
-def initDependencyWrapper(componentFunction):
-    def wrapper():
-        for i in [Transform, Renderer]: 
-            if i == None:
-                print(f"Missing {i} in {self.__str__}!")
-        componentFunction()
-    return wrapper
 
 
-class CharacterActions():
+class CharacterManager():
     componentDependencies = {
         "Transform": None,
         "Renderer": None,
+        "ConfigData": None,
     }
 
     def __init__(self, dependencies = componentDependencies, **kwargs) -> None:
-        for i in [Transform, Renderer]: 
-            if i == None:
-                print(f"Missing {i} in {self.__str__}!")
-
         
-        self.Transform = Transform
-        self.Renderer = Renderer
-
+        for i in dependencies.keys(): 
+            if dependencies[i] == None:
+                print(f"Missing {dependencies[i]} in {self}!")
+        
+        self.Transform = dependencies["Transform"]
+        self.Renderer = dependencies["Renderer"]
+        self.configData = dependencies["ConfigData"]
+        
+        
+        configFile = self.configData.configFile
         self.allowControl = True
         self.gr = False
         self.st = False
@@ -168,7 +169,7 @@ class CharacterActions():
         self.dashspeed = configFile['dash']['dashSpeed']
         self.dashlist = [False, False, False, False]
         self.dashslow = configFile['dash']['dashDeceleration']
-        self.color = colors["red"]
+        self.color = self.Renderer.colors["red"]
         self.DCsuper = 0
         self.DChyper = 0
 
@@ -183,12 +184,12 @@ class CharacterActions():
         self.Transform.yVelocity = self.jumppower
         self.gr = False
         self.dashslow = 1
-        self.Transform.xVelocity * 2
+        self.Transform.xVelocity *= 2
         self.dashslow = 1
         if self.dashleave or self.dashstate:
             print("Dash Cancel")
             if not self.xv == 0:
-                self.xv = abs(self.xv)/ self.xv * 24
+                self.xv = abs(self.Transform.xVelocity)/ self.xv * 24
                 if self.dashlist[3] == True:
                     print("Hyper")
                     self.yv = -13
@@ -222,47 +223,47 @@ class CharacterActions():
             self.dashlist[2] = True
 
 #Run every frame, to run checks and blocks of code for all dash related stuff
-    def dashManager(char):
-        if not Timer.get("dash") and char.dashstate:
-            char.color = colors["green"]
-            if char.dashlist[0]:
-                if char.yv > -char.dashspeed:
-                    char.yv = -char.dashspeed
-            if char.dashlist[1]:
-                if char.xv > -char.dashspeed:
-                    char.xv = -char.dashspeed
-            if char.dashlist[2]:
-                if char.xv < char.dashspeed:
-                    char.xv = char.dashspeed
-            if char.dashlist[3]:
-                if char.yv < char.dashspeed:
-                    char.yv = char.dashspeed
-            if char.dashlist[3]:
-                if char.dashlist[0]:
-                    char.yv = 0
-#                    char.xv *= 1.2
-        elif char.dashstate:
-            char.dashstate = False
-            char.dashleave = True
-            char.color = (200, 200, 200)
-            Timer.set("dashleave", char.dashcooldown)
+    def dashManager(self):
+        if not Timer.get("dash") and self.dashstate:
+            self.color = self.Renderer.colors["green"]
+            if self.dashlist[0]:
+                if self.yv > -self.dashspeed:
+                    self.yv = -self.dashspeed
+            if self.dashlist[1]:
+                if self.xv > -self.dashspeed:
+                    self.xv = -self.dashspeed
+            if self.dashlist[2]:
+                if self.xv < self.dashspeed:
+                    self.xv = self.dashspeed
+            if self.dashlist[3]:
+                if self.yv < self.dashspeed:
+                    self.yv = self.dashspeed
+            if self.dashlist[3]:
+                if self.dashlist[0]:
+                    self.yv = 0
+#                    self.xv *= 1.2
+        elif self.dashstate:
+            self.dashstate = False
+            self.dashleave = True
+            self.color = (200, 200, 200)
+            Timer.set("dashleave", self.dashcooldown)
         if Timer.get("dashleave") == False:
-            if char.gr:
-                char.dashes = 1   
+            if self.gr:
+                self.dashes = 1   
 
         if Timer.get("dashleave") == True:
-            char.dashlist = [False, False, False, False]
-            char.dashleave = False
-            char.color = colors["blue"]
+            self.dashlist = [False, False, False, False]
+            self.dashleave = False
+            self.color = self.Renderer.colors["blue"]
 
-        if char.dashes > 0:
-            char.color = colors["red"]
+        if self.dashes > 0:
+            self.color = self.Renderer.colors["red"]
         
-        if char.dashslow > 1:
-            char.dashslow / 1.066
-        if char.dashslow < 1:
-            char.dashslow = 1
-        #print(char.dashlist, Timer.get("dash"))
+        if self.dashslow > 1:
+            self.dashslow /= 1.066
+        if self.dashslow < 1:
+            self.dashslow = 1
+        #print(self.dashlist, Timer.get("dash"))
 
     def resetDash(self):
         self.dashes = 1
