@@ -7,7 +7,8 @@ def timeFunction(func):
         func()
         end = time.now()
         print(f"{func.__name__} took {start - end} seconds to run")
-    return func
+    return timerWrapper
+
 
 #Import And Initialize ===========================================================================================================
 import Scripts.EZPickle as FileManager
@@ -64,7 +65,7 @@ def NextID(platformList) -> int:
 #---------------------------------------------------------------------------------------------------------------------------
 #Platforming Mode ==========================================================================================================
 @timeFunction
-def drawCurrentFrame(renderQueue, **kwargs):
+async def drawCurrentFrame(renderQueue, **kwargs):
     placestage = kwargs["placestage"]
     level = kwargs["level"]
     mousepos = kwargs["mousepos"]
@@ -157,14 +158,8 @@ def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0):
 # =====   =   ===== =====   =
 #     =   =   =   = = =     =
 # =====   =   =   = =   =   =
-
+@timeFunction
 def startPlatformingScene() -> str:
-    global level
-    global p
-    global delta
-    global devMode
-    global input
-    global currentInputs
     devMode = False
     placestage = 0
     mousedown = False
@@ -212,7 +207,10 @@ def startPlatformingScene() -> str:
 
 
     global platformingStart
-    def platformingStart() -> str:
+
+
+
+    async def platformingStart() -> str:
         print("\n")
         if dev.devpause:
             textRect = p.font.get_rect()
@@ -508,8 +506,8 @@ def startPlatformingScene() -> str:
 
             
     #Render Scene ===============================================================================================================
-        if renderFrame:
-            drawCurrentFrame({}, placestage, level ,mousepos, mouseposx, mouseposy, tempx, tempy, select)
+        #if renderFrame:
+       #     drawCurrentFrame({}, placestage, level ,mousepos, mouseposx, mouseposy, tempx, tempy, select)
         #print(char.dashlist, Timer.get("dashleave"), Timer.getvalue("dashleave", False))
 
         Timer.tick()
@@ -518,6 +516,7 @@ def startPlatformingScene() -> str:
         p.game_timer += ((1 * p.fps) / 60) / 60
         p.total_ticks += 1
         delta = (((1 * p.fps) / 60) / 60) / renderframeavg 
+    return platformingStart
 
 
 
@@ -525,8 +524,7 @@ def startPlatformingScene() -> str:
 
 
 
-
-def main():
+async def main():
     global p    
     global char
     global clock
@@ -535,6 +533,14 @@ def main():
     global platData
     global sky
     global cam
+
+    global level
+    global p
+    global delta
+    global devMode
+    global input
+    global currentInputs
+    
 
     cam = Camera()
     p = FileManager.load(properetiesFileName)
@@ -566,29 +572,40 @@ def main():
     global renderQueue
     renderQueue = {
         "template1": {
-            "x": 100,
-            "y": 100,
+            "xPosition": 100,
+            "yPosition": 100,
             "path": programPath+r"\Assets\Images\hehe.png",
-            "xspeed": 1,
-            "yspeed": 1,
+            "xSpeed": 1,
+            "ySpeed": 1,
         },
         "template2": {
-            "x": 200,
-            "y": 200,
+            "xPosition": 200,
+            "yPosition": 200,
             "path": None,
-            "xl": 100,
-            "yl": 100,
+            "xLength": 100,
+            "yLength": 100,
+            "xSpeed": 5,
+            "ySpeed": 0,
         },
 
     }
 
-    
+    platformingTick = startPlatformingScene()
     #Run physics 20 times per second
+    global asyncioTasks
+    asyncioTasks = []
     while True:
-        physicErrorList = startPlatformingScene()
-        drawErrorList = drawCurrentFrame(renderQueue, placestage, level, mousepos,mouseposx,mouseposy,tempx,tempy,select)
-
+        asyncioTasks[0] = asyncio.create_task(platformingTick())
+        asyncioTasks[1] = asyncio.create_task(drawCurrentFrame(renderQueue, 
+        placestage,level,mousepos,mouseposx,mouseposy,tempx,tempy,select))
+        done, pending = await asyncio.wait(asyncioTasks)
+        for task in done:
+            if not task.result() == None:
+                print(
+                    "Done:", done, "\n",
+                    "Result:", task.result(), "\n",
+                    )
+        clock.tick(60)
         
-
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
