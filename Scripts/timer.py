@@ -1,49 +1,47 @@
-class Timer():
-    UpList = {}
-    DownList = {}
+from main import NextID
+UpList = {}
+DownList = {}
 
-    def tick():
-        for i in Timer.UpList:
-            Timer.UpList[i] += 1
-        for i in Timer.DownList:
-            if not Timer.DownList[i] == True:
-                Timer.DownList[i] -= 1
-            if Timer.DownList[i] == 0:
-                Timer.DownList[i] = True
+def tick() -> None:
+    for i in UpList:
+        UpList[i] += 1
+    for i in DownList:
+        if not DownList[i] == True:
+            DownList[i] -= 1
+        if DownList[i] == 0:
+            DownList[i] = True
 
-    def set(name = False, value = None, up = False):
-        if value == None or up:
-            if name == False:
-                keylist = Timer.UpList.keys()
-                for i in Timer.UpList:
-                    if not keylist[Timer.UpList.index(i)] == i:
-                        name = Timer.UpList[i]
-                        print(name)
-            if value == None:
-                value = 0
-            Timer.UpList[name] = value
-        else:
-            Timer.DownList[name] = value
-        
+def set(name = None, value = None, up = None) -> None:
+    if value == None or not up == True:
+        DownList[name] = value
+        return
 
-    def get(name, up = False):
-        if up:
-            return Timer.UpList[name]
-        if Timer.DownList[name] == True:
-            #print(Timer.DownList)
-            return True 
-        else:
-            return False
+    if name == None:
+        name = NextID(UpList)
 
-    def getvalue(name, up):
-        if up:
-            return Timer.UpList[name]
-        return Timer.DownList[name]
+    if value == None:
+        value = 0
 
-    def __str__():
-        print("Current Timers:")
-        for i in Timer.UpList:
-            print(Timer.UpList)
-            print(i,":", Timer.UpList[i])
-        for i in Timer.DownList:
-            print(i,":", Timer.DownList[i])
+    UpList[name] = value
+    return
+
+def get(name, up = False) -> bool:
+    if up:
+        return UpList[name]
+    if DownList[name] == True:
+        return True 
+    else:
+        return False
+
+def getvalue(name, up) -> int:
+    if up:
+        return UpList[name]
+    return DownList[name]
+
+def __str__() -> None:
+    print("Current Timers:")
+    for i in UpList:
+        print(UpList)
+        print(i,":", UpList[i])
+    for i in DownList:
+        print(i,":", DownList[i])

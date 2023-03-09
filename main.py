@@ -17,17 +17,17 @@ import Scripts.cutsceneManager as CutsceneManager
 
 import os
 import asyncio
-import pygame as pyg
+import pygame as pyg # type: ignore
 import Scripts.dev as dev
 
+import Scripts.components as Component
 import Scripts.platforms as platform
 import Scripts.character as character
 
 import Scripts.boards as Boards
 import Scripts.defaultPropereties as defaultProperties
+import Scripts.timer as Timer
 
-from Scripts.timer import Timer
-from Scripts.cameramanager import Camera
 from sys import exit
 
 pyg.init()
@@ -48,19 +48,30 @@ class Level():
         self.length = length * 20
         self.height = height * 20
 
-def NextID(platformList) -> int:
-    keylist = platformList.keys()
-    #print(keylist, platformList)
-    for i in range(len(platformList)):
+def NextID(itemList) -> int:
+    keylist = itemList.keys()
+    for i in range(len(itemList)):
         if not i in keylist:
             name = i
             return name
-    return len(platformList)
+    return len(itemList)
 
 
 
 
 
+
+def renderWithDict(dictObj):
+    if isinstance(dictObj["path"], type(None)):
+        drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
+        return
+    try:
+        drawImage(dictObj["path"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
+    except FileNotFoundError as fnfe:
+        drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
+
+def renderWithObj(rendererObj):
+    drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset)
 
 #---------------------------------------------------------------------------------------------------------------------------
 #Platforming Mode ==========================================================================================================
@@ -79,27 +90,11 @@ async def drawCurrentFrame(renderQueue, **kwargs):
         if isinstance(i, dict):
             renderWithDict(i)
 
-def renderWithDict(dictObj):
-    if isinstance(dictObj["path"], None):
-        drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
-        return
-    try:
-        drawImage(dictObj["path"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
-    except FileNotFoundError as fnfe:
-        drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
-
-def renderWithObj(rendererObj):
-    drawImage(rendererObj.
-
-def cont():
     getCameraPosition()
-#Render Background
-    screen.fill(p.bg_color)
+
     drawImage(sky, 0, 0)
 
-#Render Player ------------------------------------
-    drawRect(char.color, char.x, char.y, char.xl, char.yl)
-    
+
 #Render Platforms ---------------------------------
     for platformToBeDrawn in level.plat.values():
         drawRect(platformToBeDrawn.color, platformToBeDrawn.x, platformToBeDrawn.y, platformToBeDrawn.xl, platformToBeDrawn.yl)
@@ -109,7 +104,7 @@ def cont():
         tempPlat = dev.createTempPlat(mousepos, mouseposx, mouseposy, tempx, tempy, select)
         drawRect(tempPlat[0],tempPlat[1],tempPlat[2],tempPlat[3],tempPlat[4])
 #Indicator Dot for Grid Placment
-    drawRect(p.red, mouseposx - 2, mouseposy - 2, 4, 4)            
+    drawRect(p.red, mouseposx - 2, mouseposy - 2, 4, 4)             
     pyg.display.flip()
 
 
@@ -225,42 +220,41 @@ def startPlatformingScene() -> str:
 
 
 async def platformingTick():
-        print("\n")
-        if dev.devpause:
-            textRect = p.font.get_rect()
-            inputFromKeyboard = 0
-            letter = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "BACKSPACE", "TAB"]    
-            for i in range(len(input)):
-                if InputManager.k(letter[i], eventsGet):
-                    if letter[i] == "BACKSPACE":
-                        inputFromKeyboard.pop()
-                    elif letter[i] == "TAB":
-                        dev.devpause = False
-                    else:
-                        inputFromKeyboard.append(letter[i])
-            text = font.render(inputFromKeyboard, True, p.white)
-            screen.blit(text, textRect)
-            renderFrame(placestage, level,mousepos, mouseposx, mouseposy, tempx, tempy, select)
-            pyg.display.flip()
-            clock.tick(60)
-            exit
-        renderframeavg = p.fps / p.renderfps
-        #print(renderframeavg, p.fps, p.renderfps, p.total_ticks, p.total_ticks % round(renderframeavg) )
-            #print("not rendered")
+    print("\n")
+    if dev.devpause:
+        textRect = p.font.get_rect()
+        inputFromKeyboard = ''
+        letter = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "BACKSPACE", "TAB"]    
+        for i in range(len(input)):
+            if InputManager.k(letter[i], eventsGet):
+                if letter[i] == "BACKSPACE":
+                    inputFromKeyboard.pop()
+                elif letter[i] == "TAB":
+                    dev.devpause = False
+                else:
+                    inputFromKeyboard.join(letter[i])
+        text = font.render(inputFromKeyboard, True, p.white)
+        screen.blit(text, textRect)
+        pyg.display.flip()
+        clock.tick(60)
+        break
+    renderframeavg = p.fps / p.renderfps
+    #print(renderframeavg, p.fps, p.renderfps, p.total_ticks, p.total_ticks % round(renderframeavg) )
+        #print("not rendered")
 #        print(renderFrame)
-        if fREEZEFRAMES > 0:
-            fREEZEFRAMES -= 1
-            pyg.display.flip()
-            clock.tick(p.fps)
-            return "early"
+    if fREEZEFRAMES > 0:
+        fREEZEFRAMES -= 1
+        pyg.display.flip()
+        clock.tick(p.fps)
+        return "early"
 
-        mousepos = pyg.mouse.get_pos()
-        mousepos = (mousepos[0] + cam.xpos, mousepos[1] + cam.ypos)
-        mouseposx = round((mousepos[0]/p.grid), 0)*p.grid
-        mouseposy = round((mousepos[1]/p.grid), 0)*p.grid
-        mouselist = pyg.mouse.get_pressed(num_buttons=5)
-        eventsGet = pyg.event.get()
-        eventsGetHeld = pyg.key.get_pressed()
+    mousepos = pyg.mouse.get_pos()
+    mousepos = (mousepos[0] + cam.xpos, mousepos[1] + cam.ypos)
+    mouseposx = round((mousepos[0]/p.grid), 0)*p.grid
+    mouseposy = round((mousepos[1]/p.grid), 0)*p.grid
+    mouselist = pyg.mouse.get_pressed(num_buttons=5)
+    eventsGet = pyg.event.get()
+    eventsGetHeld = pyg.key.get_pressed()
 
 
 
@@ -273,101 +267,101 @@ async def platformingTick():
 
 
 #Extra Input From Player (For dev use) =========================================================================================================
-        currentInputs = {
-            "up":    False, 
-            "left":  False, 
-            "down":  False,
-            "right": False,
-            "jump":  False,
-            "dash":  False, 
-            "UP":    False, 
-            "LEFT":  False,
-            "DOWN":  False,
-            "RIGHT": False,
-        }
-        for actionToCheck in InputManager.defaultInputKeys:
-            for keyToCheck in range(len(input[actionToCheck])):
-                if InputManager.kh(input[actionToCheck][keyToCheck], eventsGetHeld):
-                    Boards.apP(True, actionToCheck)
-                    currentInputs[actionToCheck] = True
-                    break
-                else:
-                    Boards.apP(False, actionToCheck)
+    currentInputs = {
+        "up":    False, 
+        "left":  False, 
+        "down":  False,
+        "right": False,
+        "jump":  False,
+        "dash":  False, 
+        "UP":    False, 
+        "LEFT":  False,
+        "DOWN":  False,
+        "RIGHT": False,
+    }
+    for actionToCheck in InputManager.defaultInputKeys:
+        for keyToCheck in range(len(input[actionToCheck])):
+            if InputManager.kh(input[actionToCheck][keyToCheck], eventsGetHeld):
+                Boards.apP(True, actionToCheck)
+                currentInputs[actionToCheck] = True
+                break
+            else:
+                Boards.apP(False, actionToCheck)
 
-        if devMode == True:
-            if InputManager.k("z", eventsGet):
-                platData[100] = level.plat
-                FileManager.save(platData, platformfilename)
-                print("Saved Platform Data")
-            if InputManager.k("x", eventsGet):
-                data = FileManager.load(platformfilename)
-                level = Level(data[100], data[100])
-            if InputManager.k("c", eventsGet):
-                level.plat = {}
-            if InputManager.k("q", eventsGet):
-                pyg.quit()
-                exit()
-            if InputManager.k("r", eventsGet):
-                p = defaultProperties(defaultProperties.lis)
-                FileManager.save(p, properetiesFileName)
-                print("Saved Propereties")        
-            if InputManager.k("`", eventsGet):
-                FileManager.save(p, "prop.dat")
-                print("Saved Propereites")
+    if devMode == True:
+        if InputManager.k("z", eventsGet):
+            platData[100] = level.plat
+            FileManager.save(platData, platformfilename)
+            print("Saved Platform Data")
+        if InputManager.k("x", eventsGet):
+            data = FileManager.load(platformfilename)
+            level = Level(data[100], data[100])
+        if InputManager.k("c", eventsGet):
+            level.plat = {}
+        if InputManager.k("q", eventsGet):
+            pyg.quit()
+            exit()
+        if InputManager.k("r", eventsGet):
+            p = defaultProperties(defaultProperties.lis)
+            FileManager.save(p, properetiesFileName)
+            print("Saved Propereties")        
+        if InputManager.k("`", eventsGet):
+            FileManager.save(p, "prop.dat")
+            print("Saved Propereites")
 
-        for i in range(10):
-            if InputManager.kh(str(i), eventsGetHeld):
-                select = i
-                print(i)
-            
-        if InputManager.k("TAB", eventsGet):
-            devMode = True
-            # p = dev.cmd()
+    for i in range(10):
+        if InputManager.kh(str(i), eventsGetHeld):
+            select = i
+            print(i)
         
-        if mouselist[0]:
-            if not mousedown:
-                print("Click!")
-                if select == 0:
-                    for platformThing in level.plat:
-                        platformToBeDeleted = level.plat[platformThing]
-                        if platform.collision.check(mouseposx, mouseposy, 1, 1, platformToBeDeleted.x, platformToBeDeleted.y, platformToBeDeleted.xl, platformToBeDeleted.yl)[0]:
-                            del level.plat[platformThing]
-                            break
+    if InputManager.k("TAB", eventsGet):
+        devMode = True
+        # p = dev.cmd()
+    
+    if mouselist[0]:
+        if not mousedown:
+            print("Click!")
+            if select == 0:
+                for platformThing in level.plat:
+                    platformToBeDeleted = level.plat[platformThing]
+                    if platform.collision.check(mouseposx, mouseposy, 1, 1, platformToBeDeleted.x, platformToBeDeleted.y, platformToBeDeleted.xl, platformToBeDeleted.yl)[0]:
+                        del level.plat[platformThing]
+                        break
+            
+            elif placestage == 0:
+                placestage = 1
+                tempx = mouseposx
+                tempy = mouseposy
+                print(f"({tempx}, {tempy})")
                 
-                elif placestage == 0:
-                    placestage = 1
-                    tempx = mouseposx
-                    tempy = mouseposy
-                    print(f"({tempx}, {tempy})")
-                    
+            
+            elif placestage == 1:
+                tempx2 = mouseposx
+                tempy2 = mouseposy
+                if tempx > tempx2:
+                    xstate = tempx2
+                else:
+                    xstate = tempx
+                if tempy > tempy2:
+                    ystate = tempy2
+                else:
+                    ystate = tempy
                 
-                elif placestage == 1:
-                    tempx2 = mouseposx
-                    tempy2 = mouseposy
-                    if tempx > tempx2:
-                        xstate = tempx2
-                    else:
-                        xstate = tempx
-                    if tempy > tempy2:
-                        ystate = tempy2
-                    else:
-                        ystate = tempy
-                    
-                    if platform.placeprop[select]["#HasPlaceReq"]:
-                        if not platform.placeprop[select]["xl"] == False:
-                            tempx2 = platform.placeprop[select]["xl"]
-                            tempx = 0
-                        if not platform.placeprop[select]["yl"] == False:
-                            tempy2 = platform.placeprop[select]["yl"]
-                            tempy = 0
-                    if platform.placeprop[select]["#object"]:
-                        level.plat[platform.NextID(level.plat)] = platform.create(mouseposx, mouseposy, tempx2, tempy2, select)
-                    elif not abs(tempx2 - tempx) == 0 and not abs(tempy2 - tempy) == 0:
-                        level.plat[platform.NextID(level.plat)] = platform.create(xstate, ystate, abs(tempx2 - tempx), abs(tempy2 - tempy), select)  
-                    placestage = 0
-                mousedown = True
-        else:
-            mousedown = False
+                if platform.placeprop[select]["#HasPlaceReq"]:
+                    if not platform.placeprop[select]["xl"] == False:
+                        tempx2 = platform.placeprop[select]["xl"]
+                        tempx = 0
+                    if not platform.placeprop[select]["yl"] == False:
+                        tempy2 = platform.placeprop[select]["yl"]
+                        tempy = 0
+                if platform.placeprop[select]["#object"]:
+                    level.plat[platform.NextID(level.plat)] = platform.create(mouseposx, mouseposy, tempx2, tempy2, select)
+                elif not abs(tempx2 - tempx) == 0 and not abs(tempy2 - tempy) == 0:
+                    level.plat[platform.NextID(level.plat)] = platform.create(xstate, ystate, abs(tempx2 - tempx), abs(tempy2 - tempy), select)  
+                placestage = 0
+            mousedown = True
+    else:
+        mousedown = False
 
 
 
@@ -375,7 +369,8 @@ async def platformingTick():
 
 
 
-
+#Component Handler
+    for object in 
 
 
 
@@ -386,28 +381,28 @@ async def platformingTick():
 
 
 #Cutscene Handler =================================================
-        for cutscene in CutsceneManager.cutsceneList.values():
-            
-            cutsceneStartResult = cutscene.startCheck(cutscenePropRefDict)
-            
-            if cutsceneStartResult is bool:
-                if cutsceneStartResult:
+    for cutscene in CutsceneManager.cutsceneList.values():
+        
+        cutsceneStartResult = cutscene.startCheck(cutscenePropRefDict)
+        
+        if cutsceneStartResult is bool:
+            if cutsceneStartResult:
+                CutsceneManager.cutsceneActive = True
+                cutscene.start(cutscenePropRefDict)
+        
+        elif cutsceneStartResult is dict:
+            if cutsceneStartResult["trigger"]:
+                if platform.collision.check(char.x, char.y, char.xl, char.yl, cutsceneStartResult["triggerHitbox"]["x"], cutsceneStartResult["triggerHitbox"]["y"], cutsceneStartResult["triggerHitbox"]["xl"], cutsceneStartResult["triggerHitbox"]["yl"])[0]:
                     CutsceneManager.cutsceneActive = True
                     cutscene.start(cutscenePropRefDict)
-            
-            elif cutsceneStartResult is dict:
-                if cutsceneStartResult["trigger"]:
-                    if platform.collision.check(char.x, char.y, char.xl, char.yl, cutsceneStartResult["triggerHitbox"]["x"], cutsceneStartResult["triggerHitbox"]["y"], cutsceneStartResult["triggerHitbox"]["xl"], cutsceneStartResult["triggerHitbox"]["yl"])[0]:
-                        CutsceneManager.cutsceneActive = True
-                        cutscene.start(cutscenePropRefDict)
+    
+    if CutsceneManager.cutsceneActive:
+        cutscene = CutsceneManager.cutsceneList[CutsceneManager.cutsceneID]
         
-        if CutsceneManager.cutsceneActive:
-            cutscene = CutsceneManager.cutsceneList[CutsceneManager.cutsceneID]
-            
-            cutscene.update(cutscenePropRefDict)
-            if cutscene.endCheck(cutscenePropRefDict):
-                CutsceneManager.cutsceneActive = False
-                cutscene.end(cutscenePropRefDict)
+        cutscene.update(cutscenePropRefDict)
+        if cutscene.endCheck(cutscenePropRefDict):
+            CutsceneManager.cutsceneActive = False
+            cutscene.end(cutscenePropRefDict)
 
 
 
@@ -417,9 +412,9 @@ async def platformingTick():
 
 
 
-        if char.allowControl == False:
-            for actionToCheck in InputManager.defaultInputKeys:
-                Boards.apP(False, actionToCheck)
+    if char.allowControl == False:
+        for actionToCheck in InputManager.defaultInputKeys:
+            Boards.apP(False, actionToCheck)
 
 
 
@@ -431,32 +426,32 @@ async def platformingTick():
 
 
 
-        
-        
+    
+    
 #Platform checker, uses pre-determined checking of which parts of the wall have been collided with
-        
+    
 #Run functions
-        for platformToBeChecked in level.plat.values():
-            wallcheck = platform.collision.check(char.x, char.y, char.xl, char.yl, platformToBeChecked.x, platformToBeChecked.y, platformToBeChecked.xl, platformToBeChecked.yl)
-            platform.types.functionList[platformToBeChecked.type]({
-                "char": char, 
-                "wallcheck": wallcheck, 
-                "platformToBeChecked": platformToBeChecked, 
-                "cam": cam}
-                )
+    for platformToBeChecked in level.plat.values():
+        wallcheck = platform.collision.check(char.x, char.y, char.xl, char.yl, platformToBeChecked.x, platformToBeChecked.y, platformToBeChecked.xl, platformToBeChecked.yl)
+        platform.types.functionList[platformToBeChecked.type]({
+            "char": char, 
+            "wallcheck": wallcheck, 
+            "platformToBeChecked": platformToBeChecked, 
+            "cam": cam}
+            )
 
-            
-    #Render Scene ===============================================================================================================
-        #if renderFrame:
-       #     drawCurrentFrame({}, placestage, level ,mousepos, mouseposx, mouseposy, tempx, tempy, select)
-        #print(char.dashlist, Timer.get("dashleave"), Timer.getvalue("dashleave", False))
-
-        Timer.tick()
-        clock.tick(p.fps)
         
-        p.game_timer += ((1 * p.fps) / 60) / 60
-        p.total_ticks += 1
-        delta = (((1 * p.fps) / 60) / 60) / renderframeavg 
+#Render Scene ===============================================================================================================
+    #if renderFrame:
+    #     drawCurrentFrame({}, placestage, level ,mousepos, mouseposx, mouseposy, tempx, tempy, select)
+    #print(char.dashlist, Timer.get("dashleave"), Timer.getvalue("dashleave", False))
+
+    Timer.tick()
+    clock.tick(p.fps)
+    
+    p.game_timer += ((1 * p.fps) / 60) / 60
+    p.total_ticks += 1
+    delta = (((1 * p.fps) / 60) / 60) / renderframeavg 
 
 
 
@@ -483,7 +478,7 @@ async def main():
     global currentInputs
     
 
-    cam = Camera()
+    cam = Component.Camera()
     p = FileManager.load(properetiesFileName)
     if p == False:
         p = defaultProperties(dev.lis)
@@ -497,7 +492,9 @@ async def main():
     pyg.display.set_caption('Platformer')
     sky = pyg.image.load(programPath+r"\Assets\Images\SkyBox.png").convert()
     
-    
+    Objects = {
+        "Character": Component.CharacterManager()
+    }
     
     platData = {
         0: None,
@@ -516,7 +513,7 @@ async def main():
         "template1": {
             "xPosition": 100,
             "yPosition": 100,
-            "path": programPath+r"\Assets\Images\hehe.png",
+            "path": programPath+r"\Assets\Images\hehe.png", 
             "xSpeed": 1,
             "ySpeed": 1,
         },
@@ -537,7 +534,7 @@ async def main():
 
     while True:
         asyncioTasks = [asyncio.create_task(platformingTick()), 
-            asyncio.create_task(drawCurrentFrame(renderQueue, 
+            asyncio.create_task(drawCurrentFrame(renderQueue,
             placestage,level,mousepos,mouseposx,mouseposy,tempx,tempy,select))]
         done, pending = await asyncio.wait(asyncioTasks)
         for task in done:
