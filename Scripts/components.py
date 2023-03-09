@@ -1,8 +1,10 @@
 # self. = kwargs[""]
 from Scripts.timer import Timer
 import Scripts.boards as Boards
+from componentDependencyDecorators import *
 
 #Handles all positioning aspects of an object in world space
+
 class Transform():
     def __init__(self, **kwargs) -> None:
         self.xPosition = kwargs["xPosition"]
@@ -16,8 +18,16 @@ class Transform():
 #Used to check as to whether the selected item is colliding with the object
 #This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
 #activation area. If you want to add collisions, use this in tangent with RigidBody
+@dependencyWrapper(requiredDependencies=
+{ "Transform": True }
+)
 class Collider():
+    @initializationWrapper
+    def initilization(self, dependencies):
+        self.Transform = dependencies["Transform"]
 
+
+class Collider():
     componentDependencies = {
         "Transform": None,
     }
@@ -28,6 +38,10 @@ class Collider():
             if dependencies[i] == None:
                 print(f"Missing {dependencies[i]} in {self.__str__}!")
         
+
+
+
+
         self.Transform = dependencies["Transform"]
 
 
@@ -51,32 +65,59 @@ class Collider():
         return lis
 
 
+def componentDependencyWrapper(func):
+    def wrapper():
+        dependencies = componentDependencies
+        missLog = []
+        for i in dependencies.keys(): 
+            if dependencies[i] == None:
+                missLog.append(i)
+                
+        if len(missLog) > 0:            
+            print(f"Missing {missLog} in {self.__str__}!")
+            from sys import exit
+            exit()
+
+        func()
+    return wrapper
+
+
 #Used to handle collisions and other physical forces
 #Use with a Collider to properly collide with other objects that have Colliders 
 class RigidBody():
-    dependancies = {
-        "Transform",
-        "Collider",
+    componentDependencies = {
+        "Transform": None,
+        "Collider": False,
     }
-    def __init__(self, **kwargs) -> None:
+
+    def __init__(self, dependencies = componentDependencies, **kwargs) -> None:
+        missLog = []
+        for i in dependencies.keys(): 
+            if dependencies[i] == None:
+                missLog.append(i)
+                
+        if len(missLog) > 0:            
+            print(f"Missing {missLog} in {self.__str__}!")
+            from sys import exit
+            exit()
+                
+        self.Transform = dependencies["Transform"]
+        self.Collider = dependencies["Collider"]
+
         self.mass = kwargs["mass"]
         
 
 #Renders an object either via image or rectangle
 class Renderer():
-
-    dependencies = {
-        "Transform",
-    }
-
     colors = {
     "red":   (255, 0,   0  ),
     "green": (0,   255, 0  ),
     "blue":  (0,   0,   255),
     "gray":  (30,  30,  30 ),
     }
-
     def __init__(self, **kwargs) -> None:
+
+
         try:
             self.path = kwargs["path"]    
         except KeyError as ke:
@@ -90,51 +131,42 @@ class Renderer():
         except KeyError as ke:
             print(f"Warning: {self.__repr__()}/Renderer: Invalid arguments, some are missing.")
 
-    def renderUpdate(self, transform):
-        if self.path == None:
-            return {
-            "xPosition": transform.xVelocity,
-            "yPosition": transform.yVelocity,
-            "path": None,
-            "xLength": self.xLength,
-            "yLength": self.yLength,
-            "xSpeed": transform.xVelocity,
-            "ySpeed": transform.yVelocity,    
-            }
-        return {
-            "xPosition": transform.xVelocity,
-            "yPosition": transform.yVelocity,
-            "path": self.path,
-            "xSpeed": transform.xVelocity,
-            "ySpeed": transform.yVelocity,
-        }
+    def update(self, dependencies):
 
+
+
+#Allows one to get inputs to be used by a scripting component
 class Controller():
     def __init__(self) -> None:
         pass
 
+    
 
 
 
+#Grabs 
 class ConfigData():
-    def __init__(self, filename) -> None:
+    def __init__(self, filename, fileType="toml") -> None:
         from os import getcwd
         from tomllib import load
-        
-        with open(getcwd()+r"\ConfigFiles" + fr"\{filename}" + r'.toml', "rb" ) as f:
-            self.configFile = load(f)
+        if fileType == "toml":
+            with open(getcwd()+r"\ConfigFiles" + fr"\{filename}" + r'.toml', "rb" ) as f:
+                self.configFile = load(f)
             
 
 
 
 
 
-
+#This is responsible for all of the actions a Character can do
+#Mostly used for the player character
 class CharacterManager():
     componentDependencies = {
         "Transform": None,
         "Renderer": None,
+        "Controller": None,
         "ConfigData": None,
+
     }
 
     def __init__(self, dependencies = componentDependencies, **kwargs) -> None:
@@ -149,6 +181,7 @@ class CharacterManager():
         
         
         configFile = self.configData.configFile
+        
         self.allowControl = True
         self.gr = False
         self.st = False
@@ -172,6 +205,84 @@ class CharacterManager():
         self.color = self.Renderer.colors["red"]
         self.DCsuper = 0
         self.DChyper = 0
+
+
+    def update():
+#Movement/Collisions =========================================================================================================
+#Ideally the best course of action is to have all of the movements before
+# the collisions so that the player's momentum doesn't push the character
+# into the ground after the collision checks have already taken place
+# leaving the character in the ground as the frame ends 
+
+#Movement
+        if Timer.get("dashcool") == True and char.gr and char.dashstate == False and char.dashleave == False:
+            char.dashes = 1            
+            char.color = character.colors["red"]
+
+        if Boards.getP('left') and not Boards.getP('right'):
+            if char.xv > -char.speed:
+                char.xv -= char.acc/( p.fps * delta)
+            else:
+                char.xv += char.decel/( p.fps * delta)
+        elif Boards.getP('right') and not Boards.getP('left'):
+            if char.xv < char.speed:
+                char.xv += char.acc/( p.fps * delta)
+            else:
+                char.xv -= char.decel/( p.fps * delta)
+        else:
+            if   char.xv <=-char.decel:
+                 char.xv += char.decel * char.dashslow
+            elif char.xv >= char.decel:
+                 char.xv -= char.decel * char.dashslow
+            else:
+                char.xv = 0
+
+        
+
+#Gravity
+        if Boards.getP("down"):
+            char.gravity = 14
+        else:
+            char.gravity = 7
+
+        if char.yv < char.gravity and char.gr == False:
+            char.yv += 1 /(p.fps * delta)
+        elif char.gr == False and char.yv > char.gravity + 1:
+            char.yv -= 1
+
+#Actions
+        if Boards.getP("jump") and char.gr or Boards.getP("jump") and Timer.get("CoyoteTime", True) < p.coyoteTime:
+            print("Jump!")
+            Timer.set("CoyoteTime", p.coyoteTime, True)
+            char.jump()
+
+        elif Boards.getP("jump") and char.wj:
+            print("Walljump!")
+            char.walljump(char.w)
+
+        if Boards.getP("dash") and char.dashes > 0 and Timer.get("dashcool"):
+            Timer.set("dashcool", char.dashcooldown * renderframeavg)
+            Timer.set("dash", char.dashlength * renderframeavg)
+            char.dashstate = True
+            fREEZEFRAMES += 2
+            char.dash()            
+        char.dashManager()
+
+#Momentum to actual movement
+        char.x += char.xv /( p.fps * delta)
+        char.y += char.yv /( p.fps * delta)
+        char.gr = False
+        char.wj = False
+        
+#Death from void        
+        if char.y > level.height:
+            char.die()
+
+        if char.x < 0:
+            char.x = 0
+        elif char.x > p.screen_width + level.length:
+            char.x = 0
+
 
     def die(self):
         self.Transform.xPosition = 500        

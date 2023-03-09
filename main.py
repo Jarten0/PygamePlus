@@ -75,6 +75,23 @@ async def drawCurrentFrame(renderQueue, **kwargs):
     tempy = kwargs["tempy"] 
     select = kwargs["select"] 
 
+    for i in renderQueue:
+        if isinstance(i, dict):
+            renderWithDict(i)
+
+def renderWithDict(dictObj):
+    if isinstance(dictObj["path"], None):
+        drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
+        return
+    try:
+        drawImage(dictObj["path"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
+    except FileNotFoundError as fnfe:
+        drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
+
+def renderWithObj(rendererObj):
+    drawImage(rendererObj.
+
+def cont():
     getCameraPosition()
 #Render Background
     screen.fill(p.bg_color)
@@ -413,80 +430,7 @@ async def platformingTick():
 
 
 
-#Movement/Collisions =========================================================================================================
-#Ideally the best course of action is to have all of the movements before
-# the collisions so that the player's momentum doesn't push the character
-# into the ground after the collision checks have already taken place
-# leaving the character in the ground as the frame ends 
 
-#Movement
-        if Timer.get("dashcool") == True and char.gr and char.dashstate == False and char.dashleave == False:
-            char.dashes = 1            
-            char.color = character.colors["red"]
-
-        if Boards.getP('left') and not Boards.getP('right'):
-            if char.xv > -char.speed:
-                char.xv -= char.acc/( p.fps * delta)
-            else:
-                char.xv += char.decel/( p.fps * delta)
-        elif Boards.getP('right') and not Boards.getP('left'):
-            if char.xv < char.speed:
-                char.xv += char.acc/( p.fps * delta)
-            else:
-                char.xv -= char.decel/( p.fps * delta)
-        else:
-            if   char.xv <=-char.decel:
-                 char.xv += char.decel * char.dashslow
-            elif char.xv >= char.decel:
-                 char.xv -= char.decel * char.dashslow
-            else:
-                char.xv = 0
-
-        
-
-#Gravity
-        if Boards.getP("down"):
-            char.gravity = 14
-        else:
-            char.gravity = 7
-
-        if char.yv < char.gravity and char.gr == False:
-            char.yv += 1 /(p.fps * delta)
-        elif char.gr == False and char.yv > char.gravity + 1:
-            char.yv -= 1
-
-#Actions
-        if Boards.getP("jump") and char.gr or Boards.getP("jump") and Timer.get("CoyoteTime", True) < p.coyoteTime:
-            print("Jump!")
-            Timer.set("CoyoteTime", p.coyoteTime, True)
-            char.jump()
-
-        elif Boards.getP("jump") and char.wj:
-            print("Walljump!")
-            char.walljump(char.w)
-
-        if Boards.getP("dash") and char.dashes > 0 and Timer.get("dashcool"):
-            Timer.set("dashcool", char.dashcooldown * renderframeavg)
-            Timer.set("dash", char.dashlength * renderframeavg)
-            char.dashstate = True
-            fREEZEFRAMES += 2
-            char.dash()            
-        char.dashManager()
-
-#Momentum to actual movement
-        char.x += char.xv /( p.fps * delta)
-        char.y += char.yv /( p.fps * delta)
-        char.gr = False
-        char.wj = False
-        
-#Death from void        
-        if char.y > level.height:
-            char.die()
-
-        if char.x < 0:
-            char.x = 0
-        elif char.x > p.screen_width + level.length:
-            char.x = 0
         
         
 #Platform checker, uses pre-determined checking of which parts of the wall have been collided with
@@ -568,6 +512,7 @@ async def main():
 
     global renderQueue
     renderQueue = {
+        "template": """
         "template1": {
             "xPosition": 100,
             "yPosition": 100,
@@ -584,7 +529,7 @@ async def main():
             "xSpeed": 5,
             "ySpeed": 0,
         },
-
+        "template3": Renderer #Is a renderer component data type. Add support for more in the drawing function """
     }
 
     startPlatformingScene()

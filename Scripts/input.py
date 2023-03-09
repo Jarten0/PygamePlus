@@ -75,20 +75,19 @@ keyBindListKeys = keyBindList.keys()
 #================================================================================================
 def k(input, events):
     for event in events:
-        if event.type == pyg.KEYDOWN:
-            if event.key == keyBindList[input]:
-                print(input)
-                return True
-            else:
-                return False
-        else:
+
+        if not event.type == pyg.KEYDOWN:
+            return False
+            
+        if not event.key == keyBindList[input]:
             return False
 
-def kh(input, events):
-    if events[keyBindList[input]]:
         return True
-    else:
+
+def kh(input, events):
+    if not events[keyBindList[input]]:
         return False
+    return True
 
 
 def main():
@@ -97,7 +96,7 @@ def main():
             configFile = tomllib.load(f)
             print(configFile)
     stop = False
-    Info = """
+    INFO = """
     This program is a script intended on being used to adjust what keybinds are to correlate to whichever actions are best suited in the user's preference
     Or frankly, a keybinding configuration script to allow you to add however many buttons on your keyboard to whatever actions you want
     To be more specific, you can bind as many buttons as you want to any particular action, and you can add buttons that can do multiple actions at once (at the exact same time, delays between actions are still on you)
@@ -209,7 +208,7 @@ FileManager.save(configFile, 'Save Data/input mappings.dat')
                         stop = True
                         break
                 elif inputFromUser.lower() == "help" or inputFromUser == "7":
-                    print(Info)
+                    print(INFO)
                 elif inputFromUser == "next" or inputFromUser == "":
                     break
         
