@@ -1,159 +1,293 @@
-# self. = kwargs[""]
-if not __name__ == "__main__":
-    import Scripts.timer as Timer
-    import Scripts.boards as Boards
+from sys import exit
+if __name__ == "__main__":
+    print(r"Cannot run components script as main :/")
+    exit()
+import pygame as pyg
+import Scripts.timer  as Timer
+import Scripts.boards as Boards
+import Scripts.input  as Input
 from componentDependencyDecorators import *
+Main = __import__("__main__")
 
 
 
+#Standard naming conventions: camelCaseForRegularVariables, AlwaysUppercaseForComponents
+#To create a component, copy and study the template below. You can also study any of the built in components aswell
+#To create a component that uses dependencies, check out the template below the Transform component
+# (DependenciesTemplate) to see how it's done
+class Template(): 
+#The decoraters used in DependenciesTemplate are not required at all if you do not wish to import
+#any dependencies from any other objects. The component itself can still be used for dependencies
+#with or without the decorater. ! Note the difference in function names, however ! 'def __init__(self)' is fine
+#to use if you are not using the decoraters, though if you are it must be replaced with 'def initialize(self, dependencies)'
+#else the decoraters will fail to function. Keep that in mind as you add new components.
+    def __init__(self, whateverArgumetsYouWant, **kwargs): #**kwargs to catch any loose keyword arguments if you wish
 
-
+#Once you have defined an initialize function, __init__ or initialize, now you can add whatever scripting
+#components and methods you wish to be used by other components.
+        self.variable = "whatever"
+    def method(self):
+        print(self.variable) 
 
 #Handles all positioning aspects of an object in world space
 @dependencyWrapper(requiredDependencies={}) # type: ignore
 class Transform():
     @initializationWrapper
-    def initalize(self, **kwargs) -> None:
-        self.xPosition = kwargs["xPosition"]
-        self.yPosition = kwargs["yPosition"]
-        self.zPosition = kwargs["zPosition"]
-        self.xVelocity = kwargs["xVelocity"]
-        self.yVelocity = kwargs["yVelocity"]
-        self.zVelocity = kwargs["zVelocity"]
+    def initialize(self, 
+    xPosition=0, yPosition=0, zPosition=0, xVelocity=0, yVelocity=0, **kwargs) -> None:
+        self.xPosition = xPosition
+        self.yPosition = yPosition
+        self.zPosition = zPosition #Z position is used for rendering order purposes, the lower the higher priority
+        self.xVelocity = xVelocity
+        self.yVelocity = yVelocity
+    
+    def update(self):
+        self.xPosition += self.xVelocity
+        self.yPosition += self.yVelocity
+
+#How these dependency wrappers work (the @ function) is where it takes in a set amount of dependencies, 
+# and will add in missing depenndences if a required one is missing, at set default values. 
+@dependencyWrapper(requiredDependencies={     # type: ignore  (The use of this is to ignore vscode warnings, there is an error when inputting dependencies into decoraters.)
+    "Transform": Transform,  #To input a required dependency, input the name of the class as a string in the key.
+# Then add the class name into the value DO NOT USE PARENTHESIS. It will call a default init function and somewhat break the system.
+    "Transform2": False,     #To input an optional dependency, input the name into the key and False into the value.
+    "Transform3": Transform })    #You can have multiple clones of components, just make sure they have different keys. 
+class DependenciesTemplate():   #Best practices are to not use inheritance. Keep it procedural here.
+    #You can also throw any general class variables here incase you so wish
+    #accessibleValue = 5
+
+    @initializationWrapper      #This should be right under an 'initialzie' function.
+    def initialize(self, dependencies, keywordArgument, **kwargs): #IT IS REQUIRED to have this named 'initialize' 
+    #if you use the @dependencyWrapper, else it will pull up an error
+
+        #You can now initialize whatevver variables you wish
+        #DependenciesTemplate.accessibleValue += 3
+        #self.valueFromKeyword = keywordArgument
+        #self.Transform = dependencies["Transform"]
+        #self.OtherTransform = dependencies["Transform3"]
+
+        pass #Feel free to study the other components given
 
 @dependencyWrapper(requiredDependencies={}) # type: ignore
 class Camera():
     @initializationWrapper
-    def initalize(self, dependencies) -> None:
+    def initialize(self, dependencies) -> None:
         self.xPosition = 0
         self.yPosition = 0
+
 #Used to check as to whether the selected item is colliding with the object
 #This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
 #activation area. If you want to add collisions, use this in tangent with RigidBody
-@dependencyWrapper(requiredDependencies=
-{ "Transform": Transform }
+@dependencyWrapper(requiredDependencies={
+    "Transform": Transform 
+    }
 )# type: ignore
 class Collider():
     @initializationWrapper
-    def initilization(self, dependencies, **kwargs):
+    def initilization(self, dependencies, Objects={}, xLength=50, yLength=50 **kwargs):
         self.Transform = dependencies["Transform"]
-        self.xLength = kwargs["xLength"]
-        self.yLength = kwargs["yLength"]
+        self.xLength = xLength
+        self.yLength = yLength
+        self.Objects = Objects #Used as a pointer
+        self.collideList = {}
+
+    def update(self):
+        for i in self.Objects:
+            checkList = self.check(i)
+            if checkList[0]:
+                collideList.append((i, checkList))
 
     def check(self, item) -> list[bool]:
         lis = [False, False, False, False, False]
-        if item.Transform.yPosition + item.yLength >= self.Transform.yPosition and item.Transform.yPosition <= self.Transform.yPosition + self.yLength and item.Transform.xPosition + item.xLength >= self.Transform.xPosition and item.Transform.xPosition <= self.Transform.xPosition + self.xLength:
+    #S and I are shorthands for self and item to drastically simplify this function and reduce characters
+        s = self.Transform
+        i = item.Transform
+        #Colliding
+        if i.yPosition + item.yLength >= s.yPosition and i.yPosition <= s.yPosition + self.yLength and i.xPosition + item.xLength >= s.xPosition and i.xPosition <= s.xPosition + self.xLength:
             return lis
+        
         lis[0] = True
-        if item.Transform.yPosition + item.yLength   < self.Transform.yPosition + 10 and item.Transform.xPosition + item.xLength     > self.Transform.xPosition and item.Transform.xPosition < self.Transform.xPosition + self.xLength:
+        #Top side
+        if s.yPosition + (self.yLength / 2) < i.yPosition + (item.yLength / 2) \
+        and s.xPosition > i.xPosition \
+        and s.xPosition + self.xLength < i.xPosition + i.xLength \
+        and s.xVelocity > self.xLength and s.xVelocity < -self.xLength:
             lis[1] = True
-        if item.Transform.xPosition + item.xLength   < self.Transform.xPosition + 20 and item.Transform.yPosition + item.yLength - 5 > self.Transform.yPosition and item.Transform.yPosition < self.Transform.yPosition + self.yLength:
+        
+        #Bottom side
+        if s.yPosition + (self.yLength / 2) > i.yPosition + (item.yLength / 2) \
+        and s.xPosition > i.xPosition \
+        and s.xPosition + self.xLength < i.xPosition + i.xLength \
+        and s.xVelocity > self.xLength and s.xVelocity < -self.xLength:
             lis[2] = True
-        if item.Transform.yPosition > self.Transform.yPosition + self.yLength - 10   and item.Transform.xPosition + item.xLength     > self.Transform.xPosition and item.Transform.xPosition < self.Transform.xPosition + self.xLength:
+        
+        #Left side
+        if s.xPosition + (self.yLength / 2) < i.xPosition + (item.xLength / 2) \
+        and s.yPosition + self.yLength > item.yPosition:
             lis[3] = True
-        if item.Transform.xPosition > self.Transform.xPosition + self.xLength - 20   and item.Transform.yPosition + item.yLength - 5 > self.Transform.yPosition and item.Transform.yPosition < self.Transform.yPosition + self.yLength:
-            lis[4] = True         
+        
+        #Right side
+        if s.xPosition + (self.yLength / 2) > i.xPosition + (item.xLength / 2) \
+        and s.yPosition + self.yLength > item.yPosition:
+            lis[4] = True
         
         return lis
-
 
 #Used to handle collisions and other physical forces
 #Use with a Collider to properly collide with other objects that have Colliders 
 @dependencyWrapper(requiredDependencies={
-    "Transform": Transform, "Collider": False
+    "Transform": Transform, "Collider": Collider
     })# type: ignore
 class RigidBody():
-    @initializationWrapper
-    def initialization(self, dependencies, **kwargs) -> None:
 
-                
+    @initializationWrapper
+    def initialization(self, dependencies, mass=0, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.Collider = dependencies["Collider"]
+        self.mass = mass
+        self.grounded = True
 
-        self.mass = kwargs["mass"]
+    def update(self):
+        if not self.grounded:
+            if self.Transform.yVelocity < self.mass: 
+                self.Transform.yVelocity += self.mass / 100
+                if self.Transform.yVelocity > self.mass:
+                    self.Transform.yVelocity = self.mass
         
+        self.grounded = False
+        for i in self.Collider.collideList:
+            item, lis = i
+            if lis[1]:
+                self.grounded = True
+                self.Transform.yVelocity = 0
+                self.Transform.yPosition = item.yPosition - self.yLength
+            if lis[2]:
+                self.Transform.yVelocity = 0 
+                self.Transform.yPosition = item.yPosition + item.yLength
+            if lis[3]:
+                self.Transform.xVelocity = 0
+                self.Transform.xPosition = item.xPosition + self.xLength
+            if lis[4]:
+                self.Transform.xVelocity = 0
+                self.Transform.xPosition = item.yPosition - item.yLength
 
 #Renders an object either via image or rectangle
 @dependencyWrapper(requiredDependencies={
     "Transform": Transform
     })# type: ignore
 class Renderer():
+    
     colors = {
     "red":   (255, 0,   0  ),
     "green": (0,   255, 0  ),
     "blue":  (0,   0,   255),
     "gray":  (30,  30,  30 ),
     }
-    def initalize(self, dependencies, **kwargs) -> None:
-        try:
-            self.path = kwargs["path"]    
-        except KeyError as ke:
+    
+    def initialize(self, dependencies,
+        path=None, tier=3, xOffset=0, yOffset=0, xLength=0, yLength=0, color=colors["gray"]**kwargs) -> None:
+        
+        self.path = path    
+        if path == None:    
             self.path = r'\Assets\Images\MissingImage.png'
             print(f"{self.__repr__()}/Renderer: No path argument found! Add 'path=None' or 'path=<path name>' to the initializer")
 
-        try:
-            self.xOffset = kwargs["xOffset"]
-            self.yOffset = kwargs["yOffset"]
-            self.xLength = kwargs["xLength"]
-            self.yLength = kwargs["yLength"]
-        except KeyError as ke:
-            print(f"Warning: {self.__repr__()}/Renderer: Invalid arguments, some are missing.")
+        self.tier    = tier
+        self.xOffset = xOffset
+        self.yOffset = yOffset
+        self.xLength = xLength
+        self.yLength = yLength
+        self.color   = color
+
+    def update(self):
+        renderQueue[self] = (self, tier, self.Transfor.zPosition)
         
-
-
 #Allows one to get inputs to be used by a scripting component
-@dependencyWrapper(requiredDependencies={
-    "Transform": Transform
-    })# type: ignore
+@dependencyWrapper(requiredDependencies={})# type: ignore
 class Controller():
+    defaultInputs = {
+        "up":    False, 
+        "left":  False, 
+        "down":  False,
+        "right": False,
+        "jump":  False,
+        "dash":  False, 
+        "UP":    False, 
+        "LEFT":  False,
+        "DOWN":  False,
+        "RIGHT": False,
+        }
+    currentInputs = defaultInputs
+   
     @initializationWrapper
-    def initalize(self) -> None:
+    def initialize(self, dependencies, **kwargs) -> None:
         pass
 
-    
 
+    def update():
+        pass
 
+    def classUpdate(self):
+        eventsGet = pyg.event.get()
+        eventsGetHeld = pyg.key.get_pressed()
+        for actionToCheck in Input.defaultInputKeys:
+            for keyToCheck in range(len(input[actionToCheck])):
+                if Input.keyDownHeld(input[actionToCheck][keyToCheck], eventsGetHeld):
+                    Boards.apP(True, actionToCheck)
+                    self.currentInputs[actionToCheck] = True
+                    break
+                else:
+                    Boards.apP(False, actionToCheck)
+
+    def getKeyDown(input, events) -> bool:
+        for event in events:
+            if not event.type == pyg.KEYDOWN:
+                return False
+            if not event.key == Input.keyBindList[input]:
+                return False
+            return True
+
+    def getKeyHeld(input, events) -> bool:
+        if not events[Input.keyBindList[input]]:
+            return False
+        return True
 
 #Grabs data from a config file for use
 @dependencyWrapper(requiredDependencies={})# type: ignore
 class ConfigData():
     @initializationWrapper
-    def initalize(self, filename, fileType="toml") -> None:
+    def initialize(self, filename="", fileType="toml") -> None:
         from os import getcwd
         from tomllib import load
         if fileType == "toml":
             with open(getcwd()+r"\ConfigFiles" + fr"\{filename}" + r'.toml', "rb" ) as f:
                 self.configFile = load(f)
             
-
-
-
-
-
-
-
-
 #This is responsible for all of the actions a Character can do
 #Mostly used for the player character
 @dependencyWrapper(requiredDependencies={
-    "Transform" : Transform,
-    "Renderer"  : Renderer,
+    "Transform" : Transform ,
+    "Renderer"  : Renderer  ,
     "Controller": Controller,
     "ConfigData": ConfigData,
+    "Collider"  : Collider  ,
+    "RigidBody" : RigidBody ,
 }) # type: ignore
-class CharacterManager():
+class Character():
     @initializationWrapper
-    def initalize(self, dependencies, **kwargs) -> None:
+    def initialize(self, dependencies, configFile, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.Renderer = dependencies["Renderer"]
         self.configData = dependencies["ConfigData"]
+        self.Controller = dependencies["Controller"]
+        self.Collider = dependencies["Collider"]
+        self.RigidBody = dependencies["RigidBody"]
         
         configFile = self.configData.configFile
         
         self.allowControl = True
-        self.gr = False
         self.st = False
-        self.wj = False
+        self.canWalljump = False
         self.w = None
         self.dead = False
         self.speed = configFile['run']['runSpeed']
@@ -163,94 +297,76 @@ class CharacterManager():
         self.jumppower = configFile['jump']['jumpPower']
         self.gravity = configFile['jump']['gravityStrength']
         self.dashes = configFile['dash']['dashCount']
-        self.dashstate = False
-        self.dashleave = True
-        self.dashlength = configFile['dash']['dashLength']
-        self.dashcooldown = configFile['dash']['dashCooldownLength']
-        self.dashspeed = configFile['dash']['dashSpeed']
-        self.dashlist = [False, False, False, False]
-        self.dashslow = configFile['dash']['dashDeceleration']
+        self.dashState = False
+        self.dashLeave = True
+        self.dashLength = configFile['dash']['dashLength']
+        self.dashCooldown = configFile['dash']['dashCooldownLength']
+        self.dashSpeed = configFile['dash']['dashSpeed']
+        self.dashList = [False, False, False, False]
+        self.dashSlow = configFile['dash']['dashDeceleration']
         self.color = self.Renderer.colors["red"]
         self.DCsuper = 0
         self.DChyper = 0
 
-
-#Movement/Collisions =========================================================================================================
-#Ideally the best course of action is to have all of the movements before
-# the collisions so that the player's momentum doesn't push the character
-# into the ground after the collision checks have already taken place
-# leaving the character in the ground as the frame ends 
-
-#Movement
     def update(self):
-        if Timer.get('dashcool') == True and self.gr and self.dashstate == False and self.dashleave == False:
+        if Timer.get('dashcool') == True and self.RigidBody.grounded and self.dashState == False and self.dashLeave == False:
             self.dashes = 1            
             self.color = self.Renderer.colors["red"]
 
         if Boards.getP('left') and not Boards.getP('right'):
-            if self.Transform.xv > -self.speed:
-                self.Transform.xv -= self.acc
+            if self.Transform.xVelocity > -self.speed:
+                self.Transform.xVelocity -= self.acc
             else:
-                self.Transform.xv += self.decel
+                self.Transform.xVelocity += self.decel
         elif Boards.getP('right') and not Boards.getP('left'):
-            if self.xv < self.speed:
-                self.xv += self.acc
+            if self.Transform.xVelocity < self.speed:
+                self.Transform.xVelocity += self.acc
             else:
-                self.xv -= self.decel
+                self.Transform.xVelocity -= self.decel
         else:
-            if   self.xv <=-self.decel:
-                 self.xv += self.decel * self.dashslow
-            elif self.xv >= self.decel:
-                 self.xv -= self.decel * self.dashslow
+            if   self.Transform.xVelocity <=-self.decel:
+                 self.Transform.xVelocity += self.decel * self.dashSlow
+            elif self.Transform.xVelocity >= self.decel:
+                 self.Transform.xVelocity -= self.decel * self.dashSlow
             else:
-                self.xv = 0
+                self.Transform.xVelocity = 0
 
         
 
 #Gravity
         if Boards.getP("down"):
-            self.gravity = 14
+            self.RigidBody.mass = 14
         else:
-            self.gravity = 7
-
-        if self.yv < self.gravity and self.gr == False:
-            self.yv += 1 /(p.fps * delta)
-        elif self.gr == False and self.yv > self.gravity + 1:
-            self.yv -= 1
-
+            self.RigidBody.mass = 7
 #Actions
-        if Boards.getP("jump") and self.gr or Boards.getP("jump") and Timer.get("CoyoteTime", True) < p.coyoteTime:
+        if Boards.getP("jump") and self.RigidBody.grounded or Boards.getP("jump") and Timer.get("CoyoteTime", True) < p.coyoteTime:
             print("Jump!")
             Timer.set("CoyoteTime", p.coyoteTime, True)
             self.jump()
 
-        elif Boards.getP("jump") and self.wj:
+        elif Boards.getP("jump") and self.canWalljump:
             print("Walljump!")
             self.walljump(self.w)
 
         if Boards.getP("dash") and self.dashes > 0 and Timer.get("dashcool"):
-            Timer.set("dashcool", self.dashcooldown * renderframeavg)
-            Timer.set("dash", self.dashlength * renderframeavg)
-            self.dashstate = True
+            Timer.set("dashcool", self.dashCooldown * renderframeavg)
+            Timer.set("dash", self.dashLength * renderframeavg)
+            self.dashState = True
             fREEZEFRAMES += 2
             self.dash()            
         self.dashManager()
 
 #Momentum to actual movement
-        self.x += self.xv /( p.fps * delta)
-        self.y += self.yv /( p.fps * delta)
-        self.gr = False
-        self.wj = False
+        self.canWalljump = False
         
 #Death from void        
         if self.y > level.height:
             self.die()
 
-        if self.x < 0:
-            self.x = 0
-        elif self.x > p.screen_width + level.length:
-            self.x = 0
-
+        if self.Transform.xPosition < 0:
+            self.Transform.xPosition = 0
+        elif self.Transform.xPosition > p.screen_width + level.length:
+            self.Transform.xPosition = 0
 
     def die(self):
         self.Transform.xPosition = 500        
@@ -261,99 +377,90 @@ class CharacterManager():
 
     def jump(self, transform):
         self.Transform.yVelocity = self.jumppower
-        self.gr = False
-        self.dashslow = 1
+        self.RigidBody.grounded = False
+        self.dashSlow = 1
         self.Transform.xVelocity *= 2
-        self.dashslow = 1
-        if self.dashleave or self.dashstate:
+        if self.dashLeave or self.dashState:
             print("Dash Cancel")
-            if not self.xv == 0:
-                self.xv = abs(self.Transform.xVelocity)/ self.xv * 24
-                if self.dashlist[3] == True:
+            if not self.Transform.xVelocity == 0:
+                self.Transform.xVelocity = abs(self.Transform.xVelocity)/ self.Transform.xVelocity * 24
+                if self.dashList[3] == True:
                     print("Hyper")
-                    self.yv = -13
-                    self.xv *= 3
+                    self.Transform.yVelocity = -13
+                    self.Transform.xVelocity *= 3
 
     def walljump(self, wallcheck):
         if wallcheck[0] and wallcheck[1]:
-            self.yv = self.jumppower
+            self.Transform.yVelocity = self.jumppower
         elif wallcheck[0]:
-            self.xv = -7
-            self.yv = self.jumppower
+            self.Transform.xVelocity = -7
+            self.Transform.yVelocity = self.jumppower
         elif wallcheck[1]:
-            self.xv = 7
-            self.yv = self.jumppower
+            self.Transform.xVelocity = 7
+            self.Transform.yVelocity = self.jumppower
 
-        if self.dashleave or self.dashstate:
-            if self.dashlist[0]:
+        if self.dashLeave or self.dashState:
+            if self.dashList[0]:
                 print("Dash Cancel")
-                self.yv *= 1.2
-                self.xv *= 1.5
+                self.Transform.yVelocity *= 1.2
+                self.Transform.xVelocity *= 1.5
                 
-#Run on the first frame of a check
     def dash(self):
         input = ["up", "left", "right", "down", "jump", "dash"]
         self.dashes -= 1
-        self.dashslow = 2
+        self.dashSlow = 2
         for i in range(4):
             if Boards.getP(input[i]):
-                self.dashlist[i] = True
-        if self.dashlist == [False, False, False, False]:
-            self.dashlist[2] = True
+                self.dashList[i] = True
+        if self.dashList == [False, False, False, False]:
+            self.dashList[2] = True
 
-#Run every frame, to run checks and blocks of code for all dash related stuff
     def dashManager(self):
-        if not Timer.get("dash") and self.dashstate:
+        if not Timer.get("dash") and self.dashState:
             self.color = self.Renderer.colors["green"]
-            if self.dashlist[0]:
-                if self.yv > -self.dashspeed:
-                    self.yv = -self.dashspeed
-            if self.dashlist[1]:
-                if self.xv > -self.dashspeed:
-                    self.xv = -self.dashspeed
-            if self.dashlist[2]:
-                if self.xv < self.dashspeed:
-                    self.xv = self.dashspeed
-            if self.dashlist[3]:
-                if self.yv < self.dashspeed:
-                    self.yv = self.dashspeed
-            if self.dashlist[3]:
-                if self.dashlist[0]:
-                    self.yv = 0
-#                    self.xv *= 1.2
-        elif self.dashstate:
-            self.dashstate = False
-            self.dashleave = True
+            if self.dashList[0]:
+                if self.Transform.yVelocity > -self.dashSpeed:
+                    self.Transform.yVelocity = -self.dashSpeed
+            if self.dashList[1]:
+                if self.Transform.xVelocity > -self.dashSpeed:
+                    self.Transform.xVelocity = -self.dashSpeed
+            if self.dashList[2]:
+                if self.Transform.xVelocity < self.dashSpeed:
+                    self.Transform.xVelocity = self.dashSpeed
+            if self.dashList[3]:
+                if self.Transform.yVelocity < self.dashSpeed:
+                    self.Transform.yVelocity = self.dashSpeed
+            if self.dashList[3]:
+                if self.dashList[0]:
+                    self.Transform.yVelocity = 0
+#                    self.Transform.xVelocity *= 1.2
+        elif self.dashState:
+            self.dashState = False
+            self.dashLeave = True
             self.color = (200, 200, 200)
-            Timer.set("dashleave", self.dashcooldown)
-        if Timer.get("dashleave") == False:
+            Timer.set("dashLeave", self.dashCooldown)
+        if Timer.get("dashLeave") == False:
             if self.gr:
                 self.dashes = 1   
 
-        if Timer.get("dashleave") == True:
-            self.dashlist = [False, False, False, False]
-            self.dashleave = False
+        if Timer.get("dashLeave") == True:
+            self.dashList = [False, False, False, False]
+            self.dashLeave = False
             self.color = self.Renderer.colors["blue"]
 
         if self.dashes > 0:
             self.color = self.Renderer.colors["red"]
         
-        if self.dashslow > 1:
-            self.dashslow /= 1.066
-        if self.dashslow < 1:
-            self.dashslow = 1
-        #print(self.dashlist, Timer.get("dash"))
+        if self.dashSlow > 1:
+            self.dashSlow /= 1.066
+        if self.dashSlow < 1:
+            self.dashSlow = 1
+        #print(self.dashList, Timer.get("dash"))
 
     def resetDash(self):
         self.dashes = 1
-        self.dashstate = False
-        self.dashleave = False
-        Timer.set("dashleave", True)
+        self.dashState = False
+        self.dashLeave = False
+        Timer.set("dashLeave", True)
         Timer.set("dash", True)
         Timer.set("dashcool", True)
-    
-def mainfunc():
-    character = Renderer()
-
-if __name__ == "main":
-    mainfunc()

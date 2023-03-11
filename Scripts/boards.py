@@ -10,7 +10,7 @@ perm = {
     "dashcool": 0,
 }
 
-def apT(value, key = None):
+def appendToTemp(value, key = None):
     if not key == None:
         try:
             temp[key] = value
@@ -21,7 +21,8 @@ def apT(value, key = None):
     else:
         temp[len(temp)] = value
         return len(temp) - 1
-def apP(value, key = ""):
+
+def appendToPerm(value, key = ""):
     if not key == None:
         try:
             perm[key] = value
@@ -32,7 +33,9 @@ def apP(value, key = ""):
     else:
         perm[len(temp)] = value
         return len(perm) - 1
-def getT(key):
+
+def getFromTemp(key):
     return perm[key]
-def getP(key):
+
+def getFromPerm(key):
     return perm[key]

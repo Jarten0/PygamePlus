@@ -1,10 +1,12 @@
 import components
+
 def parametrized(dec): #This is not my idea but it works
     def layer(*args, **kwargs):
         def repl(f):
             return dec(f, *args, **kwargs)
         return repl
     return layer #okay but the rest of it was made solo by me after an unnecessarily long time like it took ~12 attempts and ~10 hours for FIFTY lines of code like serioursly this was a pain
+
 def initializationWrapper(componentInitFunc):
     def wrapper(dependencies, *args, **kwargs):
         def initialize( *args, **kwargs):
@@ -13,12 +15,14 @@ def initializationWrapper(componentInitFunc):
             componentInitFunc(self, dependencies)        
         return initialize
     return wrapper
+
 @parametrized
-def dependencyWrapper(initialComponent, requiredDependencies):
+def dependencyWrapper(initialComponent, requiredDependencies={}):
     
     name = initialComponent.__name__
     class Component():  
-        missLog = []  
+        missLog = []
+        active = True
         def __new__(cls, givenDependencies): 
                 
             
@@ -42,7 +46,7 @@ def dependencyWrapper(initialComponent, requiredDependencies):
                 for i in givenDependencies:
                     self.dependencies[f"{i}"] = i
         except AttributeError as ae:
-            error = f"InitializationFunctionMissing: No initialization function in {name}! Add missing function using template (run script as main for template)"
+            error = f"InitializationFunctionMissing: No initialize function in {name}! Add missing function using template (run script as main for template)"
             raise ModuleNotFoundError(error)
 
     Component.__name__ = name+"(Wrapped)"

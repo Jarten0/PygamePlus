@@ -1,4 +1,5 @@
 class defaultPropereties(): 
+
     lis = {
     "scwd": 1000,
     "schi": 1000,
@@ -8,6 +9,7 @@ class defaultPropereties():
     "grid": 10,
     "Coyote Time": 10,
     }
+
     def __init__(self, lis):
         self.lis = lis
         print(lis)

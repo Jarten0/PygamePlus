@@ -73,22 +73,6 @@ keyBindListKeys = keyBindList.keys()
 #================================================================================================
 #===== FURTHER CODE SHOULD NOT BE MODIFIED IF YOU ONLY WISH TO CHANGE KEYBINDS ==================
 #================================================================================================
-def k(input, events):
-    for event in events:
-
-        if not event.type == pyg.KEYDOWN:
-            return False
-            
-        if not event.key == keyBindList[input]:
-            return False
-
-        return True
-
-def kh(input, events):
-    if not events[keyBindList[input]]:
-        return False
-    return True
-
 
 def main():
     import os, tomllib
@@ -214,4 +198,3 @@ FileManager.save(configFile, 'Save Data/input mappings.dat')
         
 if __name__ == "__main__":
     main()
-

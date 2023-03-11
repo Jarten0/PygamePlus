@@ -1,6 +1,5 @@
 import os, importlib.util
 
-
 def findNextAvailableID(List):
     KeyList = List.keys()
     for i in range(len(List) + 1):
@@ -9,8 +8,7 @@ def findNextAvailableID(List):
                 
 cutsceneActive = True
 cutsceneID = 0
-cutsceneList = {
-}
+cutsceneList = {}
 
 def init():
     for i in os.listdir(os.getcwd()+r"\Cutscenes"):

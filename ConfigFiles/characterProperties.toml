@@ -2,13 +2,14 @@
 #related properties, remember that the origin is in the
 #top left corner instead of the bottom left corner
 
-#Also, the game runs at 240 physics updates per second
-#So one frame is 1/240th of a second
+#Also, the game runs at 60 physics updates per second
+#So one frame is 1/60th of a second
 
 #Initial position and size of character
 [body]
 xpos = 500
 ypos = 0
+zpos = 10
 xlength = 20
 ylength = 20
 
