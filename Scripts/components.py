@@ -6,7 +6,7 @@ import pygame as pyg
 import Scripts.timer  as Timer
 import Scripts.boards as Boards
 import Scripts.input  as Input
-from componentDependencyDecorators import *
+from Scripts.componentDependencyDecorators import *
 Main = __import__("__main__")
 
 
@@ -21,20 +21,21 @@ class Template():
 #with or without the decorater. ! Note the difference in function names, however ! 'def __init__(self)' is fine
 #to use if you are not using the decoraters, though if you are it must be replaced with 'def initialize(self, dependencies)'
 #else the decoraters will fail to function. Keep that in mind as you add new components.
-    def __init__(self, whateverArgumetsYouWant, **kwargs): #**kwargs to catch any loose keyword arguments if you wish
+    def __init__(self, *whateverArgumetsYouWant, **kwargs): #**kwargs to catch any loose keyword arguments if you wish
 
 #Once you have defined an initialize function, __init__ or initialize, now you can add whatever scripting
 #components and methods you wish to be used by other components.
-        self.variable = "whatever"
-    def method(self):
-        print(self.variable) 
+        #self.variable = "whatever"
+    #def method(self):
+        #print(self.variable) 
+        pass
 
 #Handles all positioning aspects of an object in world space
 @dependencyWrapper(requiredDependencies={}) # type: ignore
 class Transform():
     @initializationWrapper
-    def initialize(self, 
-    xPosition=0, yPosition=0, zPosition=0, xVelocity=0, yVelocity=0, **kwargs) -> None:
+    def initialize(self,
+    xPosition:int=0, yPosition:int=0, zPosition:int=0, xVelocity:int=0, yVelocity:int=0, **kwargs) -> None:
         self.xPosition = xPosition
         self.yPosition = yPosition
         self.zPosition = zPosition #Z position is used for rendering order purposes, the lower the higher priority
@@ -47,17 +48,19 @@ class Transform():
 
 #How these dependency wrappers work (the @ function) is where it takes in a set amount of dependencies, 
 # and will add in missing depenndences if a required one is missing, at set default values. 
-@dependencyWrapper(requiredDependencies={     # type: ignore  (The use of this is to ignore vscode warnings, there is an error when inputting dependencies into decoraters.)
-    "Transform": Transform,  #To input a required dependency, input the name of the class as a string in the key.
+@dependencyWrapper(requiredDependencies={
+    "Transform": Transform
+})     # type: ignore  (The use of this is to ignore vscode warnings, there is an error when inputting dependencies into decoraters.)
+    #"Transform": Transform,  #To input a required dependency, input the name of the class as a string in the key.
 # Then add the class name into the value DO NOT USE PARENTHESIS. It will call a default init function and somewhat break the system.
-    "Transform2": False,     #To input an optional dependency, input the name into the key and False into the value.
-    "Transform3": Transform })    #You can have multiple clones of components, just make sure they have different keys. 
+    #"Transform2": False,     #To input an optional dependency, input the name into the key and False into the value.
+    #"Transform3": Transform })    #You can have multiple clones of components, just make sure they have different keys. 
 class DependenciesTemplate():   #Best practices are to not use inheritance. Keep it procedural here.
     #You can also throw any general class variables here incase you so wish
     #accessibleValue = 5
 
-    @initializationWrapper      #This should be right under an 'initialzie' function.
-    def initialize(self, dependencies, keywordArgument, **kwargs): #IT IS REQUIRED to have this named 'initialize' 
+    @initializationWrapper      #This should be right under an 'initialize' function.
+    def initialize(self, dependencies, keywordArgument, *args, **kwargs): #IT IS REQUIRED to have this named 'initialize' 
     #if you use the @dependencyWrapper, else it will pull up an error
 
         #You can now initialize whatevver variables you wish
@@ -68,10 +71,11 @@ class DependenciesTemplate():   #Best practices are to not use inheritance. Keep
 
         pass #Feel free to study the other components given
 
-@dependencyWrapper(requiredDependencies={}) # type: ignore
+@dependencyWrapper(requiredDependencies={
+}) # type: ignore
 class Camera():
     @initializationWrapper
-    def initialize(self, dependencies) -> None:
+    def initialize(self, dependencies:dict, *args) -> None:
         self.xPosition = 0
         self.yPosition = 0
 
@@ -84,18 +88,18 @@ class Camera():
 )# type: ignore
 class Collider():
     @initializationWrapper
-    def initilization(self, dependencies, Objects={}, xLength=50, yLength=50 **kwargs):
+    def initialize(self, dependencies:dict, Objects:dict={}, xLength:int=50, yLength:int=50, **kwargs):
         self.Transform = dependencies["Transform"]
         self.xLength = xLength
         self.yLength = yLength
         self.Objects = Objects #Used as a pointer
-        self.collideList = {}
+        self.collideList = []
 
     def update(self):
         for i in self.Objects:
             checkList = self.check(i)
             if checkList[0]:
-                collideList.append((i, checkList))
+                self.collideList.append((i, checkList))
 
     def check(self, item) -> list[bool]:
         lis = [False, False, False, False, False]
@@ -103,31 +107,31 @@ class Collider():
         s = self.Transform
         i = item.Transform
         #Colliding
-        if i.yPosition + item.yLength >= s.yPosition and i.yPosition <= s.yPosition + self.yLength and i.xPosition + item.xLength >= s.xPosition and i.xPosition <= s.xPosition + self.xLength:
+        if i.yPosition + item.Collider.yLength >= s.yPosition and i.yPosition <= s.yPosition + self.yLength and i.xPosition + item.Collider.xLength >= s.xPosition and i.xPosition <= s.xPosition + self.xLength:
             return lis
         
         lis[0] = True
         #Top side
-        if s.yPosition + (self.yLength / 2) < i.yPosition + (item.yLength / 2) \
+        if s.yPosition + (self.yLength / 2) < i.yPosition + (item.Collider.yLength / 2) \
         and s.xPosition > i.xPosition \
-        and s.xPosition + self.xLength < i.xPosition + i.xLength \
+        and s.xPosition + self.xLength < i.xPosition + i.Collider.xLength \
         and s.xVelocity > self.xLength and s.xVelocity < -self.xLength:
             lis[1] = True
         
         #Bottom side
-        if s.yPosition + (self.yLength / 2) > i.yPosition + (item.yLength / 2) \
+        if s.yPosition + (self.yLength / 2) > i.yPosition + (item.Collider.yLength / 2) \
         and s.xPosition > i.xPosition \
-        and s.xPosition + self.xLength < i.xPosition + i.xLength \
+        and s.xPosition + self.xLength < i.xPosition + i.Collider.xLength \
         and s.xVelocity > self.xLength and s.xVelocity < -self.xLength:
             lis[2] = True
         
         #Left side
-        if s.xPosition + (self.yLength / 2) < i.xPosition + (item.xLength / 2) \
+        if s.xPosition + (self.yLength / 2) < i.xPosition + (item.Collider.xLength / 2) \
         and s.yPosition + self.yLength > item.yPosition:
             lis[3] = True
         
         #Right side
-        if s.xPosition + (self.yLength / 2) > i.xPosition + (item.xLength / 2) \
+        if s.xPosition + (self.yLength / 2) > i.xPosition + (item.Collider.xLength / 2) \
         and s.yPosition + self.yLength > item.yPosition:
             lis[4] = True
         
@@ -141,13 +145,13 @@ class Collider():
 class RigidBody():
 
     @initializationWrapper
-    def initialization(self, dependencies, mass=0, **kwargs) -> None:
+    def initialize(self, dependencies: dict, mass:int=0, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.Collider = dependencies["Collider"]
         self.mass = mass
         self.grounded = True
 
-    def update(self):
+    def update(self) -> None:
         if not self.grounded:
             if self.Transform.yVelocity < self.mass: 
                 self.Transform.yVelocity += self.mass / 100
@@ -160,21 +164,21 @@ class RigidBody():
             if lis[1]:
                 self.grounded = True
                 self.Transform.yVelocity = 0
-                self.Transform.yPosition = item.yPosition - self.yLength
+                self.Transform.yPosition = item.yPosition - self.Collider.yLength
             if lis[2]:
                 self.Transform.yVelocity = 0 
-                self.Transform.yPosition = item.yPosition + item.yLength
+                self.Transform.yPosition = item.yPosition + item.Collider.yLength
             if lis[3]:
                 self.Transform.xVelocity = 0
-                self.Transform.xPosition = item.xPosition + self.xLength
+                self.Transform.xPosition = item.xPosition + self.Collider.xLength
             if lis[4]:
                 self.Transform.xVelocity = 0
-                self.Transform.xPosition = item.yPosition - item.yLength
+                self.Transform.xPosition = item.yPosition - item.Collider.yLength
 
 #Renders an object either via image or rectangle
 @dependencyWrapper(requiredDependencies={
     "Transform": Transform
-    })# type: ignore
+    }) # type: ignore
 class Renderer():
     
     colors = {
@@ -183,15 +187,17 @@ class Renderer():
     "blue":  (0,   0,   255),
     "gray":  (30,  30,  30 ),
     }
-    
-    def initialize(self, dependencies,
-        path=None, tier=3, xOffset=0, yOffset=0, xLength=0, yLength=0, color=colors["gray"]**kwargs) -> None:
+
+    @initializationWrapper
+    def initialize(self, dependencies: dict,
+        path: str = "", tier: int = 3, xOffset:int=0, yOffset:int=0, xLength:int=0, yLength:int=0, color=colors["gray"], **kwargs) -> None:
         
         self.path = path    
-        if path == None:    
+        if path == "":    
             self.path = r'\Assets\Images\MissingImage.png'
             print(f"{self.__repr__()}/Renderer: No path argument found! Add 'path=None' or 'path=<path name>' to the initializer")
 
+        self.Transform = dependencies["Transform"]
         self.tier    = tier
         self.xOffset = xOffset
         self.yOffset = yOffset
@@ -200,7 +206,7 @@ class Renderer():
         self.color   = color
 
     def update(self):
-        renderQueue[self] = (self, tier, self.Transfor.zPosition)
+        Main.renderQueue[self] = (self, self.tier, self.Transform.zPosition)
         
 #Allows one to get inputs to be used by a scripting component
 @dependencyWrapper(requiredDependencies={})# type: ignore
@@ -220,34 +226,35 @@ class Controller():
     currentInputs = defaultInputs
    
     @initializationWrapper
-    def initialize(self, dependencies, **kwargs) -> None:
+    def initialize(self, dependencies: dict, **kwargs) -> None:
         pass
 
 
-    def update():
+    def update(self):
         pass
 
     def classUpdate(self):
         eventsGet = pyg.event.get()
         eventsGetHeld = pyg.key.get_pressed()
         for actionToCheck in Input.defaultInputKeys:
-            for keyToCheck in range(len(input[actionToCheck])):
-                if Input.keyDownHeld(input[actionToCheck][keyToCheck], eventsGetHeld):
-                    Boards.apP(True, actionToCheck)
+            for keyToCheck in range(len(Main.input[actionToCheck])):
+                if self.getKeyHeld(Main.input[actionToCheck][keyToCheck], eventsGetHeld):
+                    Boards.appendToPerm(True, actionToCheck)
                     self.currentInputs[actionToCheck] = True
                     break
                 else:
-                    Boards.apP(False, actionToCheck)
+                    Boards.appendToPerm(False, actionToCheck)
 
-    def getKeyDown(input, events) -> bool:
+    def getKeyDown(self, input, events) -> bool:
         for event in events:
             if not event.type == pyg.KEYDOWN:
                 return False
             if not event.key == Input.keyBindList[input]:
                 return False
             return True
+        return False
 
-    def getKeyHeld(input, events) -> bool:
+    def getKeyHeld(self, input, events) -> bool:
         if not events[Input.keyBindList[input]]:
             return False
         return True
@@ -256,13 +263,15 @@ class Controller():
 @dependencyWrapper(requiredDependencies={})# type: ignore
 class ConfigData():
     @initializationWrapper
-    def initialize(self, filename="", fileType="toml") -> None:
-        from os import getcwd
-        from tomllib import load
-        if fileType == "toml":
-            with open(getcwd()+r"\ConfigFiles" + fr"\{filename}" + r'.toml', "rb" ) as f:
+    def initialize(self, dirFileName: str = "", fileType: str = "toml", *args, **kwargs) -> None:
+        self.fileName = dirFileName
+        self.fileType = fileType
+        if self.fileType == "toml":
+            from os import getcwd
+            from tomllib import load       
+            with open(getcwd()+'\ConfigFiles\\' + f'{self.fileName}' + '.toml', "rb" ) as f:
                 self.configFile = load(f)
-            
+        
 #This is responsible for all of the actions a Character can do
 #Mostly used for the player character
 @dependencyWrapper(requiredDependencies={
@@ -275,15 +284,16 @@ class ConfigData():
 }) # type: ignore
 class Character():
     @initializationWrapper
-    def initialize(self, dependencies, configFile, **kwargs) -> None:
+    def initialize(self, dependencies, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.Renderer = dependencies["Renderer"]
-        self.configData = dependencies["ConfigData"]
+        self.ConfigData = dependencies["ConfigData"]
         self.Controller = dependencies["Controller"]
         self.Collider = dependencies["Collider"]
         self.RigidBody = dependencies["RigidBody"]
         
-        configFile = self.configData.configFile
+        print(self.ConfigData)
+        configFile = self.ConfigData.configFile
         
         self.allowControl = True
         self.st = False
@@ -313,12 +323,12 @@ class Character():
             self.dashes = 1            
             self.color = self.Renderer.colors["red"]
 
-        if Boards.getP('left') and not Boards.getP('right'):
+        if self.Controller.getKeyHeld('left') and not self.Controller.getKeyHeld('right'):
             if self.Transform.xVelocity > -self.speed:
                 self.Transform.xVelocity -= self.acc
             else:
                 self.Transform.xVelocity += self.decel
-        elif Boards.getP('right') and not Boards.getP('left'):
+        elif self.Controller.getKeyHeld('right') and not self.Controller.getKeyHeld('left'):
             if self.Transform.xVelocity < self.speed:
                 self.Transform.xVelocity += self.acc
             else:
@@ -334,25 +344,25 @@ class Character():
         
 
 #Gravity
-        if Boards.getP("down"):
+        if self.Controller.getKeyHeld("down"):
             self.RigidBody.mass = 14
         else:
             self.RigidBody.mass = 7
 #Actions
-        if Boards.getP("jump") and self.RigidBody.grounded or Boards.getP("jump") and Timer.get("CoyoteTime", True) < p.coyoteTime:
+        if self.Controller.getKeyHeld("jump") and self.RigidBody.grounded or self.Controller.getKeyHeld("jump") and Timer.get("CoyoteTime", True) < Main.p.coyoteTime:
             print("Jump!")
-            Timer.set("CoyoteTime", p.coyoteTime, True)
+            Timer.set("CoyoteTime", Main.p.coyoteTime, True)
             self.jump()
 
-        elif Boards.getP("jump") and self.canWalljump:
+        elif self.Controller.getKeyHeld("jump") and self.canWalljump:
             print("Walljump!")
             self.walljump(self.w)
 
-        if Boards.getP("dash") and self.dashes > 0 and Timer.get("dashcool"):
-            Timer.set("dashcool", self.dashCooldown * renderframeavg)
-            Timer.set("dash", self.dashLength * renderframeavg)
+        if self.Controller.getKeyHeld("dash") and self.dashes > 0 and Timer.get("dashcool"):
+            Timer.set("dashcool", self.dashCooldown )
+            Timer.set("dash", self.dashLength )
             self.dashState = True
-            fREEZEFRAMES += 2
+            Main.fREEZEFRAMES += 2
             self.dash()            
         self.dashManager()
 
@@ -360,12 +370,12 @@ class Character():
         self.canWalljump = False
         
 #Death from void        
-        if self.y > level.height:
+        if self.Transform.yPosition > Main.level.height:
             self.die()
 
         if self.Transform.xPosition < 0:
             self.Transform.xPosition = 0
-        elif self.Transform.xPosition > p.screen_width + level.length:
+        elif self.Transform.xPosition > Main.p.screen_width + Main.level.length:
             self.Transform.xPosition = 0
 
     def die(self):
@@ -375,7 +385,7 @@ class Character():
         self.Transform.yVelocity = 1
         self.dead = True
 
-    def jump(self, transform):
+    def jump(self):
         self.Transform.yVelocity = self.jumppower
         self.RigidBody.grounded = False
         self.dashSlow = 1
@@ -410,7 +420,7 @@ class Character():
         self.dashes -= 1
         self.dashSlow = 2
         for i in range(4):
-            if Boards.getP(input[i]):
+            if self.Controller.getKeyHeld(input[i]):
                 self.dashList[i] = True
         if self.dashList == [False, False, False, False]:
             self.dashList[2] = True
@@ -440,7 +450,7 @@ class Character():
             self.color = (200, 200, 200)
             Timer.set("dashLeave", self.dashCooldown)
         if Timer.get("dashLeave") == False:
-            if self.gr:
+            if self.RigidBody.grounded:
                 self.dashes = 1   
 
         if Timer.get("dashLeave") == True:

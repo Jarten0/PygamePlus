@@ -1,4 +1,3 @@
-print(__name__, "Dev")
 import Scripts.EZPickle as FileManager
 import Scripts.platforms as platform
 import pygame as pyg

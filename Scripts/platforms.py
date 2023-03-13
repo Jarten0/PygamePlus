@@ -1,5 +1,4 @@
-print(__name__, "Platforms")
-from Scripts.timer import Timer
+import Scripts.timer as Timer
 import Scripts.boards as Boards
 #from main import kill
 platcolors = {
@@ -56,7 +55,7 @@ class create():
         self.color = platcolors[self.type]
 
 
-    def collider(self, item) -> list[bool, bool, bool, bool, bool]:
+    def collider(self, item) -> list[bool]:
         lis = [False, False, False, False, False]
         if item.y + item.yl >= self.y and item.y <= self.y + self.yl:
             if item.x + item.xl >= self.x and item.x <= self.x + self.xl:
@@ -75,7 +74,7 @@ class create():
 
 class collision():
     #C = Character, P = Platform, L = Length
-    def check(cx, cy, cxl, cyl, px, py, pxl, pyl) -> list[bool, bool, bool, bool, bool]: #Checks
+    def check(self, cx, cy, cxl, cyl, px, py, pxl, pyl) -> list[bool]: #Checks
         lis = [False, False, False, False, False]
         if cy + cyl >= py and cy <= py + pyl:
             if cx + cxl >= px and cx <= px + pxl:
@@ -92,7 +91,7 @@ class collision():
         return lis
 
 class types():
-    def wall(prop) -> None:
+    def wall(self, prop) -> None:
         wallcheck = prop["wallcheck"]
         char = prop["char"]
         pTBC = prop["platformToBeChecked"]
@@ -126,23 +125,23 @@ class types():
                 char.wj = True
                 char.w = [wallcheck[2], wallcheck[4]]
     
-    def passthrough(prop) -> None:
+    def passthrough(self, prop) -> None:
         wallcheck = prop["wallcheck"]
         char = prop["char"]
         pTBC = prop["platformToBeChecked"]
         if wallcheck[1]:
-            if char.yv >= 0 and not Boards.getP("down"):           
+            if char.yv >= 0 and not Boards.getFromPerm("down"):           
                 char.gr = True
                 char.y = pTBC.y - char.yl  
                 char.yv = 0
                 #Timer.set("dashcool", True)
                 Timer.set("CoyoteTime", 0, True)
 
-    def lava(prop) -> None:
+    def lava(self, prop) -> None:
         if prop["wallcheck"][0]:
             prop["char"].die()
     
-    def bounce(prop) -> None:
+    def bounce(self, prop) -> None:
         char = prop["char"]
         if prop["wallcheck"][0]:
             char.resetDash()

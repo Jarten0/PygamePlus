@@ -1,3 +1,5 @@
+print("\n" * 10)
+LogInConsole = False
 #Import And Initialize ===========================================================================================================
 import Scripts.EZPickle as FileManager
 import Scripts.input as InputManager
@@ -11,10 +13,9 @@ import Scripts.dev as dev
 
 import Scripts.components as Component
 import Scripts.platforms as platform
-import Scripts.character as character
 
 import Scripts.boards as Boards
-import Scripts.defaultPropereties as defaultProperties
+from Scripts.defaultPropereties import defaultPropereties
 import Scripts.timer as Timer
 
 from sys import exit
@@ -35,16 +36,12 @@ class Level():
         self.height = height * 20
 
 def timeFunction(func):
-    def timerWrapper():
+    def timerWrapper() -> None:
         start = time.time()
         func()
         end = time.time()
         print(f"{func.__name__} took {start - end} seconds to run")
     return timerWrapper
-
-def createObject(object=Component.DependencyTemplate(Component.Transform())):
-    Objects[object.__name__] = object
-    return object
 
 def NextID(itemList) -> int:
     keylist = itemList.keys()
@@ -54,7 +51,21 @@ def NextID(itemList) -> int:
             return name
     return len(itemList)
 
-def renderWithDict(dictObj):
+def createObject(name="") -> Component.Template: #type: ignore
+    if name == "" or name in Objects:
+        name = NextID(Objects)
+    object = Component.Template()
+    Objects[name] = object #type: ignore
+    return object
+
+def createComplexObject(name, *args, **kwargs) -> Component.DependenciesTemplate:
+    object = Component.DependenciesTemplate(*args, **kwargs) # type: ignore
+    Objects[name.__name__] = object
+    return object
+
+
+
+def renderWithDict(dictObj) -> None:
     if isinstance(dictObj["path"], type(None)):
         drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
         return
@@ -63,16 +74,16 @@ def renderWithDict(dictObj):
     except FileNotFoundError as fnfe:
         drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
 
-def renderWithObj(rendererObj):
+def renderWithObj(rendererObj) -> None:
     drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset)
 
     
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
-async def drawCurrentFrame(renderQueue, **kwargs):
+async def drawCurrentFrame(renderQueue, **kwargs) -> None:
     drawImage(sky, 0, 0)
     sortRenderQueue(renderQueue)
-    getCameraPosition()
+    getCameraPosition(cam)
     asyncioRenderTasks = []
     for i in renderQueue:
         if isinstance(i, dict):
@@ -170,8 +181,9 @@ def startPlatformingScene() -> str:
         }
 
     CutsceneManager.init()
+    global cutscenePropRefDict
     cutscenePropRefDict = {
-        "char": char,
+        "char": Character,
         "plat": level.plat,
         "input": currentInputs,
     }
@@ -186,6 +198,7 @@ def startPlatformingScene() -> str:
     Mouse.tempx = 0
     Mouse.tempy = 0 
     Mouse.down = False
+    return "Done"
 
 async def platformingTick():
     print("\n")
@@ -327,26 +340,8 @@ async def platformingTick():
         cutscene.update(cutscenePropRefDict)
         if cutscene.endCheck(cutscenePropRefDict):
             CutsceneManager.cutsceneActive = False
-            cutscene.end(cutscenePropRefDict)
 
-    if char.allowControl == False:
-        for actionToCheck in InputManager.defaultInputKeys:
-            Boards.apP(False, actionToCheck)
 
-    for platformToBeChecked in level.plat.values():
-        wallcheck = platform.collision.check(char.x, char.y, char.xl, char.yl, platformToBeChecked.x, platformToBeChecked.y, platformToBeChecked.xl, platformToBeChecked.yl)
-        platform.types.functionList[platformToBeChecked.type]({
-            "char": char, 
-            "wallcheck": wallcheck, 
-            "platformToBeChecked": platformToBeChecked, 
-            "cam": cam}
-            )
-
-        
-#Render Scene ===============================================================================================================
-    #if renderFrame:
-    #     drawCurrentFrame({}, placestage, level ,Mouse.pos, Mouse.posx, Mouse.posy, Mouse.tempx, Mouse.tempy, select)
-    #print(char.dashlist, Timer.get("dashleave"), Timer.getvalue("dashleave", False))
 
     Timer.tick()
     clock.tick(p.fps)
@@ -357,60 +352,78 @@ async def platformingTick():
 
 #---------------------------------------------------------------------------------------------------------------------------
 async def main():
-    global p, char, clock, screen, font, platData, sky, cam, Mouse, \
-    fREEZEFRAMES, level, p,delta, devMode, input, currentInputs, cutscenePropRefDict
+    global p, clock, screen, font, platData, sky, cam, Mouse, Objects, LogInConsole, \
+    fREEZEFRAMES, level, p, delta, devMode, input, currentInputs, cutscenePropRefDict, \
+    Character
     
     pyg.init()
     cam = Component.Camera()
     p = FileManager.load(properetiesFileName)
     if p == False:
-        p = defaultProperties(dev.lis)
+        p = defaultPropereties(dev.lis)
     FileManager.save(p, properetiesFileName)
 
     Mouse = None
-    char = character.create()
     font = pyg.font.Font('freesansbold.ttf', 32)
     clock = pyg.time.Clock()
     screen = pyg.display.set_mode((p.screen_width, p.screen_height))
     pyg.display.set_caption('Platformer')
     sky = pyg.image.load(programPath+r"\Assets\Images\SkyBox.png").convert()
     
-
     Objects = {}
 
-    Character = createObject(Component.DependenciesTemplate(
-        ConfigData=Component.ConfigData(
-            filename = r".\ConfigFiles\CharacterProperties.toml",
-            filetype = "toml",
-            ),
-        Transform=Component.Transform(
-            xPosition=ConfigData.configFile["body"]["xpos"],
-            yPosition=ConfigData.configFile["body"]["ypos"],
-            zPosition=ConfigData.configFile["body"]["zpos"],
-            ),
-        Renderer=Component.Renderer(
-            xOffset=0,
-            yOffset=0,
-            xLength=20,
-            yLength=20,
-            path=r"Assets\Images\hehe.png",
-            tier=5,
-            ),
-        Collider=Component.Collider(
-            xLength = 20,
-            yLength = 20,
-            Objects = Objects,
-            ),
-        RigidBody=Component.Rigidbody(
-            mass=5,
-            ),
-        Character=Component.Character(
-            ConfigData=ConfigData,
-            Transform=Transform,
-            ),
-        )
-    )
     
+    Character = createObject("Character")
+    Character.ConfigData = Component.ConfigData(     # type: ignore
+        dirFileName = 'CharacterProperties',
+        fileType = "toml"
+        )
+    Character.Transform=Component.Transform(     # type: ignore
+        xPosition=Character.ConfigData.configFile["body"]["xpos"],     # type: ignore
+        yPosition=Character.ConfigData.configFile["body"]["ypos"],     # type: ignore
+        zPosition=Character.ConfigData.configFile["body"]["zpos"],     # type: ignore
+        )
+    Character.Renderer=Component.Renderer(     # type: ignore
+        Transform = Character.Transform,     # type: ignore
+        xOffset=0,
+        yOffset=0,
+        xLength=20,
+        yLength=20,
+        path='Assets\Images\hehe.png',
+        tier=5,
+        )
+    Character.Controller=Component.Controller()     # type: ignore
+    Character.Collider=Component.Collider(     # type: ignore
+        Transform = Character.Transform,     # type: ignore
+        xLength = 20,
+        yLength = 20,
+        Objects = Objects,
+        )
+    Character.RigidBody=Component.RigidBody(     # type: ignore
+        Transform = Character.Transform,     # type: ignore
+        Collider = Character.Collider,     # type: ignore
+        mass = 5,
+        )
+    print(Character.ConfigData)     # type: ignore
+    Character.Character=Component.Character(     # type: ignore
+        ConfigData = Character.ConfigData,     # type: ignore
+        Transform = Character.Transform,     # type: ignore
+        Renderer = Character.Renderer,     # type: ignore
+        Controller = Character.Controller,     # type: ignore
+        Collider = Character.Collider,     # type: ignore
+        RigidBody = Character.RigidBody,     # type: ignore
+        )
+    Character = createComplexObject("Character", 
+        Controller = Character.Controller,     # type: ignore
+        ConfigData = Character.ConfigData,      # type: ignore
+        Transform = Character.Transform,      # type: ignore
+        Renderer = Character.Renderer,      # type: ignore
+        Collider = Character.Collider,      # type: ignore
+        RigidBody = Character.RigidBody,      # type: ignore
+        Character = Character.Character     # type: ignore
+        )
+    print("HeHa!")
+
     platData = {
         0: None,
     #100 - 199 are levels in the game
@@ -431,7 +444,7 @@ async def main():
     while True:
         asyncioTasks = [
             asyncio.create_task(platformingTick()), 
-            asyncio.create_task(drawCurrentFrame(copy(renderQueue)))]
+            asyncio.create_task(drawCurrentFrame(copy(renderQueue)))]     # type: ignore
         done, pending = await asyncio.wait(asyncioTasks)
         for task in done:
             if not task.result() == None:
@@ -442,4 +455,5 @@ async def main():
         clock.tick(60)
         
 if __name__ == "__main__":
+    print("\n"*3)
     asyncio.run(main())
