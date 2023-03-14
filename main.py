@@ -1,9 +1,9 @@
 print("\n" * 10)
-LogInConsole = False
 #Import And Initialize ===========================================================================================================
 import Scripts.EZPickle as FileManager
 import Scripts.input as InputManager
 import Scripts.cutsceneManager as CutsceneManager
+import Scripts.componentManager as ComponentManager
 
 import os
 import asyncio
@@ -11,21 +11,19 @@ import time
 import pygame as pyg # type: ignore
 import Scripts.dev as dev
 
-import Scripts.components as Component
+import Scripts.Components.character as CharacterComponent
+import Scripts.Components.components as MainComponent 
 import Scripts.platforms as platform
 
 import Scripts.boards as Boards
-from Scripts.defaultPropereties import defaultPropereties
+from Scripts.settings import defaultPropereties
 import Scripts.timer as Timer
 
 from sys import exit
 from copy import copy
 
-#Add names of files here: -----------------------------
+LogInConsole = defaultPropereties
 programPath = os.getcwd()
-platformfilename = 'Save Data/platform info.dat'
-properetiesFileName = 'Save Data/saved properties.dat'
-inputsFileName = 'Save Data/input mappings.dat'
 
 #Setup ====================================================================================================================
 class Level():
@@ -51,15 +49,15 @@ def NextID(itemList) -> int:
             return name
     return len(itemList)
 
-def createObject(name="") -> Component.Template: #type: ignore
+def createObject(name="") -> MainComponent.Template: #type: ignore
     if name == "" or name in Objects:
         name = NextID(Objects)
-    object = Component.Template()
+    object = MainComponent.Template()
     Objects[name] = object #type: ignore
     return object
 
-def createComplexObject(name, *args, **kwargs) -> Component.DependenciesTemplate:
-    object = Component.DependenciesTemplate(*args, **kwargs) # type: ignore
+def createComplexObject(name, *args, **kwargs) -> MainComponent.DependenciesTemplate:
+    object = MainComponent.DependenciesTemplate(*args, **kwargs) # type: ignore
     Objects[name.__name__] = object
     return object
 
@@ -88,7 +86,7 @@ async def drawCurrentFrame(renderQueue, **kwargs) -> None:
     for i in renderQueue:
         if isinstance(i, dict):
             asyncio.create_task(renderWithDict(i)), 
-        elif isinstance(i, Component.Renderer):
+        elif isinstance(i, MainComponent.Renderer):
             asyncio.create_task(renderWithObj(i)), 
         else:
             print(f"RenderQueue: {i} does not have a function for rendering and thus failed to render.")
@@ -151,17 +149,11 @@ def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0):
 @timeFunction
 def startPlatformingScene() -> str:
     devMode = False
-    placestage = 0
-    select = 1
-
-    #Initialize several timers 
+    
     for i in { ("dashcool", 20, False), ("grace", 0, True),
-("CoyoteTime", 0, True), ("dash", 0, False), ("dashleave", 4, False)}:
+        ("CoyoteTime", 0, True), ("dash", 0, False), ("dashleave", 4, False)}:
         (name, value, up) = i
         Timer.set(name, value, up)
-    Timer.__str__()
-    print(Timer.get("CoyoteTime", True))
-    delta = ((1 * p.fps) / 60) * 4
     fREEZEFRAMES = 0
 
     input = FileManager.load(inputsFileName)
@@ -181,20 +173,15 @@ def startPlatformingScene() -> str:
         }
 
     CutsceneManager.init()
-    global cutscenePropRefDict
-    cutscenePropRefDict = {
-        "char": Character,
-        "plat": level.plat,
-        "input": currentInputs,
-    }
-
-    p = FileManager.load(properetiesFileName)
+    settings = FileManager.load('ConfigFiles\settings.toml', type="toml")
     level = Level("Level 0", platData[100], 500, 500)
-    data = FileManager.load(platformfilename)
+    data = FileManager.load('Save Data\platform info.dat')
     if data == False:
         data = platData
     level = Level(data[100], data[100])
 
+    Mouse.placestage = 0
+    Mouse.select = 1
     Mouse.tempx = 0
     Mouse.tempy = 0 
     Mouse.down = False
@@ -220,12 +207,9 @@ async def platformingTick():
         pyg.display.flip()
         clock.tick(60)
         return "freezeframe"
-    renderframeavg = p.fps / p.renderfps
 
     if fREEZEFRAMES > 0:
         fREEZEFRAMES -= 1
-        pyg.display.flip()
-        clock.tick(p.fps)
         return "early"
 
     Mouse.pos = pyg.mouse.get_pos()
@@ -315,8 +299,13 @@ async def platformingTick():
 
 #Component Handler
     for objectToRender in Objects:
-        if Component.Renderer in dir(objectToRender):
+        if MainComponent.Renderer in dir(objectToRender):
             renderQueue[str(objectToRender)] = objectToRender.Renderer
+
+    for obj in Object.values():
+        obj.update()
+    
+
 
 #Cutscene Handler =================================================
     for cutscene in CutsceneManager.cutsceneList.values():
@@ -357,33 +346,37 @@ async def main():
     Character
     
     pyg.init()
-    cam = Component.Camera()
+    Objects = {}
+
+
+    cam = createObject(MainComponent.Camera())
     p = FileManager.load(properetiesFileName)
     if p == False:
         p = defaultPropereties(dev.lis)
     FileManager.save(p, properetiesFileName)
 
-    Mouse = None
+    Mouse = createObject()
     font = pyg.font.Font('freesansbold.ttf', 32)
     clock = pyg.time.Clock()
     screen = pyg.display.set_mode((p.screen_width, p.screen_height))
     pyg.display.set_caption('Platformer')
+    sky = createObject()
+    sky = createComplexObject(k,ihyz)
     sky = pyg.image.load(programPath+r"\Assets\Images\SkyBox.png").convert()
-    
-    Objects = {}
+
 
     
     Character = createObject("Character")
-    Character.ConfigData = Component.ConfigData(     # type: ignore
+    Character.ConfigData = MainComponent.ConfigData(     # type: ignore
         dirFileName = 'CharacterProperties',
         fileType = "toml"
         )
-    Character.Transform=Component.Transform(     # type: ignore
+    Character.Transform = MainComponent.Transform(     # type: ignore
         xPosition=Character.ConfigData.configFile["body"]["xpos"],     # type: ignore
         yPosition=Character.ConfigData.configFile["body"]["ypos"],     # type: ignore
         zPosition=Character.ConfigData.configFile["body"]["zpos"],     # type: ignore
         )
-    Character.Renderer=Component.Renderer(     # type: ignore
+    Character.Renderer = MainComponent.Renderer(     # type: ignore
         Transform = Character.Transform,     # type: ignore
         xOffset=0,
         yOffset=0,
@@ -392,14 +385,14 @@ async def main():
         path='Assets\Images\hehe.png',
         tier=5,
         )
-    Character.Controller=Component.Controller()     # type: ignore
-    Character.Collider=Component.Collider(     # type: ignore
+    Character.Controller = MainComponent.Controller()     # type: ignore
+    Character.Collider = MainComponent.Collider(     # type: ignore
         Transform = Character.Transform,     # type: ignore
         xLength = 20,
         yLength = 20,
         Objects = Objects,
         )
-    Character.RigidBody=Component.RigidBody(     # type: ignore
+    Character.RigidBody = MainComponent.RigidBody(     # type: ignore
         Transform = Character.Transform,     # type: ignore
         Collider = Character.Collider,     # type: ignore
         mass = 5,

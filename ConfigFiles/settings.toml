@@ -1,0 +1,13 @@
+SceneType = "main"
+
+[Screen]
+screen_width = 1000
+screen_height = 1000
+bg_color = (100, 100, 255)
+grid = 10
+
+[Clock]
+fps = 60
+renderfps = 240
+game_timer = 0
+total_ticks = 0

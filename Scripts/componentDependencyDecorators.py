@@ -21,7 +21,12 @@ def initializationWrapper(componentInitFunc):
     return wrapper
 
 @parametrized
-def dependencyWrapper(initialComponent: classmethod, requiredDependencies:dict={}, *args, **kwargs):
+def dependencyWrapper(
+initialComponent: classmethod, 
+requiredDependencies:dict={}, 
+*args, **kwargs,
+):
+    
     name = initialComponent.__name__
     class Component():  
         missLog = []
