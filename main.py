@@ -16,14 +16,17 @@ import Scripts.Components.components as MainComponent
 import Scripts.platforms as platform
 
 import Scripts.boards as Boards
-from Scripts.settings import defaultPropereties
 import Scripts.timer as Timer
 
 from sys import exit
 from copy import copy
 
-LogInConsole = defaultPropereties
 programPath = os.getcwd()
+
+Settings = FileManager.load('\ConfigFiles\settings.toml', 'toml')
+if isinstance(Settings, bool):
+    raise Exception('Critical file missing!: \ConfigFiles\settings.toml')
+LogInConsole = Settings['LogInConsole']
 
 #Setup ====================================================================================================================
 class Level():
@@ -66,16 +69,15 @@ def createComplexObject(name, *args, **kwargs) -> MainComponent.DependenciesTemp
 async def drawCurrentFrame(renderQueue, **kwargs) -> None:
     drawImage(sky, 0, 0)
     sortRenderQueue(renderQueue)
-    getCameraPosition(Camera)
     asyncioRenderTasks = []
     for i in renderQueue:
         if isinstance(i, dict):
-            asyncio.create_task(renderWithDict(i)), 
+            asyncioRenderTasks[] = asyncio.create_task(renderWithDict(i))
         elif isinstance(i, MainComponent.Renderer):
-            asyncio.create_task(renderWithObj(i)), 
+            asyncioRenderTasks[] = asyncio.create_task(renderWithObj(i)) 
         else:
             print(f"RenderQueue: {i} does not have a function for rendering and thus failed to render.")
-    done, pending = await asyncio.wait(asyncioTasks)
+    done, pending = await asyncio.wait(asyncioRenderTasks)
 
     pyg.display.flip()
 
