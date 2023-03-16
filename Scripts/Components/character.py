@@ -18,8 +18,64 @@ Main = __import__("__main__")
     "RigidBody" : MainComponent.RigidBody ,
 }) # type: ignore
 class Character():
+    init_ = {
+        'OnStart': True
+
+    }
+    @initOnCreate
+    def __create() -> MainComponent.DependenciesTemplate:
+        Character = Main.createObject("Character")
+        Character.ConfigData = MainComponent.ConfigData(     # type: ignore
+            dirFileName = 'CharacterProperties',
+            fileType = "toml"
+            )
+        Character.Transform = MainComponent.Transform(     # type: ignore
+            xPosition=Character.ConfigData.configFile["body"]["xpos"],     # type: ignore
+            yPosition=Character.ConfigData.configFile["body"]["ypos"],     # type: ignore
+            zPosition=Character.ConfigData.configFile["body"]["zpos"],     # type: ignore
+            )
+        Character.Renderer = MainComponent.Renderer(     # type: ignore
+            Transform = Character.Transform,     # type: ignore
+            xOffset=0,
+            yOffset=0,
+            xLength=20,
+            yLength=20,
+            path='Assets\Images\hehe.png',
+            tier=5,
+            )
+        Character.Controller = MainComponent.Controller()     # type: ignore
+        Character.Collider = MainComponent.Collider(     # type: ignore
+            Transform = Character.Transform,     # type: ignore
+            xLength = 20,
+            yLength = 20,
+            Objects = Objects,
+            )
+        Character.RigidBody = MainComponent.RigidBody(     # type: ignore
+            Transform = Character.Transform,     # type: ignore
+            Collider = Character.Collider,     # type: ignore
+            mass = 5,
+            )
+        Character.Character=Character(     # type: ignore
+            ConfigData = Character.ConfigData,     # type: ignore
+            Transform = Character.Transform,     # type: ignore
+            Renderer = Character.Renderer,     # type: ignore
+            Controller = Character.Controller,     # type: ignore
+            Collider = Character.Collider,     # type: ignore
+            RigidBody = Character.RigidBody,     # type: ignore
+            )
+        Character = Main.createComplexObject("Character", 
+            Controller = Character.Controller,     # type: ignore
+            ConfigData = Character.ConfigData,      # type: ignore
+            Transform = Character.Transform,      # type: ignore
+            Renderer = Character.Renderer,      # type: ignore
+            Collider = Character.Collider,      # type: ignore
+            RigidBody = Character.RigidBody,      # type: ignore
+            Character = Character.Character     # type: ignore
+            )
+        return Character
+
     @initializationWrapper
-    def initialize(self, dependencies, **kwargs) -> None:
+    def __initialize(self, dependencies, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.Renderer = dependencies["Renderer"]
         self.ConfigData = dependencies["ConfigData"]
@@ -33,7 +89,7 @@ class Character():
         self.allowControl = True
         self.st = False
         self.canWalljump = False
-        self.w = None
+        self.wallCollisions = None
         self.dead = False
         self.speed = configFile['run']['runSpeed']
         self.acc = configFile['run']['runAcceleration']
@@ -53,7 +109,7 @@ class Character():
         self.DCsuper = 0
         self.DChyper = 0
 
-    def update(self):
+    def __update(self):
         if Timer.get('dashcool') == True and self.RigidBody.grounded and self.dashState == False and self.dashLeave == False:
             self.dashes = 1            
             self.color = self.Renderer.colors["red"]
@@ -91,7 +147,7 @@ class Character():
 
         elif self.Controller.getKeyHeld("jump") and self.canWalljump:
             print("Walljump!")
-            self.walljump(self.w)
+            self.walljump(self.wallCollisions)
 
         if self.Controller.getKeyHeld("dash") and self.dashes > 0 and Timer.get("dashcool"):
             Timer.set("dashcool", self.dashCooldown )
@@ -134,13 +190,13 @@ class Character():
                     self.Transform.yVelocity = -13
                     self.Transform.xVelocity *= 3
 
-    def walljump(self, wallcheck):
-        if wallcheck[0] and wallcheck[1]:
+    def walljump(self, wallCollisions):
+        if wallCollisions[0] and wallCollisions[1]:
             self.Transform.yVelocity = self.jumppower
-        elif wallcheck[0]:
+        elif wallCollisions[0]:
             self.Transform.xVelocity = -7
             self.Transform.yVelocity = self.jumppower
-        elif wallcheck[1]:
+        elif wallCollisions[1]:
             self.Transform.xVelocity = 7
             self.Transform.yVelocity = self.jumppower
 

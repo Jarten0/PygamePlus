@@ -77,8 +77,8 @@ keyBindListKeys = keyBindList.keys()
 def main():
     import os, tomllib
     with open(os.getcwd()+'\ConfigFiles\characterProperties.toml', "rb") as f:
-            configFile = tomllib.load(f)
-            print(configFile)
+        configFile = tomllib.load(f)
+        print(configFile)
     stop = False
     INFO = """
     This program is a script intended on being used to adjust what keybinds are to correlate to whichever actions are best suited in the user's preference

@@ -61,27 +61,12 @@ def createComplexObject(name, *args, **kwargs) -> MainComponent.DependenciesTemp
     Objects[name.__name__] = object
     return object
 
-
-
-def renderWithDict(dictObj) -> None:
-    if isinstance(dictObj["path"], type(None)):
-        drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
-        return
-    try:
-        drawImage(dictObj["path"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
-    except FileNotFoundError as fnfe:
-        drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
-
-def renderWithObj(rendererObj) -> None:
-    drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset)
-
-    
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
 async def drawCurrentFrame(renderQueue, **kwargs) -> None:
     drawImage(sky, 0, 0)
     sortRenderQueue(renderQueue)
-    getCameraPosition(cam)
+    getCameraPosition(Camera)
     asyncioRenderTasks = []
     for i in renderQueue:
         if isinstance(i, dict):
@@ -105,45 +90,23 @@ def sortRenderQueue(renderQueue) -> dict:
         returnedRenderQueue[tempRenderQueue.index(i)] = value
     return returnedRenderQueue
 
+def renderWithDict(dictObj) -> None:
+    if isinstance(dictObj["path"], type(None)):
+        drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
+        return
+    try:
+        drawImage(dictObj["path"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
+    except FileNotFoundError as fnfe:
+        drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
 
-def getCameraPosition(cam):
-    if Boards.getP("LEFT"):
-        cam.xOffset -= 10
-    elif Boards.getP("RIGHT"):
-        cam.xOffset += 10
-    if Boards.getP("UP"):
-        cam.yOffset -= 10
-    elif Boards.getP("DOWN"):
-        cam.yOffset += 10
-
-    if Boards.getP("up") or Boards.getP("down") or Boards.getP("left") or Boards.getP("right"):
-        cam.xOffset = 0
-        cam.yOffset = 0
-
-    if char.x + 1 >= p.screen_width / 2 and char.x < level.length - p.screen_width / 2:
-        cam.xdefault = char.x - p.screen_width / 2    
-    else:
-        if char.x <= p.screen_width / 2:
-            cam.xdefault = 0
-        else:
-            cam.xdefault = level.length - p.screen_width
-
-    if char.y +1 >= p.screen_height / 2 and char.y < level.height - p.screen_height / 2:
-        cam.ydefault = char.y - p.screen_height / 2    
-    else:
-        if char.y < p.screen_height / 2:
-            cam.ydefault = 0
-        else:
-            cam.ydefault = level.height - p.screen_height   
-            
-    cam.xpos = cam.xdefault + cam.xOffset
-    cam.ypos = cam.ydefault + cam.yOffset
+def renderWithObj(rendererObj) -> None:
+    drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset)
 
 def drawRect(color, x, y, xl, yl):
-    pyg.draw.rect(screen, color, (x - cam.xpos, y - cam.ypos, xl, yl))
+    pyg.draw.rect(screen, color, (x - Camera.xpos, y - Camera.ypos, xl, yl))
 
 def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0):
-    screen.blit(imageObject, (x - xOffset - cam.xpos, y - yOffset - cam.ypos))
+    screen.blit(imageObject, (x - xOffset - Camera.xpos, y - yOffset - Camera.ypos))
 
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
@@ -171,6 +134,8 @@ def startPlatformingScene() -> str:
             "DOWN":  False,
             "RIGHT": False,
         }
+
+    ComponentManager.init()
 
     CutsceneManager.init()
     settings = FileManager.load('ConfigFiles\settings.toml', type="toml")
@@ -213,7 +178,7 @@ async def platformingTick():
         return "early"
 
     Mouse.pos = pyg.mouse.get_pos()
-    Mouse.pos = (Mouse.pos[0] + cam.xpos, Mouse.pos[1] + cam.ypos)
+    Mouse.pos = (Mouse.pos[0] + Camera.xpos, Mouse.pos[1] + Camera.ypos)
     Mouse.posx = round((Mouse.pos[0]/p.grid), 0)*p.grid
     Mouse.posy = round((Mouse.pos[1]/p.grid), 0)*p.grid
     Mouse.list = pyg.mouse.get_pressed(num_buttons=5)
@@ -235,7 +200,7 @@ async def platformingTick():
             pyg.quit()
             exit()
         if InputManager.k("r", eventsGet):
-            p = defaultProperties(defaultProperties.lis)
+            settings= defaultProperties(defaultProperties.lis)
             FileManager.save(p, properetiesFileName)
             print("Saved Propereties")        
         if InputManager.k("`", eventsGet):
@@ -243,13 +208,13 @@ async def platformingTick():
             print("Saved Propereites")
 
     for i in range(10):
-        if InputManager.kh(str(i), eventsGetHeld):
+        if InputManager.keyDownHeld(str(i), eventsGetHeld):
             select = i
             print(i)
         
     if InputManager.k("TAB", eventsGet):
         devMode = True
-        # p = dev.cmd()
+        # settings= dev.cmd()
     
     if Mouse.list[0]:
         if not Mouse.down:
@@ -341,18 +306,18 @@ async def platformingTick():
 
 #---------------------------------------------------------------------------------------------------------------------------
 async def main():
-    global p, clock, screen, font, platData, sky, cam, Mouse, Objects, LogInConsole, \
-    fREEZEFRAMES, level, p, delta, devMode, input, currentInputs, cutscenePropRefDict, \
+    global settings, clock, screen, font, platData, sky, Camera, Mouse, Objects, LogInConsole, \
+    fREEZEFRAMES, level, p, delta, devMode, input, currentInputs, \
     Character
     
     pyg.init()
+
     Objects = {}
 
 
-    cam = createObject(MainComponent.Camera())
-    p = FileManager.load(properetiesFileName)
-    if p == False:
-        p = defaultPropereties(dev.lis)
+    Camera = createObject(MainComponent.Camera())
+    settings= FileManager.load('\ConfigFiles\settings.toml', 'toml')
+    
     FileManager.save(p, properetiesFileName)
 
     Mouse = createObject()
@@ -366,55 +331,6 @@ async def main():
 
 
     
-    Character = createObject("Character")
-    Character.ConfigData = MainComponent.ConfigData(     # type: ignore
-        dirFileName = 'CharacterProperties',
-        fileType = "toml"
-        )
-    Character.Transform = MainComponent.Transform(     # type: ignore
-        xPosition=Character.ConfigData.configFile["body"]["xpos"],     # type: ignore
-        yPosition=Character.ConfigData.configFile["body"]["ypos"],     # type: ignore
-        zPosition=Character.ConfigData.configFile["body"]["zpos"],     # type: ignore
-        )
-    Character.Renderer = MainComponent.Renderer(     # type: ignore
-        Transform = Character.Transform,     # type: ignore
-        xOffset=0,
-        yOffset=0,
-        xLength=20,
-        yLength=20,
-        path='Assets\Images\hehe.png',
-        tier=5,
-        )
-    Character.Controller = MainComponent.Controller()     # type: ignore
-    Character.Collider = MainComponent.Collider(     # type: ignore
-        Transform = Character.Transform,     # type: ignore
-        xLength = 20,
-        yLength = 20,
-        Objects = Objects,
-        )
-    Character.RigidBody = MainComponent.RigidBody(     # type: ignore
-        Transform = Character.Transform,     # type: ignore
-        Collider = Character.Collider,     # type: ignore
-        mass = 5,
-        )
-    print(Character.ConfigData)     # type: ignore
-    Character.Character=Component.Character(     # type: ignore
-        ConfigData = Character.ConfigData,     # type: ignore
-        Transform = Character.Transform,     # type: ignore
-        Renderer = Character.Renderer,     # type: ignore
-        Controller = Character.Controller,     # type: ignore
-        Collider = Character.Collider,     # type: ignore
-        RigidBody = Character.RigidBody,     # type: ignore
-        )
-    Character = createComplexObject("Character", 
-        Controller = Character.Controller,     # type: ignore
-        ConfigData = Character.ConfigData,      # type: ignore
-        Transform = Character.Transform,      # type: ignore
-        Renderer = Character.Renderer,      # type: ignore
-        Collider = Character.Collider,      # type: ignore
-        RigidBody = Character.RigidBody,      # type: ignore
-        Character = Character.Character     # type: ignore
-        )
     print("HeHa!")
 
     platData = {

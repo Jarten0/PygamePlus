@@ -6,10 +6,8 @@ import pygame as pyg
 import Scripts.timer  as Timer
 import Scripts.boards as Boards
 import Scripts.input  as Input
-from Scripts.Components.componentDependencyDecorators import *
+from Scripts.componentManager import *
 Main = __import__("__main__")
-
-
 
 #Standard naming conventions: camelCaseForRegularVariables, AlwaysUppercaseForComponents
 #To create a component, copy and study the template below. You can also study any of the built in components aswell
@@ -70,14 +68,6 @@ class DependenciesTemplate():   #Best practices are to not use inheritance. Keep
         #self.OtherTransform = dependencies["Transform3"]
 
         pass #Feel free to study the other components given
-
-@dependencyWrapper(requiredDependencies={
-}) # type: ignore
-class Camera():
-    @initializationWrapper
-    def initialize(self, dependencies:dict, *args) -> None:
-        self.xPosition = 0
-        self.yPosition = 0
 
 #Used to check as to whether the selected item is colliding with the object
 #This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
@@ -228,6 +218,13 @@ class Controller():
     def initialize(self, dependencies: dict, **kwargs) -> None:
         pass
 
+    def getDown(self, key):
+        if Boards.getFromPerm(key) == True:
+            return True
+        return False
+
+    def getHeld(self, key):
+        return(Controller.currentInputs[key])
 
     def update(self):
         pass
@@ -239,7 +236,7 @@ class Controller():
             for keyToCheck in range(len(Main.input[actionToCheck])):
                 if self.getKeyHeld(Main.input[actionToCheck][keyToCheck], eventsGetHeld):
                     Boards.appendToPerm(True, actionToCheck)
-                    self.currentInputs[actionToCheck] = True
+                    Controller.currentInputs[actionToCheck] = True
                     break
                 else:
                     Boards.appendToPerm(False, actionToCheck)
@@ -270,4 +267,3 @@ class ConfigData():
             from tomllib import load       
             with open(getcwd()+'\ConfigFiles\\' + f'{self.fileName}' + '.toml', "rb" ) as f:
                 self.configFile = load(f)
-        
