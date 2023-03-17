@@ -9,16 +9,20 @@ def _findNextAvailableID(List):
 componentList = {}
 
 def _init():
-    for i in os.listdir(os.getcwd()+'\Scripts\Components'):
+    for i in os.listdir(os.getcwd()+"\\Scripts\\Components"):
         if i in {"templateCutscene.py", "__pycache__"}:
             continue
-        moduleSpec = importlib.util.spec_from_file_location(i, os.getcwd()+'\Scripts\Components\ ' - ' ' + i)
+        moduleSpec = importlib.util.spec_from_file_location(name=i, location=os.getcwd()+"\\Scripts\\Components\\" + i)
+        if isinstance(moduleSpec, None.__class__):
+            continue
+        if isinstance(moduleSpec.loader, None.__class__):
+            continue
         module = importlib.util.module_from_spec(moduleSpec)
         moduleSpec.loader.exec_module(module)
-        componentList[i] = module    
+        componentList[i] = module
         if 'init_' in module.__dir__():        
-            if module.init_['OnStart'] == True:
-                module.create()
+            if module.init__['OnStart'] == True:
+                module.create__()
 
 def _parametrized(dec, *args, **kwargs): #This is not my code but it works
     def layer(*args2, **kwargs2):
@@ -44,6 +48,7 @@ def initalizeOnStartWrapper_(componentCreateFunc):
     def wrapper():
         componentCreateFunc.__class__.initOnStart__ = True
         componentCreateFunc()
+    wrapper.__name__ = componentCreateFunc.__name__
     return wrapper
 
 @_parametrized
@@ -71,7 +76,7 @@ requiredDependencies:dict={},
             return super(Component, cls).__new__(cls)
         
         try:
-            @initialComponent.__initialize # type: ignore
+            @initialComponent.initialize__ # type: ignore
             def __init__(self, *args, **kwargs) -> None:
                 self.dependencies = {}
                 for i in Component.missLog:
@@ -83,7 +88,7 @@ requiredDependencies:dict={},
             error = f"InitializationFunctionMissing: No initialize function in {name}! Add missing function using template (run script as main for template)"
             raise Exception(error)
         except TypeError as te:
-            error = f"InitializationWrapperMissing: No @initializationWrapper decorater in {name}! Add missing @decorater using template (run script as main for template)"
+            error = f"InitializationWrapperMissing: No @initializationWrapper_ decorater in {name}! Add missing @decorater using template (run script as main for template)"
             raise Exception(error)
 
     Component.__name__ = name+"(Wrapped)"

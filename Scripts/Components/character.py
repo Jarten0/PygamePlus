@@ -3,13 +3,13 @@ import Scripts.Components.components as MainComponent
 import Scripts.timer  as Timer
 import Scripts.boards as Boards
 import Scripts.input  as Input
-from Scripts.componentDependencyDecorators import *
+from Scripts.componentManager import *
 Main = __import__("__main__")
 
 
 #This is responsible for all of the actions a Character can do
 #Mostly used for the player character
-@dependencyWrapper(requiredDependencies={
+@dependencyWrapper_(requiredDependencies={
     "Transform" : MainComponent.Transform ,
     "Renderer"  : MainComponent.Renderer  ,
     "Controller": MainComponent.Controller,
@@ -22,8 +22,8 @@ class Character():
         'OnStart': True
 
     }
-    @initOnCreate
-    def __create() -> MainComponent.DependenciesTemplate:
+    @initalizeOnStartWrapper_
+    def create__() -> MainComponent.DependenciesTemplate:
         Character = Main.createObject("Character")
         Character.ConfigData = MainComponent.ConfigData(     # type: ignore
             dirFileName = 'CharacterProperties',
@@ -40,7 +40,7 @@ class Character():
             yOffset=0,
             xLength=20,
             yLength=20,
-            path='Assets\Images\hehe.png',
+            path="Assets\\Images\\hehe.png",
             tier=5,
             )
         Character.Controller = MainComponent.Controller()     # type: ignore
@@ -48,7 +48,7 @@ class Character():
             Transform = Character.Transform,     # type: ignore
             xLength = 20,
             yLength = 20,
-            Objects = Objects,
+            Objects = Main.Objects,
             )
         Character.RigidBody = MainComponent.RigidBody(     # type: ignore
             Transform = Character.Transform,     # type: ignore
@@ -74,8 +74,8 @@ class Character():
             )
         return Character
 
-    @initializationWrapper
-    def __initialize(self, dependencies, **kwargs) -> None:
+    @initializationWrapper_
+    def initialize__(self, dependencies, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.Renderer = dependencies["Renderer"]
         self.ConfigData = dependencies["ConfigData"]
@@ -109,7 +109,7 @@ class Character():
         self.DCsuper = 0
         self.DChyper = 0
 
-    def __update(self):
+    def update__(self):
         if Timer.get('dashcool') == True and self.RigidBody.grounded and self.dashState == False and self.dashLeave == False:
             self.dashes = 1            
             self.color = self.Renderer.colors["red"]

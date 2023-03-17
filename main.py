@@ -1,3 +1,4 @@
+LogInConsole = True
 print("\n" * 10)
 #Import And Initialize ===========================================================================================================
 import Scripts.EZPickle as FileManager
@@ -13,6 +14,7 @@ import Scripts.dev as dev
 
 import Scripts.Components.character as CharacterComponent
 import Scripts.Components.components as MainComponent 
+import Scripts.Components.camera as CameraComponent
 import Scripts.platforms as platform
 
 import Scripts.boards as Boards
@@ -21,12 +23,6 @@ import Scripts.timer as Timer
 from sys import exit
 from copy import copy
 
-programPath = os.getcwd()
-
-Settings = FileManager.load('\ConfigFiles\settings.toml', 'toml')
-if isinstance(Settings, bool):
-    raise Exception('Critical file missing!: \ConfigFiles\settings.toml')
-LogInConsole = Settings['LogInConsole']
 
 #Setup ====================================================================================================================
 class Level():
@@ -130,7 +126,7 @@ def startPlatformingScene() -> str:
         Timer.set(name, value, up)
     fREEZEFRAMES = 0
 
-    input = FileManager.load(inputsFileName)
+    input = FileManager.load(programPath+"\\Save Data\\input mappings.dat")
     if input == False:
         input = InputManager.defaultInputs
     currentInputs = {
@@ -146,8 +142,11 @@ def startPlatformingScene() -> str:
             "RIGHT": False,
         }
 
-    ComponentManager.init()
+    global Character, Camera
+    Character = CharacterComponent.Character.create__()
+    Camera = CameraComponent.Camera.create__(Character=Character)
 
+    ComponentManager._init()
     CutsceneManager.init()
     settings = FileManager.load('ConfigFiles\settings.toml', type="toml")
     level = Level("Level 0", platData[100], 500, 500)
@@ -283,61 +282,38 @@ async def platformingTick():
     
 
 
-#Cutscene Handler =================================================
-    for cutscene in CutsceneManager.cutsceneList.values():
-        
-        cutsceneStartResult = cutscene.startCheck(cutscenePropRefDict)
-        
-        if cutsceneStartResult is bool:
-            if cutsceneStartResult:
-                CutsceneManager.cutsceneActive = True
-                cutscene.start(cutscenePropRefDict)
-        
-        elif cutsceneStartResult is dict:
-            if cutsceneStartResult["trigger"]:
-                if platform.collision.check(char.x, char.y, char.xl, char.yl, cutsceneStartResult["triggerHitbox"]["x"], cutsceneStartResult["triggerHitbox"]["y"], cutsceneStartResult["triggerHitbox"]["xl"], cutsceneStartResult["triggerHitbox"]["yl"])[0]:
-                    CutsceneManager.cutsceneActive = True
-                    cutscene.start(cutscenePropRefDict)
-    
-    if CutsceneManager.cutsceneActive:
-        cutscene = CutsceneManager.cutsceneList[CutsceneManager.cutsceneID]
-        
-        cutscene.update(cutscenePropRefDict)
-        if cutscene.endCheck(cutscenePropRefDict):
-            CutsceneManager.cutsceneActive = False
-
 
 
     Timer.tick()
-    clock.tick(p.fps)
     
-    p.game_timer += ((1 * p.fps) / 60) / 60
-    p.total_ticks += 1
-    delta = (((1 * p.fps) / 60) / 60) / renderframeavg 
+    Settings.gameTimer += ((1 * p.fps) / 60) / 60
+    Settings.totalTicks += 1 
 
 #---------------------------------------------------------------------------------------------------------------------------
 async def main():
-    global settings, clock, screen, font, platData, sky, Camera, Mouse, Objects, LogInConsole, \
-    fREEZEFRAMES, level, p, delta, devMode, input, currentInputs, \
-    Character
-    
+    global Settings, clock, screen, font, platData, sky, Camera, Mouse, Objects, LogInConsole, \
+    fREEZEFRAMES, level, delta, devMode, input, currentInputs, \
+    Character, programPath
+
+    programPath = os.getcwd()
+
+    Settings = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml')
+    if isinstance(Settings, bool):
+        raise Exception('Critical file missing!: \ConfigFiles\settings.toml')
+    LogInConsole = Settings['LogInConsole']
+
+
+
     pyg.init()
 
     Objects = {}
-
-
-    Camera = createObject(MainComponent.Camera())
-    settings= FileManager.load('\ConfigFiles\settings.toml', 'toml')
     
-    FileManager.save(p, properetiesFileName)
-
     Mouse = createObject()
     font = pyg.font.Font('freesansbold.ttf', 32)
     clock = pyg.time.Clock()
-    screen = pyg.display.set_mode((p.screen_width, p.screen_height))
+    screen = pyg.display.set_mode((Settings["Screen"]["screen_width"], Settings["Screen"]["screen_height"]))
     pyg.display.set_caption('Platformer')
-    sky = createObject()
-    sky = createComplexObject()
+    sky = MainComponent.Template()
     sky.surface = pyg.image.load(programPath+'\Assets\Images\SkyBox.png').convert()
 
 

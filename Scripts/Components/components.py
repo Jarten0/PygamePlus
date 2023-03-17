@@ -2,10 +2,12 @@ from sys import exit
 if __name__ == "__main__":
     print(r"Cannot run components script as main :/")
     exit()
-import pygame as pyg
+import pygame         as pyg
 import Scripts.timer  as Timer
 import Scripts.boards as Boards
 import Scripts.input  as Input
+from   os         import getcwd
+from   tomllib    import load       
 from Scripts.componentManager import *
 Main = __import__("__main__")
 
@@ -17,7 +19,7 @@ class Template():
 #The decoraters used in DependenciesTemplate are not required at all if you do not wish to import
 #any dependencies from any other objects. The component itself can still be used for dependencies
 #with or without the decorater. ! Note the difference in function names, however ! 'def __init__(self)' is fine
-#to use if you are not using the decoraters, though if you are it must be replaced with 'def initialize(self, dependencies)'
+#to use if you are not using the decoraters, though if you are it must be replaced with 'def initialize__(self, dependencies)'
 #else the decoraters will fail to function. Keep that in mind as you add new components.
     def __init__(self, *whateverArgumetsYouWant, **kwargs): #**kwargs to catch any loose keyword arguments if you wish
 
@@ -29,10 +31,10 @@ class Template():
         pass
 
 #Handles all positioning aspects of an object in world space
-@dependencyWrapper(requiredDependencies={}) # type: ignore
+@dependencyWrapper_(requiredDependencies={}) # type: ignore
 class Transform():
-    @initializationWrapper
-    def initialize(self,
+    @initializationWrapper_
+    def initialize__(self,
     xPosition:int=0, yPosition:int=0, zPosition:int=0, xVelocity:int=0, yVelocity:int=0, **kwargs) -> None:
         self.xPosition = xPosition
         self.yPosition = yPosition
@@ -40,13 +42,13 @@ class Transform():
         self.xVelocity = xVelocity
         self.yVelocity = yVelocity
     
-    def update(self):
+    def update__(self):
         self.xPosition += self.xVelocity
         self.yPosition += self.yVelocity
 
 #How these dependency wrappers work (the @ function) is where it takes in a set amount of dependencies, 
 # and will add in missing depenndences if a required one is missing, at set default values. 
-@dependencyWrapper(requiredDependencies={
+@dependencyWrapper_(requiredDependencies={
     "Transform": Transform
 })     # type: ignore  (The use of this is to ignore vscode warnings, there is an error when inputting dependencies into decoraters.)
     #"Transform": Transform,  #To input a required dependency, input the name of the class as a string in the key.
@@ -57,9 +59,9 @@ class DependenciesTemplate():   #Best practices are to not use inheritance. Keep
     #You can also throw any general class variables here incase you so wish
     #accessibleValue = 5
 
-    @initializationWrapper      #This should be right under an 'initialize' function.
-    def initialize(self, dependencies, keywordArgument, *args, **kwargs): #IT IS REQUIRED to have this named 'initialize' 
-    #if you use the @dependencyWrapper, else it will pull up an error
+    @initializationWrapper_      #This should be right under an 'initialize' function.
+    def initialize__(self, dependencies, keywordArgument, *args, **kwargs): #IT IS REQUIRED to have this named 'initialize' 
+    #if you use the @dependencyWrapper_, else it will pull up an error
 
         #You can now initialize whatevver variables you wish
         #DependenciesTemplate.accessibleValue += 3
@@ -72,20 +74,20 @@ class DependenciesTemplate():   #Best practices are to not use inheritance. Keep
 #Used to check as to whether the selected item is colliding with the object
 #This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
 #activation area. If you want to add collisions, use this in tangent with RigidBody
-@dependencyWrapper(requiredDependencies={
+@dependencyWrapper_(requiredDependencies={
     "Transform": Transform 
     }
 )# type: ignore
 class Collider():
-    @initializationWrapper
-    def initialize(self, dependencies:dict, Objects:dict={}, xLength:int=50, yLength:int=50, **kwargs):
+    @initializationWrapper_
+    def initialize__(self, dependencies:dict, Objects:dict={}, xLength:int=50, yLength:int=50, **kwargs):
         self.Transform = dependencies["Transform"]
         self.xLength = xLength
         self.yLength = yLength
         self.Objects = Objects #Used as a pointer
         self.collideList = []
 
-    def update(self):
+    def update__(self):
         for i in self.Objects:
             checkList = self.check(i)
             if checkList[0]:
@@ -129,19 +131,19 @@ class Collider():
 
 #Used to handle collisions and other physical forces
 #Use with a Collider to properly collide with other objects that have Colliders 
-@dependencyWrapper(requiredDependencies={
+@dependencyWrapper_(requiredDependencies={
     "Transform": Transform, "Collider": Collider
     })# type: ignore
 class RigidBody():
 
-    @initializationWrapper
-    def initialize(self, dependencies: dict, mass:int=0, **kwargs) -> None:
+    @initializationWrapper_
+    def initialize__(self, dependencies: dict, mass:int=0, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.Collider = dependencies["Collider"]
         self.mass = mass
         self.grounded = True
 
-    def update(self) -> None:
+    def update__(self) -> None:
         if not self.grounded:
             if self.Transform.yVelocity < self.mass: 
                 self.Transform.yVelocity += self.mass / 100
@@ -166,7 +168,7 @@ class RigidBody():
                 self.Transform.xPosition = item.yPosition - item.Collider.yLength
 
 #Renders an object either via image or rectangle
-@dependencyWrapper(requiredDependencies={
+@dependencyWrapper_(requiredDependencies={
     "Transform": Transform
     }) # type: ignore
 class Renderer():
@@ -177,15 +179,15 @@ class Renderer():
     "gray":  (30,  30,  30 ),
     }
 
-    @initializationWrapper
-    def initialize(self, dependencies: dict,
+    @initializationWrapper_
+    def initialize__(self, dependencies: dict,
         path: str = '', tier: int = 3, xOffset:int=0, yOffset:int=0, xLength:int=0, yLength:int=0, 
         color=colors["gray"], alpha: int = 0, **kwargs) -> None:
             
         if path == '':    
-            self.path = '\Assets\Images\MissingImage.png'
+            self.path = "\\Assets\\Images\\MissingImage.png"
             #print(f"{self.__repr__()}/Renderer: No path argument found! Add 'path=None' or 'path=<path name>' to the initializer")
-        self.surface = pyg.image.load(Main.programPath+'\Assets\Images\SkyBox.png')
+        self.surface = pyg.image.load(Main.programPath+"\\Assets\\Images\\SkyBox.png")
         
         self.Transform = dependencies["Transform"]
         self.tier    = tier
@@ -203,27 +205,25 @@ class Renderer():
         "flipVertical"  : False,
         }
 
-    def update(self):
+    def update__(self):
         Main.renderQueue[self] = (self, self.tier, self.Transform.zPosition)
     
     def flip(self, flipVertically: bool = False, value: str | bool = "invert"):
-        
         try:
-        
             direction = 'flipHorizontal'
             if flipVertically == True:
                 direction = 'flipVertical'
-
+            if isinstance(value, str):
+                value = 'invert'
             if value == 'invert':
-                value == self.flags[direction]
-        
-            self.flags[dir] = value
+                value = not self.flags[direction]
+            self.flags[direction] = value
         
         except KeyError as ke:
             return ke
         
 #Allows one to get inputs to be used by a scripting component
-@dependencyWrapper(requiredDependencies={})# type: ignore
+@dependencyWrapper_(requiredDependencies={})# type: ignore
 class Controller():
     defaultInputs = {
         "up":    False, 
@@ -239,8 +239,11 @@ class Controller():
         }
     currentInputs = defaultInputs
    
-    @initializationWrapper
-    def initialize(self, dependencies: dict, **kwargs) -> None:
+    @initializationWrapper_
+    def initialize__(self, dependencies: dict, **kwargs) -> None:
+        pass
+
+    def update__(self):
         pass
 
     def getDown(self, key):
@@ -251,10 +254,8 @@ class Controller():
     def getHeld(self, key):
         return(Controller.currentInputs[key])
 
-    def update(self):
-        pass
 
-    def classUpdate(self):
+    def classUpdate__(self):
         eventsGet = pyg.event.get()
         eventsGetHeld = pyg.key.get_pressed()
         for actionToCheck in Input.defaultInputKeys:
@@ -281,14 +282,12 @@ class Controller():
         return True
 
 #Grabs data from a config file for use
-@dependencyWrapper(requiredDependencies={})# type: ignore
+@dependencyWrapper_(requiredDependencies={})# type: ignore
 class ConfigData():
-    @initializationWrapper
-    def initialize(self, dirFileName: str = "", fileType: str = "toml", *args, **kwargs) -> None:
+    @initializationWrapper_
+    def initialize__(self, dirFileName: str = "", fileType: str = "toml", *args, **kwargs) -> None:
         self.fileName = dirFileName
         self.fileType = fileType
         if self.fileType == "toml":
-            from os import getcwd
-            from tomllib import load       
-            with open(getcwd()+'\ConfigFiles\\' + f'{self.fileName}' + '.toml', "rb" ) as f:
+            with open(getcwd()+"\\ConfigFiles\\" + self.fileName + '.toml', "rb" ) as f:
                 self.configFile = load(f)
