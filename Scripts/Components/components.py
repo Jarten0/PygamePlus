@@ -206,9 +206,19 @@ class Renderer():
     def update(self):
         Main.renderQueue[self] = (self, self.tier, self.Transform.zPosition)
     
-    def flip(self, dir=''):
+    def flip(self, flipVertically: bool = False, value: str | bool = "invert"):
+        
         try:
-            self.flags[]
+        
+            direction = 'flipHorizontal'
+            if flipVertically == True:
+                direction = 'flipVertical'
+
+            if value == 'invert':
+                value == self.flags[direction]
+        
+            self.flags[dir] = value
+        
         except KeyError as ke:
             return ke
         

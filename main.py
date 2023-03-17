@@ -110,14 +110,14 @@ async def renderWithDict(dictObj) -> None:
         drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
 
 async def renderWithObj(rendererObj) -> None:
-    drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset
-    rendererObj.alpha)
+    drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset,
+    )
 
 def drawRect(color, x, y, xl, yl):
     pyg.draw.rect(screen, color, (x - Camera.xpos, y - Camera.ypos, xl, yl))
 
 def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0, alpha=0):
-    screen.blit(imageObject, (x - xOffset - Camera.xpos, y - yOffset - Camera.ypos), special_flags=)
+    screen.blit(imageObject, (x - xOffset - Camera.xpos, y - yOffset - Camera.ypos))
 
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
