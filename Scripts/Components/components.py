@@ -179,23 +179,38 @@ class Renderer():
 
     @initializationWrapper
     def initialize(self, dependencies: dict,
-        path: str = "", tier: int = 3, xOffset:int=0, yOffset:int=0, xLength:int=0, yLength:int=0, color=colors["gray"], **kwargs) -> None:
-        
-        self.path = path    
-        if path == "":    
-            self.path = r'\Assets\Images\MissingImage.png'
+        path: str = '', tier: int = 3, xOffset:int=0, yOffset:int=0, xLength:int=0, yLength:int=0, 
+        color=colors["gray"], alpha: int = 0, **kwargs) -> None:
+            
+        if path == '':    
+            self.path = '\Assets\Images\MissingImage.png'
             #print(f"{self.__repr__()}/Renderer: No path argument found! Add 'path=None' or 'path=<path name>' to the initializer")
-
+        self.surface = pyg.image.load(Main.programPath+'\Assets\Images\SkyBox.png')
+        
         self.Transform = dependencies["Transform"]
         self.tier    = tier
+        self.xOffset, self.yOffset, self.xLength, self.yLength = \
+        xOffset, yOffset, xLength, yLength
         self.xOffset = xOffset
         self.yOffset = yOffset
         self.xLength = xLength
         self.yLength = yLength
         self.color   = color
+        self.alpha   = alpha
+
+        self.flags = {
+        "flipHorizontal": False,
+        "flipVertical"  : False,
+        }
 
     def update(self):
         Main.renderQueue[self] = (self, self.tier, self.Transform.zPosition)
+    
+    def flip(self, dir=''):
+        try:
+            self.flags[]
+        except KeyError as ke:
+            return ke
         
 #Allows one to get inputs to be used by a scripting component
 @dependencyWrapper(requiredDependencies={})# type: ignore

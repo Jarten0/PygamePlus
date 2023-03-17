@@ -67,32 +67,40 @@ def createComplexObject(name, *args, **kwargs) -> MainComponent.DependenciesTemp
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
 async def drawCurrentFrame(renderQueue, **kwargs) -> None:
-    drawImage(sky, 0, 0)
+    
     sortRenderQueue(renderQueue)
+    
     asyncioRenderTasks = []
+    
+    drawImage(sky, x=0, y=0, xOffset=0, yOffset=0)
+
     for i in renderQueue:
         if isinstance(i, dict):
-            asyncioRenderTasks[] = asyncio.create_task(renderWithDict(i))
+            asyncioRenderTasks [ NextID(asyncioRenderTasks) ] = asyncio.create_task( renderWithDict(i) )
         elif isinstance(i, MainComponent.Renderer):
-            asyncioRenderTasks[] = asyncio.create_task(renderWithObj(i)) 
+            asyncioRenderTasks [ NextID(asyncioRenderTasks) ] = asyncio.create_task( renderWithObj(i)  ) 
         else:
             print(f"RenderQueue: {i} does not have a function for rendering and thus failed to render.")
-    done, pending = await asyncio.wait(asyncioRenderTasks)
-
+    
+    await asyncio.wait(asyncioRenderTasks)
+    
     pyg.display.flip()
 
 def sortRenderQueue(renderQueue) -> dict:
     tempRenderQueue = []
     returnedRenderQueue = {}
+
     for i in renderQueue:
         tempRenderQueue.append((renderQueue[i].tier, renderQueue[i].Transform.zPosition, renderQueue[i]))
     tempRenderQueue.sort()
+    
     for i in tempRenderQueue:
         tier, zPosition, value = i
         returnedRenderQueue[tempRenderQueue.index(i)] = value
+
     return returnedRenderQueue
 
-def renderWithDict(dictObj) -> None:
+async def renderWithDict(dictObj) -> None:
     if isinstance(dictObj["path"], type(None)):
         drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
         return
@@ -101,14 +109,15 @@ def renderWithDict(dictObj) -> None:
     except FileNotFoundError as fnfe:
         drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
 
-def renderWithObj(rendererObj) -> None:
-    drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset)
+async def renderWithObj(rendererObj) -> None:
+    drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset
+    rendererObj.alpha)
 
 def drawRect(color, x, y, xl, yl):
     pyg.draw.rect(screen, color, (x - Camera.xpos, y - Camera.ypos, xl, yl))
 
-def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0):
-    screen.blit(imageObject, (x - xOffset - Camera.xpos, y - yOffset - Camera.ypos))
+def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0, alpha=0):
+    screen.blit(imageObject, (x - xOffset - Camera.xpos, y - yOffset - Camera.ypos), special_flags=)
 
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
@@ -328,8 +337,8 @@ async def main():
     screen = pyg.display.set_mode((p.screen_width, p.screen_height))
     pyg.display.set_caption('Platformer')
     sky = createObject()
-    sky = createComplexObject(k,ihyz)
-    sky = pyg.image.load(programPath+r"\Assets\Images\SkyBox.png").convert()
+    sky = createComplexObject()
+    sky.surface = pyg.image.load(programPath+'\Assets\Images\SkyBox.png').convert()
 
 
     
