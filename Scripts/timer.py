@@ -1,4 +1,9 @@
-from main import NextID
+def NextID(itemList:dict, name:str='') -> str:
+    keylist = itemList.keys()
+    for i in range(len(itemList)):
+        if not name+str(i) in keylist:
+            return name+str(i)
+    return name+str(len(itemList))
 
 UpList = {}
 DownList = {}

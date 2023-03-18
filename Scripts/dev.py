@@ -1,16 +1,7 @@
 import Scripts.EZPickle as FileManager
-import Scripts.platforms as platform
+#import Scripts.platforms as platform
 import pygame as pyg
-from main import drawRect
-lis = {
-"scwd": 1000,
-"schi": 1000,
-"bgcol": (100, 100, 255),
-"fps": 240,
-"renderfps": 60,
-"grid": 10,
-"Coyote Time": 10,
-}
+#from main import drawRect
 devpause = False
 def cmd():
     devpause = True
@@ -32,8 +23,6 @@ def cmd():
     """
 
 def createTempPlat(mousepos, mouseposx, mouseposy, tempx, tempy, select):
-    (abs(mousepos[0]) + mousepos[0])/2
-    #print(mousepos, mouseposx, mouseposy, tempx, tempy, select)
     tempx2 = mouseposx
     tempy2 = mouseposy
     if tempx < tempx2:

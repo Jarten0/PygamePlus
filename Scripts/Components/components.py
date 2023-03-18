@@ -35,7 +35,8 @@ class Template():
 class Transform():
     @initializationWrapper_
     def initialize__(self,
-    xPosition:float=0, yPosition:float=0, zPosition:int=0, xVelocity:float=0, yVelocity:float=0, rotation:float = 0 **kwargs) -> None:
+    xPosition:float=0, yPosition:float=0, zPosition:int=0, \
+        xVelocity:float=0, yVelocity:float=0, rotation:float = 0, **kwargs) -> None:
         self.xPosition = xPosition
         self.yPosition = yPosition
         self.zPosition = zPosition #Z position is used for rendering order purposes, the lower the higher priority
@@ -73,7 +74,7 @@ class DependenciesTemplate():   #Best practices are to not use inheritance. Keep
         pass #Feel free to study the other components given
 
 #Is responsible for containing all of a room's data
-@dependencyWrapper_(requiredDependencies={})
+@dependencyWrapper_(requiredDependencies={}) #type: ignore
 class PlatformSceneData():
     @initializationWrapper_
     def initialize__(self, dependencies, name, plat: dict, length: int = 20000, height: int = 20000):
@@ -191,6 +192,14 @@ class Renderer():
     "gray":  (30,  30,  30 ),
     }
 
+    @initializeOnStartWrapper_
+    def create__(self, name:str='New Renderer'):
+        self.Transform = Transform()
+        renderer = Renderer(Transform=self.Transform) #type: ignore
+        if not isinstance(renderer, Renderer):
+            return
+        return renderer, name
+
     @initializationWrapper_
     def initialize__(self, dependencies: dict,
         path: str = '', tier: int = 3, xOffset:int=0, yOffset:int=0, xLength:int=0, yLength:int=0, 
@@ -299,9 +308,37 @@ class Controller():
 @dependencyWrapper_(requiredDependencies={})# type: ignore
 class ConfigData():
     @initializationWrapper_
-    def initialize__(self, dirFileName: str = "", fileType: str = "toml", *args, **kwargs) -> None:
+    def initialize__(self, dependencies, dirFileName: str = "", fileType: str = "toml", *args, **kwargs) -> None:
+        print("Init", dirFileName, args, kwargs)
         self.fileName = dirFileName
         self.fileType = fileType
         if self.fileType == "toml":
             with open(getcwd()+"\\ConfigFiles\\" + self.fileName + '.toml', "rb" ) as f:
                 self.configFile = load(f)
+
+@dependencyWrapper_(requiredDependencies={}) #type: ignore
+class Mouse():
+    @initializationWrapper_
+    def initialize__(self, dependencies) -> None:
+        print("A?")
+        print("Objects", Main.Objects)
+        self.Camera = Main.Objects['Camera']
+        print("B!")
+        self.placestage = 0
+        self.select = 1
+        self.tempx = 0
+        self.tempy = 0 
+        self.down = False
+        self.pos = pyg.mouse.get_pos()
+        self.pos = (self.pos[0], self.pos[1])
+        self.posx = round((self.pos[0]), 0)
+        self.posy = round((self.pos[1]), 0)
+        self.list = pyg.mouse.get_pressed(num_buttons=5)
+        print("Done")
+
+    def update__(self):
+        self.pos =  pyg.mouse.get_pos()
+        self.pos = (self.pos[0] + self.Camera.xpos, self.pos[1] + self.Camera.ypos)
+        self.posx = round((self.pos[0]/Main.Settings.grid), 0)*Main.Settings.grid
+        self.posy = round((self.pos[1]/Main.Settings.grid), 0)*Main.Settings.grid
+        self.list = pyg.mouse.get_pressed(num_buttons=5)

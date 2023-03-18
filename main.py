@@ -15,6 +15,7 @@ import Scripts.componentManager as ComponentManager
 import pygame as pyg # type: ignore
 import Scripts.dev as dev
 
+
 import Scripts.Components.character as CharacterComponent
 import Scripts.Components.components as MainComponent 
 import Scripts.Components.camera as CameraComponent
@@ -26,7 +27,6 @@ import Scripts.timer as Timer
 from sys import exit
 from copy import copy
 
-
 #Setup ====================================================================================================================
 def timeFunction(func):
     def timerWrapper() -> None:
@@ -37,41 +37,57 @@ def timeFunction(func):
     timerWrapper.__name__ = func.__name__
     return timerWrapper
 
-def NextID(itemList) -> int:
+def NextID(itemList:dict, name:str='') -> str:
     keylist = itemList.keys()
     for i in range(len(itemList)):
-        if not i in keylist:
-            name = i
-            return name
-    return len(itemList)
+        if not name+str(i) in keylist:
+            return name+str(i)
+    return name+str(len(itemList))
 
+def createObject(
+name:str | int = "", 
+class_:type = MainComponent.Template, 
+*args, **kwargs) -> object:
 
-def createObject(name="") -> MainComponent.Template: #type: ignore
+    condition = 'create__' in dir(class_)
+    print("CCC", class_, condition, dir(class_))
+    if condition:
+        object, name = class_.create__(*args, **kwargs) #type: ignore
+    else:
+        print("Success?", class_.__name__, args, kwargs)
+        object = class_(*args, **kwargs)
+        print("Yes?")
     if name == "" or name in Objects:
-        name = NextID(Objects)
-    object = MainComponent.Template()
-    Objects[name] = object #type: ignore
+        name = NextID(Objects, 'New Object')
+    Objects[name] = object
     return object
 
-def createComplexObject(name: str='', class_:type=MainComponent.DependenciesTemplate, *args, **kwargs) -> MainComponent.DependenciesTemplate | type:
+def createComplexObject(
+name:str = '', 
+class_:type = MainComponent.DependenciesTemplate, 
+*args, **kwargs) ->  type | bool:
+    print("Creating Complex Object: ", class_)
     object = class_(*args, **kwargs)
     if not isinstance(object, class_):
-        return
-    Objects[name.__name__] = object
+        return False
+    Objects[name] = object
     return object
 
 async def loadingScreen():
+    loadingImage = pyg.image.load(programPath+'\\Assets\\Images\\loading.png').convert()
     while readyToGo == False:
-        drawImage()
+        screen.blit(source=loadingImage, 
+        dest=(10, 10))
+        clock.tick(50)
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
 async def drawCurrentFrame(renderQueue, **kwargs) -> None:
     
     sortRenderQueue(renderQueue)
     
-    asyncioRenderTasks = []
+    asyncioRenderTasks = {}
     
-    drawImage(sky, x=0, y=0, xOffset=0, yOffset=0)
+    drawImage(sky.surface, x=0, y=0, xOffset=0, yOffset=0)
 
     for i in renderQueue:
         if isinstance(i, dict):
@@ -99,28 +115,88 @@ def sortRenderQueue(renderQueue) -> dict:
     return returnedRenderQueue
 
 async def renderWithDict(dictObj) -> None:
-    if isinstance(dictObj["path"], type(None)):
+    if not 'image' in dictObj \
+        and 'path' in dictObj:
+        
+        try:
+            dictObj['image'] = pyg.image.load(dictObj['path'])
+        except FileNotFoundError as fnfe:
+            dictObj['image'] = missingImage
+    
+    if not 'path' in dictObj:
         drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
         return
-    try:
-        drawImage(dictObj["path"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
-    except FileNotFoundError as fnfe:
-        drawImage(r"Assets\Images\MissingImage.png", dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
-
+    
+    drawImage(dictObj['image'], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
+        
 async def renderWithObj(rendererObj) -> None:
-    drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset,
+    drawImage(rendererObj.surface, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset,
     )
 
-def drawRect(color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int):
+def drawRect(color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
     pyg.draw.rect(screen, color, (int(x) - int(Camera.xpos), int(y) - int(Camera.ypos), int(xl), int(yl)))
 
-def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0, alpha=0):
-    screen.blit(dest=imageObject, area=(x - xOffset - Camera.xpos, y - yOffset - Camera.ypos))
+def drawImage(imageObject:pyg.Surface, x:int|float = 0, y:int|float = 0, xOffset:int|float = 0, yOffset:int|float = 0, alpha:int|float = 0) -> None:
+    if 'Camera' in Objects:
+        Camera = Objects['Camera']
+    else:
+        raise Exception("Camera object is not initialized! Render failed.")
+    screen.blit(source=imageObject, dest=(int(x) - int(xOffset) - Camera.xpos, int(y) - int(yOffset) - Camera.ypos))
 
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
 def startPlatformingScene() -> str:
+    global fREEZEFRAMES, level, devMode, input, currentInputs, sky, \
+    Settings, Character, Camera, renderQueue, missingImage, Mouse, font, \
+    input, Objects, UpdateObjects
+
+
+
+
     devMode = False
+
+
+    print("Not stuck!")
+    Objects = {}
+    UpdateObjects = {}
+    renderQueue = {}
+
+    
+    Character = createObject("Character", CharacterComponent.Character)
+    print("Camera.")
+    Camera = createObject("Camera", CameraComponent.Camera)
+
+    print("Here")
+
+    missingImage = pyg.image.load(programPath+"\\Assets\\Images\\MissingImage.png").convert()
+    print("There")
+
+    Mouse = createObject('Mouse', MainComponent.Mouse)
+    print("aha!")
+    font = pyg.font.Font('freesansbold.ttf', 32)
+    print("Everywhere")
+
+    sky = createObject\
+    (
+    'sky', 
+        MainComponent.Renderer \
+        ( 
+            surface = pyg.image.load \
+            (
+                programPath+'\\Assets\\Images\\SkyBox.png'
+            ).convert()
+        )               #type: ignore
+    )
+
+    platData = {
+        0: None,
+    #100 - 199 are levels in the game
+        100: {},
+    #200 - 299 are names of the levels
+        200: "Level 0",
+    }
+
+
     
     #Just initialize all the timers that need it
     for i in { ("dashcool", 20, False), ("grace", 0, True),
@@ -146,24 +222,23 @@ def startPlatformingScene() -> str:
             "RIGHT": False,
         }
 
-    global Character, Camera
-    Character = CharacterComponent.Character.create__()
-    Camera = CameraComponent.Camera.create__(Character=Character)
+    
 
     ComponentManager._init()
     CutsceneManager.init()
-    settings = FileManager.load('ConfigFiles\settings.toml', type="toml")
+    Settings = FileManager.load('ConfigFiles\settings.toml', type="toml")
     level = Level("Level 0", platData[100], 500, 500)
     data = FileManager.load('Save Data\platform info.dat')
     if data == False:
         data = platData
     level = Level(name=data[100], plat=data[100], length=20000, height=20000)
 
-    Mouse.placestage = 0
-    Mouse.select = 1
-    Mouse.tempx = 0
-    Mouse.tempy = 0 
-    Mouse.down = False
+    
+    #Add all objects with update__ functions to main
+    for i in Objects:
+        if 'update__' in dir(Objects[i]):
+            UpdateObjects[i] = Objects[i]
+    
     return "Done"
 
 async def platformingTick():
@@ -191,11 +266,7 @@ async def platformingTick():
         fREEZEFRAMES -= 1
         return "freezeFrame"
 
-    Mouse.pos = pyg.mouse.get_pos()
-    Mouse.pos = (Mouse.pos[0] + Camera.xpos, Mouse.pos[1] + Camera.ypos)
-    Mouse.posx = round((Mouse.pos[0]/p.grid), 0)*p.grid
-    Mouse.posy = round((Mouse.pos[1]/p.grid), 0)*p.grid
-    Mouse.list = pyg.mouse.get_pressed(num_buttons=5)
+    
 
 
 #Extra Input From Player (For dev use) =========================================================================================================
@@ -281,8 +352,8 @@ async def platformingTick():
         if MainComponent.Renderer in dir(objectToRender):
             renderQueue[str(objectToRender)] = objectToRender.Renderer
 
-    for obj in Object.values():
-        obj.update()
+    for obj in UpdateObjects.values():
+        obj.update__()
     
 
 
@@ -290,52 +361,45 @@ async def platformingTick():
 
     Timer.tick()
     
-    Settings.gameTimer += ((1 * p.fps) / 60) / 60
-    Settings.totalTicks += 1 
+    Settings['gameTimer' ] += 1 / 60 # type: ignore
+    Settings['totalTicks'] += 1  # type: ignore
+
+    return 'complete'
 
 #---------------------------------------------------------------------------------------------------------------------------
 async def main():
-    global Settings, clock, screen, font, platData, sky, Camera, Mouse, Objects, LogInConsole, \
-    fREEZEFRAMES, level, delta, devMode, input, currentInputs, \
-    Character, programPath, renderQueue, readyToGo
+    global Settings, clock, screen, LogInConsole, programPath, readyToGo
 
     programPath = os.getcwd()
-
     Settings = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml')
     if isinstance(Settings, bool):
-        raise Exception('Critical file missing!: \ConfigFiles\settings.toml')
+        raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
     LogInConsole = Settings['LogInConsole']
+    
+    pyg.init()
+    screen = pyg.display.set_mode((Settings["Screen"]["screen_width"], Settings["Screen"]["screen_height"]))
+    pyg.display.set_icon(pyg.image.load(programPath+"\\Assets\\Images\\loading.png").convert())
+    pyg.display.set_caption('Platformer')
+
+    clock = pyg.time.Clock()
     readyToGo = False
 
-    pyg.init()
-    asyncioTasks = [asyncio.create_task(loadingScreen())] 
 
-    Objects = {}
-    renderQueue = {}
+
+    #Activate Loading screen
+    # asyncioTasks = [asyncio.create_task(loadingScreen())] 
 
     
-    Mouse = createObject()
-    font = pyg.font.Font('freesansbold.ttf', 32)
-    clock = pyg.time.Clock()
-    screen = pyg.display.set_mode((Settings["Screen"]["screen_width"], Settings["Screen"]["screen_height"]))
-    pyg.display.set_caption('Platformer')
-    sky = MainComponent.Template()
-    sky.surface = pyg.image.load(programPath+'\Assets\Images\SkyBox.png').convert()
-
-    platData = {
-        0: None,
-    #100 - 199 are levels in the game
-        100: {},
-    #200 - 299 are names of the levels
-        200: "Level 0",
-    }
 
     startPlatformingScene()
     
+    print("Did we make it?")
 
-
+    #Leave loading screen
     readyToGo = True
-    await asyncio.wait(asyncioTasks)
+    # await asyncio.wait(asyncioTasks)
+
+    print("We did?!")
 
     #Run physics 60 times per second
     while True:
@@ -354,3 +418,4 @@ async def main():
 if __name__ == "__main__":
     print("\n"*3)
     asyncio.run(main())
+    

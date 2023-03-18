@@ -18,28 +18,24 @@ Main = __import__("__main__")
     "RigidBody" : MainComponent.RigidBody ,
 }) # type: ignore
 class Character():
-    init_ = {
-        'OnStart': True,
-        'OnCollision': False
-    }
-
-    def start__():
+    def start__(self) -> object:
         return Character.create__()
 
-    @initalizeOnStartWrapper_
-    def create__() -> MainComponent.DependenciesTemplate:
-        character = Main.createObject("Character")
+    @initializeOnStartWrapper_
+    def create__() -> object:
+        print("Ran")
+        character = Main.createObject("Character", Character)
         character.ConfigData = MainComponent.ConfigData(     # type: ignore
             dirFileName = 'CharacterProperties',
             fileType = "toml"
             )
         character.Transform = MainComponent.Transform(     # type: ignore
-            xPosition=character.ConfigData.configFile["body"]["xpos"],     # type: ignore
-            yPosition=character.ConfigData.configFile["body"]["ypos"],     # type: ignore
-            zPosition=character.ConfigData.configFile["body"]["zpos"],     # type: ignore
+            xPosition=character.ConfigData.configFile["body"]["xpos"],    
+            yPosition=character.ConfigData.configFile["body"]["ypos"],    
+            zPosition=character.ConfigData.configFile["body"]["zpos"],    
             )
         character.Renderer = MainComponent.Renderer(     # type: ignore
-            Transform = character.Transform,     # type: ignore
+            Transform = character.Transform,    
             xOffset=0,
             yOffset=0,
             xLength=20,
@@ -47,39 +43,42 @@ class Character():
             path="Assets\\Images\\hehe.png",
             tier=5,
             )
-        character.Controller = MainComponent.Controller()     # type: ignore
+        character.Controller = MainComponent.Controller()    
         character.Collider = MainComponent.Collider(     # type: ignore
-            Transform = character.Transform,     # type: ignore
+            Transform = character.Transform,    
             xLength = 20,
             yLength = 20,
             Objects = Main.Objects,
             )
         character.RigidBody = MainComponent.RigidBody(     # type: ignore
-            Transform = character.Transform,     # type: ignore
-            Collider = character.Collider,     # type: ignore
+            Transform = character.Transform,    
+            Collider = character.Collider,    
             mass = 5,
             )
         character.character=Character(     # type: ignore
-            ConfigData = character.ConfigData,     # type: ignore
-            Transform = character.Transform,     # type: ignore
-            Renderer = character.Renderer,     # type: ignore
-            Controller = character.Controller,     # type: ignore
-            Collider = character.Collider,     # type: ignore
-            RigidBody = character.RigidBody,     # type: ignore
+            ConfigData = character.ConfigData,    
+            Transform = character.Transform,    
+            Renderer = character.Renderer,    
+            Controller = character.Controller,    
+            Collider = character.Collider,    
+            RigidBody = character.RigidBody,    
             )
-        character = Main.createComplexObject("Character", type=Character,
-            Controller = character.Controller,     # type: ignore
-            ConfigData = character.ConfigData,      # type: ignore
-            Transform = character.Transform,      # type: ignore
-            Renderer = character.Renderer,      # type: ignore
-            Collider = character.Collider,      # type: ignore
-            RigidBody = character.RigidBody,      # type: ignore
-            character = character.Character     # type: ignore
+        character = Main.createComplexObject("Character", class_=Character,
+            Controller = character.Controller,    
+            ConfigData = character.ConfigData,    
+            Transform = character.Transform,      
+            Renderer = character.Renderer,      
+            Collider = character.Collider,      
+            RigidBody = character.RigidBody,    
+            character = character.Character     
             )
+        if not isinstance(character, Character):
+            return
         return character
 
     @initializationWrapper_
     def initialize__(self, dependencies, **kwargs) -> None:
+        print("InitDir", dir(self))
         self.Transform = dependencies["Transform"]
         self.Renderer = dependencies["Renderer"]
         self.ConfigData = dependencies["ConfigData"]

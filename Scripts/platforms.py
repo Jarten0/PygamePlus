@@ -48,7 +48,7 @@ class Platform():
         "yl": 10,
         "#object": True},
     }
-    @initializeWrapper_
+    @initializationWrapper_
     def initialize__(self, Transform: MainComponent.Transform, Renderer: MainComponent.Renderer,
     xLength:int, yLength:int, platformType:int) -> None:
         self.Transform = Transform
@@ -57,49 +57,53 @@ class Platform():
         self.type  = platformType
         self.color = platcolors[self.platformType]
 
-    class types():
-        def wall(self, prop, character) -> None:
-            pTBC = prop["platformToBeChecked"]
-            if wallcheck[1]:       
+    def update__(self):
+        pass
+
+class types():
+    def wall(self, prop, char) -> None:
+        
+        pTBC = prop["platformToBeChecked"]
+        if wallcheck[1]:       
+            char.gr = True
+            char.y = pTBC.y - char.yl  
+            char.yv = 0
+            Timer.set("CoyoteTime", 0, True)
+        
+        if wallcheck[2] or wallcheck[4]:
+            char.wj = True
+            char.w = [wallcheck[2], wallcheck[4]]
+    
+    def passthrough(self, prop) -> None:
+        wallcheck = prop["wallcheck"]
+        char = prop["char"]
+        pTBC = prop["platformToBeChecked"]
+        if wallcheck[1]:
+            if char.yv >= 0 and not Boards.getFromPerm("down"):           
                 char.gr = True
                 char.y = pTBC.y - char.yl  
                 char.yv = 0
+                #Timer.set("dashcool", True)
                 Timer.set("CoyoteTime", 0, True)
-            
-            if wallcheck[2] or wallcheck[4]:
-                    char.wj = True
-                    char.w = [wallcheck[2], wallcheck[4]]
-        
-        def passthrough(self, prop) -> None:
-            wallcheck = prop["wallcheck"]
-            char = prop["char"]
-            pTBC = prop["platformToBeChecked"]
-            if wallcheck[1]:
-                if char.yv >= 0 and not Boards.getFromPerm("down"):           
-                    char.gr = True
-                    char.y = pTBC.y - char.yl  
-                    char.yv = 0
-                    #Timer.set("dashcool", True)
-                    Timer.set("CoyoteTime", 0, True)
 
-        def lava(self, prop) -> None:
-            if prop["wallcheck"][0]:
-                prop["char"].die()
-        
-        def bounce(self, prop) -> None:
-            char = prop["char"]
-            if prop["wallcheck"][0]:
-                char.resetDash()
-                char.yv = -22
-                if char.xv > char.speed:
-                    char.xv = char.speed
-                elif char.xv < -char.speed:
-                    char.xv = -char.speed     
+    def lava(self, prop) -> None:
+        if prop["wallcheck"][0]:
+            prop["char"].die()
+    
+    def bounce(self, prop) -> None:
+        char = prop["char"]
+        if prop["wallcheck"][0]:
+            char.resetDash()
+            char.yv = -22
+            if char.xv > char.speed:
+                char.xv = char.speed
+            elif char.xv < -char.speed:
+                char.xv = -char.speed     
+            
+    functionList = {
+        1: wall,
+        2: passthrough,
+        3: lava,
+        4: bounce,
+    }
                 
-        functionList = {
-            1: wall,
-            2: passthrough,
-            3: lava,
-            4: bounce,
-        }
-                    

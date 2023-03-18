@@ -13,15 +13,15 @@ Main = __import__("__main__")
     'Controller': MainComponent.Controller,
 }) # type: ignore
 class Camera():
-    @initalizeOnStartWrapper_
-    def create__(Character) -> MainComponent.DependenciesTemplate:
+    @initializeOnStartWrapper_
+    def create__() -> MainComponent.DependenciesTemplate:
         Camera = Main.createObject()
         Camera.Transform = MainComponent.Transform()
         Camera.Controller = MainComponent.Controller()
         Camera = Main.createComplexObject(
+            name = 'Camera',
             Transform= Camera.Transform,
             Controller=Camera.Controller,
-            Character=Camera.Character
         )
         
         return Camera
@@ -35,13 +35,14 @@ class Camera():
         self.Transform = Transform
         self.Controller = Controller
 
-    def update__(self):
-        if char == None:
+    def update__(self) -> None:
+        if 'Character' in Main.Objects:
+            char = Main.Objects['Character']
+        else:
             self.xpos = 0
             self.ypos = 0
             return
-        char = self.Character
-
+    
         if char.direction == 'left':
             focusPointx = char.Transform.xPosition - 20
 
