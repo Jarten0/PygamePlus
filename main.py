@@ -1,14 +1,17 @@
-LogInConsole = True
-print("\n" * 10)
+if __name__ == "__main__":
+    LogInConsole = True
+    print("\n" * 10)
+
 #Import And Initialize ===========================================================================================================
+import os
+import asyncio
+import time
+
 import Scripts.EZPickle as FileManager
 import Scripts.input as InputManager
 import Scripts.cutsceneManager as CutsceneManager
 import Scripts.componentManager as ComponentManager
 
-import os
-import asyncio
-import time
 import pygame as pyg # type: ignore
 import Scripts.dev as dev
 
@@ -25,19 +28,13 @@ from copy import copy
 
 
 #Setup ====================================================================================================================
-class Level():
-    def __init__(self, name, plat, length = 200, height = 200):
-        self.name = name
-        self.plat = plat
-        self.length = length * 20
-        self.height = height * 20
-
 def timeFunction(func):
     def timerWrapper() -> None:
         start = time.time()
         func()
         end = time.time()
         print(f"{func.__name__} took {start - end} seconds to run")
+    timerWrapper.__name__ = func.__name__
     return timerWrapper
 
 def NextID(itemList) -> int:
@@ -48,6 +45,7 @@ def NextID(itemList) -> int:
             return name
     return len(itemList)
 
+
 def createObject(name="") -> MainComponent.Template: #type: ignore
     if name == "" or name in Objects:
         name = NextID(Objects)
@@ -55,11 +53,16 @@ def createObject(name="") -> MainComponent.Template: #type: ignore
     Objects[name] = object #type: ignore
     return object
 
-def createComplexObject(name, *args, **kwargs) -> MainComponent.DependenciesTemplate:
-    object = MainComponent.DependenciesTemplate(*args, **kwargs) # type: ignore
+def createComplexObject(name: str='', class_:type=MainComponent.DependenciesTemplate, *args, **kwargs) -> MainComponent.DependenciesTemplate | type:
+    object = class_(*args, **kwargs)
+    if not isinstance(object, class_):
+        return
     Objects[name.__name__] = object
     return object
 
+async def loadingScreen():
+    while readyToGo == False:
+        drawImage()
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
 async def drawCurrentFrame(renderQueue, **kwargs) -> None:
@@ -79,7 +82,6 @@ async def drawCurrentFrame(renderQueue, **kwargs) -> None:
             print(f"RenderQueue: {i} does not have a function for rendering and thus failed to render.")
     
     await asyncio.wait(asyncioRenderTasks)
-    
     pyg.display.flip()
 
 def sortRenderQueue(renderQueue) -> dict:
@@ -109,23 +111,25 @@ async def renderWithObj(rendererObj) -> None:
     drawImage(rendererObj.path, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset,
     )
 
-def drawRect(color, x, y, xl, yl):
-    pyg.draw.rect(screen, color, (x - Camera.xpos, y - Camera.ypos, xl, yl))
+def drawRect(color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int):
+    pyg.draw.rect(screen, color, (int(x) - int(Camera.xpos), int(y) - int(Camera.ypos), int(xl), int(yl)))
 
 def drawImage(imageObject, x, y, xOffset = 0, yOffset = 0, alpha=0):
-    screen.blit(imageObject, (x - xOffset - Camera.xpos, y - yOffset - Camera.ypos))
+    screen.blit(dest=imageObject, area=(x - xOffset - Camera.xpos, y - yOffset - Camera.ypos))
 
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
 def startPlatformingScene() -> str:
     devMode = False
     
+    #Just initialize all the timers that need it
     for i in { ("dashcool", 20, False), ("grace", 0, True),
         ("CoyoteTime", 0, True), ("dash", 0, False), ("dashleave", 4, False)}:
         (name, value, up) = i
         Timer.set(name, value, up)
     fREEZEFRAMES = 0
 
+    
     input = FileManager.load(programPath+"\\Save Data\\input mappings.dat")
     if input == False:
         input = InputManager.defaultInputs
@@ -153,7 +157,7 @@ def startPlatformingScene() -> str:
     data = FileManager.load('Save Data\platform info.dat')
     if data == False:
         data = platData
-    level = Level(data[100], data[100])
+    level = Level(name=data[100], plat=data[100], length=20000, height=20000)
 
     Mouse.placestage = 0
     Mouse.select = 1
@@ -181,11 +185,11 @@ async def platformingTick():
         screen.blit(text, textRect)
         pyg.display.flip()
         clock.tick(60)
-        return "freezeframe"
+        return "devpause"
 
     if fREEZEFRAMES > 0:
         fREEZEFRAMES -= 1
-        return "early"
+        return "freezeFrame"
 
     Mouse.pos = pyg.mouse.get_pos()
     Mouse.pos = (Mouse.pos[0] + Camera.xpos, Mouse.pos[1] + Camera.ypos)
@@ -293,7 +297,7 @@ async def platformingTick():
 async def main():
     global Settings, clock, screen, font, platData, sky, Camera, Mouse, Objects, LogInConsole, \
     fREEZEFRAMES, level, delta, devMode, input, currentInputs, \
-    Character, programPath
+    Character, programPath, renderQueue, readyToGo
 
     programPath = os.getcwd()
 
@@ -301,12 +305,14 @@ async def main():
     if isinstance(Settings, bool):
         raise Exception('Critical file missing!: \ConfigFiles\settings.toml')
     LogInConsole = Settings['LogInConsole']
-
-
+    readyToGo = False
 
     pyg.init()
+    asyncioTasks = [asyncio.create_task(loadingScreen())] 
 
     Objects = {}
+    renderQueue = {}
+
     
     Mouse = createObject()
     font = pyg.font.Font('freesansbold.ttf', 32)
@@ -316,10 +322,6 @@ async def main():
     sky = MainComponent.Template()
     sky.surface = pyg.image.load(programPath+'\Assets\Images\SkyBox.png').convert()
 
-
-    
-    print("HeHa!")
-
     platData = {
         0: None,
     #100 - 199 are levels in the game
@@ -328,15 +330,14 @@ async def main():
         200: "Level 0",
     }
 
-
-
-
-    global renderQueue
-    renderQueue = {    }
-
     startPlatformingScene()
-    #Run physics 20 times per second
+    
 
+
+    readyToGo = True
+    await asyncio.wait(asyncioTasks)
+
+    #Run physics 60 times per second
     while True:
         asyncioTasks = [
             asyncio.create_task(platformingTick()), 

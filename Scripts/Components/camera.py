@@ -11,7 +11,6 @@ Main = __import__("__main__")
 @dependencyWrapper_(requiredDependencies={
     'Transform' : MainComponent.Transform,
     'Controller': MainComponent.Controller,
-    'Character' : CharacterComponent.Character,
 }) # type: ignore
 class Camera():
     @initalizeOnStartWrapper_
@@ -19,7 +18,6 @@ class Camera():
         Camera = Main.createObject()
         Camera.Transform = MainComponent.Transform()
         Camera.Controller = MainComponent.Controller()
-        Camera.Character = Character
         Camera = Main.createComplexObject(
             Transform= Camera.Transform,
             Controller=Camera.Controller,
@@ -30,16 +28,23 @@ class Camera():
 
     @initializationWrapper_
     def initialize__(self, 
-    Transform:  MainComponent.Transform,
-    Character:  CharacterComponent.Character, 
-    Controller: MainComponent.Controller,
-    dependencies:dict, *args) -> None:
+        Transform:  MainComponent.Transform, 
+        Controller: MainComponent.Controller,
+        dependencies:dict, *args) -> None:
+        
         self.Transform = Transform
-        self.Character = Character
         self.Controller = Controller
 
     def update__(self):
+        if char == None:
+            self.xpos = 0
+            self.ypos = 0
+            return
         char = self.Character
+
+        if char.direction == 'left':
+            focusPointx = char.Transform.xPosition - 20
+
         p, level = Main.Settings, Main.level
         if MainComponent.Controller.currentInputs["LEFT"]:
             self.xOffset -= 10

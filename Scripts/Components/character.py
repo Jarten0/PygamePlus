@@ -19,23 +19,27 @@ Main = __import__("__main__")
 }) # type: ignore
 class Character():
     init_ = {
-        'OnStart': True
-
+        'OnStart': True,
+        'OnCollision': False
     }
+
+    def start__():
+        return Character.create__()
+
     @initalizeOnStartWrapper_
     def create__() -> MainComponent.DependenciesTemplate:
-        Character = Main.createObject("Character")
-        Character.ConfigData = MainComponent.ConfigData(     # type: ignore
+        character = Main.createObject("Character")
+        character.ConfigData = MainComponent.ConfigData(     # type: ignore
             dirFileName = 'CharacterProperties',
             fileType = "toml"
             )
-        Character.Transform = MainComponent.Transform(     # type: ignore
-            xPosition=Character.ConfigData.configFile["body"]["xpos"],     # type: ignore
-            yPosition=Character.ConfigData.configFile["body"]["ypos"],     # type: ignore
-            zPosition=Character.ConfigData.configFile["body"]["zpos"],     # type: ignore
+        character.Transform = MainComponent.Transform(     # type: ignore
+            xPosition=character.ConfigData.configFile["body"]["xpos"],     # type: ignore
+            yPosition=character.ConfigData.configFile["body"]["ypos"],     # type: ignore
+            zPosition=character.ConfigData.configFile["body"]["zpos"],     # type: ignore
             )
-        Character.Renderer = MainComponent.Renderer(     # type: ignore
-            Transform = Character.Transform,     # type: ignore
+        character.Renderer = MainComponent.Renderer(     # type: ignore
+            Transform = character.Transform,     # type: ignore
             xOffset=0,
             yOffset=0,
             xLength=20,
@@ -43,36 +47,36 @@ class Character():
             path="Assets\\Images\\hehe.png",
             tier=5,
             )
-        Character.Controller = MainComponent.Controller()     # type: ignore
-        Character.Collider = MainComponent.Collider(     # type: ignore
-            Transform = Character.Transform,     # type: ignore
+        character.Controller = MainComponent.Controller()     # type: ignore
+        character.Collider = MainComponent.Collider(     # type: ignore
+            Transform = character.Transform,     # type: ignore
             xLength = 20,
             yLength = 20,
             Objects = Main.Objects,
             )
-        Character.RigidBody = MainComponent.RigidBody(     # type: ignore
-            Transform = Character.Transform,     # type: ignore
-            Collider = Character.Collider,     # type: ignore
+        character.RigidBody = MainComponent.RigidBody(     # type: ignore
+            Transform = character.Transform,     # type: ignore
+            Collider = character.Collider,     # type: ignore
             mass = 5,
             )
-        Character.Character=Character(     # type: ignore
-            ConfigData = Character.ConfigData,     # type: ignore
-            Transform = Character.Transform,     # type: ignore
-            Renderer = Character.Renderer,     # type: ignore
-            Controller = Character.Controller,     # type: ignore
-            Collider = Character.Collider,     # type: ignore
-            RigidBody = Character.RigidBody,     # type: ignore
+        character.character=Character(     # type: ignore
+            ConfigData = character.ConfigData,     # type: ignore
+            Transform = character.Transform,     # type: ignore
+            Renderer = character.Renderer,     # type: ignore
+            Controller = character.Controller,     # type: ignore
+            Collider = character.Collider,     # type: ignore
+            RigidBody = character.RigidBody,     # type: ignore
             )
-        Character = Main.createComplexObject("Character", 
-            Controller = Character.Controller,     # type: ignore
-            ConfigData = Character.ConfigData,      # type: ignore
-            Transform = Character.Transform,      # type: ignore
-            Renderer = Character.Renderer,      # type: ignore
-            Collider = Character.Collider,      # type: ignore
-            RigidBody = Character.RigidBody,      # type: ignore
-            Character = Character.Character     # type: ignore
+        character = Main.createComplexObject("Character", type=Character,
+            Controller = character.Controller,     # type: ignore
+            ConfigData = character.ConfigData,      # type: ignore
+            Transform = character.Transform,      # type: ignore
+            Renderer = character.Renderer,      # type: ignore
+            Collider = character.Collider,      # type: ignore
+            RigidBody = character.RigidBody,      # type: ignore
+            character = character.Character     # type: ignore
             )
-        return Character
+        return character
 
     @initializationWrapper_
     def initialize__(self, dependencies, **kwargs) -> None:
@@ -88,6 +92,7 @@ class Character():
         
         self.allowControl = True
         self.st = False
+        self.direction = 'left'
         self.canWalljump = False
         self.wallCollisions = None
         self.dead = False
@@ -110,60 +115,87 @@ class Character():
         self.DChyper = 0
 
     def update__(self):
-        if Timer.get('dashcool') == True and self.RigidBody.grounded and self.dashState == False and self.dashLeave == False:
+        #Makes checks to see if the character is able to reset the dash
+        if Timer.get('dashcool') == True \
+            and self.RigidBody.grounded \
+            and self.dashState == False \
+            and self.dashLeave == False:
+
             self.dashes = 1            
             self.color = self.Renderer.colors["red"]
 
-        if self.Controller.getKeyHeld('left') and not self.Controller.getKeyHeld('right'):
-            if self.Transform.xVelocity > -self.speed:
-                self.Transform.xVelocity -= self.acc
+        #Left and right movement
+        if self.Controller.getKeyHeld('left') \
+            and not self.Controller.getKeyHeld('right'):
+            self.direction = 'left'
+            
+            if  self.Transform .xVelocity >- self.speed:
+                self.Transform .xVelocity -= self.acc
+        
             else:
-                self.Transform.xVelocity += self.decel
-        elif self.Controller.getKeyHeld('right') and not self.Controller.getKeyHeld('left'):
-            if self.Transform.xVelocity < self.speed:
-                self.Transform.xVelocity += self.acc
+                self.Transform .xVelocity += self.decel
+
+        elif    self.Controller.getKeyHeld('right') \
+            and not self.Controller.getKeyHeld('left' ) :
+            self.direction = 'right'
+
+            if  self.Transform .xVelocity <  self.speed:
+                self.Transform .xVelocity += self.acc
+        
             else:
-                self.Transform.xVelocity -= self.decel
+                self.Transform .xVelocity -= self.decel
+        
         else:
-            if   self.Transform.xVelocity <=-self.decel:
-                 self.Transform.xVelocity += self.decel * self.dashSlow
+            if  self.Transform.xVelocity <=-self.decel:
+                self.Transform.xVelocity += self.decel * self.dashSlow
+            
             elif self.Transform.xVelocity >= self.decel:
-                 self.Transform.xVelocity -= self.decel * self.dashSlow
+                self.Transform.xVelocity -= self.decel * self.dashSlow
+            
             else:
                 self.Transform.xVelocity = 0
 
         
 
-#Gravity
+        #Increases gravity if down is held
         if self.Controller.getKeyHeld("down"):
             self.RigidBody.mass = 14
         else:
             self.RigidBody.mass = 7
-#Actions
-        if self.Controller.getKeyHeld("jump") and self.RigidBody.grounded or self.Controller.getKeyHeld("jump") and Timer.get("CoyoteTime", True) < Main.p.coyoteTime:
+
+        #Actions
+        if self.Controller.getKeyHeld("jump") \
+            and self.RigidBody.grounded \
+        or self.Controller.getKeyHeld("jump") \
+            and Timer.get("CoyoteTime", True) < Main.p.coyoteTime:
             print("Jump!")
             Timer.set("CoyoteTime", Main.p.coyoteTime, True)
             self.jump()
 
-        elif self.Controller.getKeyHeld("jump") and self.canWalljump:
+        elif self.Controller.getKeyHeld("jump") \
+            and self.canWalljump:
             print("Walljump!")
             self.walljump(self.wallCollisions)
 
-        if self.Controller.getKeyHeld("dash") and self.dashes > 0 and Timer.get("dashcool"):
+        if self.Controller.getKeyHeld("dash") \
+            and self.dashes > 0 \
+            and Timer.get("dashcool"):
             Timer.set("dashcool", self.dashCooldown )
             Timer.set("dash", self.dashLength )
             self.dashState = True
             Main.fREEZEFRAMES += 2
             self.dash()            
+
         self.dashManager()
 
-#Momentum to actual movement
+        #Resets it afterward so that it doesn't last after it is necessary
         self.canWalljump = False
         
-#Death from void        
+        #Death from void        
         if self.Transform.yPosition > Main.level.height:
             self.die()
 
+        #Wrap the character around if they reach the end, but only one way
         if self.Transform.xPosition < 0:
             self.Transform.xPosition = 0
         elif self.Transform.xPosition > Main.p.screen_width + Main.level.length:
@@ -181,14 +213,15 @@ class Character():
         self.RigidBody.grounded = False
         self.dashSlow = 1
         self.Transform.xVelocity *= 2
+        print("Jump!")
         if self.dashLeave or self.dashState:
-            print("Dash Cancel")
+            print("Dash Cancel!")
             if not self.Transform.xVelocity == 0:
                 self.Transform.xVelocity = abs(self.Transform.xVelocity)/ self.Transform.xVelocity * 24
                 if self.dashList[3] == True:
-                    print("Hyper")
-                    self.Transform.yVelocity = -13
-                    self.Transform.xVelocity *= 3
+                    print("Hyper!")
+                    self.Transform.yVelocity  = -13
+                    self.Transform.xVelocity *=  3
 
     def walljump(self, wallCollisions):
         if wallCollisions[0] and wallCollisions[1]:
@@ -256,7 +289,6 @@ class Character():
             self.dashSlow /= 1.066
         if self.dashSlow < 1:
             self.dashSlow = 1
-        #print(self.dashList, Timer.get("dash"))
 
     def resetDash(self):
         self.dashes = 1

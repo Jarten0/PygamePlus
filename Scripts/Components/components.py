@@ -35,12 +35,13 @@ class Template():
 class Transform():
     @initializationWrapper_
     def initialize__(self,
-    xPosition:int=0, yPosition:int=0, zPosition:int=0, xVelocity:int=0, yVelocity:int=0, **kwargs) -> None:
+    xPosition:float=0, yPosition:float=0, zPosition:int=0, xVelocity:float=0, yVelocity:float=0, rotation:float = 0 **kwargs) -> None:
         self.xPosition = xPosition
         self.yPosition = yPosition
         self.zPosition = zPosition #Z position is used for rendering order purposes, the lower the higher priority
         self.xVelocity = xVelocity
         self.yVelocity = yVelocity
+        self.rotation  = rotation
     
     def update__(self):
         self.xPosition += self.xVelocity
@@ -70,6 +71,17 @@ class DependenciesTemplate():   #Best practices are to not use inheritance. Keep
         #self.OtherTransform = dependencies["Transform3"]
 
         pass #Feel free to study the other components given
+
+#Is responsible for containing all of a room's data
+@dependencyWrapper_(requiredDependencies={})
+class PlatformSceneData():
+    @initializationWrapper_
+    def initialize__(self, dependencies, name, plat: dict, length: int = 20000, height: int = 20000):
+        self.name = name
+        self.plat = plat
+        self.length = length
+        self.height = height
+
 
 #Used to check as to whether the selected item is colliding with the object
 #This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
@@ -188,7 +200,8 @@ class Renderer():
             self.path = "\\Assets\\Images\\MissingImage.png"
             #print(f"{self.__repr__()}/Renderer: No path argument found! Add 'path=None' or 'path=<path name>' to the initializer")
         self.surface = pyg.image.load(Main.programPath+"\\Assets\\Images\\SkyBox.png")
-        
+        self.area    = ()
+
         self.Transform = dependencies["Transform"]
         self.tier    = tier
         self.xOffset, self.yOffset, self.xLength, self.yLength = \
@@ -206,6 +219,7 @@ class Renderer():
         }
 
     def update__(self):
+
         Main.renderQueue[self] = (self, self.tier, self.Transform.zPosition)
     
     def flip(self, flipVertically: bool = False, value: str | bool = "invert"):

@@ -23,6 +23,8 @@ def _init():
         if 'init_' in module.__dir__():        
             if module.init__['OnStart'] == True:
                 module.create__()
+        if 'start__' in module.__dir__():
+            module.start__()
 
 def _parametrized(dec, *args, **kwargs): #This is not my code but it works
     def layer(*args2, **kwargs2):
