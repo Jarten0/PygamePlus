@@ -7,8 +7,7 @@ import os
 import asyncio
 import time
 
-import Scripts.EZPickle as FileManager
-import Scripts.input as InputManager
+from Scripts.EZPickle import FileManager
 import Scripts.cutsceneManager as CutsceneManager
 import Scripts.componentManager as ComponentManager
 
@@ -21,23 +20,38 @@ import Scripts.Components.components as MainComponent
 import Scripts.Components.camera as CameraComponent
 import Scripts.platforms as platform
 
-import Scripts.boards as Boards
-import Scripts.timer as Timer
+from Scripts.boards     import  Boards
+from Scripts.timer      import  Timer
+from Scripts.inputMapper import Input
+
 
 from sys import exit
-from copy import copy
+from copy import copy, deepcopy
 
 #Setup ====================================================================================================================
+def logFunc(func):
+    def wrapper(*args, **kwargs):
+        print(f"""LOGFUNC: 
+funcName: {func.__name__}
+funcStr : {func.__str__()}
+funcArgs: {args, kwargs}
+""")
+        func(*args, **kwargs)
+
+    wrapper.__name__ = func.__name__
+    return wrapper
+
 def timeFunction(func):
-    def timerWrapper() -> None:
+    def timerWrapper(*args2, **kwargs2) -> None:
         start = time.time()
-        func()
+        func(*args2, **kwargs2)
         end = time.time()
         print(f"{func.__name__} took {start - end} seconds to run")
     timerWrapper.__name__ = func.__name__
     return timerWrapper
 
-def NextID(itemList:dict, name:str='') -> str:
+def NextID(itemList:dict, name:str|int='') -> str:
+    name = str(name)
     keylist = itemList.keys()
     for i in range(len(itemList)):
         if not name+str(i) in keylist:
@@ -45,27 +59,43 @@ def NextID(itemList:dict, name:str='') -> str:
     return name+str(len(itemList))
 
 def createObject(
-name:str | int = "", 
-class_:type = MainComponent.Template, 
+name_:str | int | None = None, 
+class_:type = MainComponent.DependenciesTemplate, 
 *args, **kwargs) -> object:
 
-    condition = 'create__' in dir(class_)
-    print("CCC", class_, condition, dir(class_))
-    if condition:
-        object, name = class_.create__(*args, **kwargs) #type: ignore
-    else:
-        print("Success?", class_.__name__, args, kwargs)
-        object = class_(*args, **kwargs)
-        print("Yes?")
+    if name_ == None or name_ in Objects:
+        name_ = NextID(Objects, 'New Object')
+
+    if 'create__' in dir(class_):
+        try:
+            createdObject = class_.create__(*args, **kwargs) #type: ignore
+        except:
+            print("\n\n!!!!!!!!!!\n", class_.__name__, " create__ error: Something went wrong, go fix it.\n", sep='')
+            raise
+        if not isinstance(createdObject, class_):
+            raise Exception(f"{dir(class_), args, kwargs}\n\n\nError?? {createdObject, class_.__name__} had an issue. It should only return an object. Check to see if its ")
+        Objects[name_] = createdObject
+        return createdObject
+
+    return createFromTemplate(name=name_, class_=class_, *args, **kwargs)
+
+def createFromTemplate(name:str|int="", 
+        class_:type=MainComponent.DependenciesTemplate,
+        *args, **kwargs) -> None:
     if name == "" or name in Objects:
-        name = NextID(Objects, 'New Object')
+        if name == "":
+            NextID(Objects, 'New Object') 
+        else:
+            NextID(Objects, name=name)
+    object = class_(*args, **kwargs)
     Objects[name] = object
     return object
 
 def createComplexObject(
-name:str = '', 
-class_:type = MainComponent.DependenciesTemplate, 
-*args, **kwargs) ->  type | bool:
+    name:str = '', 
+    class_:type = MainComponent.DependenciesTemplate, 
+    *args, **kwargs) ->  type | bool:
+    
     print("Creating Complex Object: ", class_)
     object = class_(*args, **kwargs)
     if not isinstance(object, class_):
@@ -73,22 +103,28 @@ class_:type = MainComponent.DependenciesTemplate,
     Objects[name] = object
     return object
 
-async def loadingScreen():
-    loadingImage = pyg.image.load(programPath+'\\Assets\\Images\\loading.png').convert()
+async def loadingScreen() -> None:
+    loadingImage = pyg.image.load(programPath+'\\Assets\\Images\\loading.png')
+    state = 0
     while readyToGo == False:
-        screen.blit(source=loadingImage, 
-        dest=(10, 10))
-        clock.tick(50)
+        screen.fill((0,0,0))
+        screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
+        pyg.display.flip()
+        clock.tick(24)
+        state += 1
+        if state >= 8:
+            state = 0
+
+        
+        
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
-async def drawCurrentFrame(renderQueue, **kwargs) -> None:
+async def drawCurrentFrame(renderQueue:dict) -> None:
     
     sortRenderQueue(renderQueue)
     
     asyncioRenderTasks = {}
     
-    drawImage(sky.surface, x=0, y=0, xOffset=0, yOffset=0)
-
     for i in renderQueue:
         if isinstance(i, dict):
             asyncioRenderTasks [ NextID(asyncioRenderTasks) ] = asyncio.create_task( renderWithDict(i) )
@@ -134,7 +170,7 @@ async def renderWithObj(rendererObj) -> None:
     )
 
 def drawRect(color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
-    pyg.draw.rect(screen, color, (int(x) - int(Camera.xpos), int(y) - int(Camera.ypos), int(xl), int(yl)))
+    pyg.draw.rect(screen, color, (int(x) - int(Camera.Transform.xPosition), int(y) - int(Camera.Transform.yPosition), int(xl), int(yl)))
 
 def drawImage(imageObject:pyg.Surface, x:int|float = 0, y:int|float = 0, xOffset:int|float = 0, yOffset:int|float = 0, alpha:int|float = 0) -> None:
     if 'Camera' in Objects:
@@ -146,46 +182,39 @@ def drawImage(imageObject:pyg.Surface, x:int|float = 0, y:int|float = 0, xOffset
 #---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
 def startPlatformingScene() -> str:
-    global fREEZEFRAMES, level, devMode, input, currentInputs, sky, \
+    global fREEZEFRAMES, level, devMode, sky, \
     Settings, Character, Camera, renderQueue, missingImage, Mouse, font, \
-    input, Objects, UpdateObjects
-
-
-
+    Objects, UpdateObjects, renderQueue
 
     devMode = False
-
-
-    print("Not stuck!")
-    Objects = {}
+    Objects       = {}
     UpdateObjects = {}
-    renderQueue = {}
+    renderQueue   = {}
 
     
-    Character = createObject("Character", CharacterComponent.Character)
-    print("Camera.")
+    Character = createObject(name_="Character", class_=CharacterComponent.Character)
+    print("Where error")
+
     Camera = createObject("Camera", CameraComponent.Camera)
 
-    print("Here")
-
     missingImage = pyg.image.load(programPath+"\\Assets\\Images\\MissingImage.png").convert()
-    print("There")
 
     Mouse = createObject('Mouse', MainComponent.Mouse)
-    print("aha!")
     font = pyg.font.Font('freesansbold.ttf', 32)
-    print("Everywhere")
-
     sky = createObject\
     (
     'sky', 
         MainComponent.Renderer \
         ( 
+            tier = 99,
+            zPosition=99,
             surface = pyg.image.load \
             (
                 programPath+'\\Assets\\Images\\SkyBox.png'
-            ).convert()
-        )               #type: ignore
+            ).convert(),
+
+
+        )
     )
 
     platData = {
@@ -206,21 +235,6 @@ def startPlatformingScene() -> str:
     fREEZEFRAMES = 0
 
     
-    input = FileManager.load(programPath+"\\Save Data\\input mappings.dat")
-    if input == False:
-        input = InputManager.defaultInputs
-    currentInputs = {
-            "up":    False, 
-            "left":  False, 
-            "down":  False,
-            "right": False,
-            "jump":  False,
-            "dash":  False, 
-            "UP":    False, 
-            "LEFT":  False,
-            "DOWN":  False,
-            "RIGHT": False,
-        }
 
     
 
@@ -387,17 +401,18 @@ async def main():
 
 
     #Activate Loading screen
-    # asyncioTasks = [asyncio.create_task(loadingScreen())] 
-
+    asyncioTasks = [asyncio.create_task(loadingScreen())] 
     
 
+    print("Hiya")
     startPlatformingScene()
     
     print("Did we make it?")
 
     #Leave loading screen
+    clock.tick(0.2)
     readyToGo = True
-    # await asyncio.wait(asyncioTasks)
+    await asyncio.wait(asyncioTasks)
 
     print("We did?!")
 
@@ -405,7 +420,7 @@ async def main():
     while True:
         asyncioTasks = [
             asyncio.create_task(platformingTick()), 
-            asyncio.create_task(drawCurrentFrame(copy(renderQueue)))]     # type: ignore
+            asyncio.create_task(drawCurrentFrame(deepcopy(renderQueue)))]     
         done, pending = await asyncio.wait(asyncioTasks)
         for task in done:
             if not task.result() == None:

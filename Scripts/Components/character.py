@@ -1,41 +1,38 @@
 import pygame as pyg
 import Scripts.Components.components as MainComponent
-import Scripts.timer  as Timer
+from Scripts.timer import Timer
 import Scripts.boards as Boards
-import Scripts.input  as Input
+from Scripts.inputMapper  import Input
 from Scripts.componentManager import *
 Main = __import__("__main__")
 
 
 #This is responsible for all of the actions a Character can do
 #Mostly used for the player character
-@dependencyWrapper_(requiredDependencies={
+@dependencyWrapper_
+class Character():
+    requiredDependencies={
     "Transform" : MainComponent.Transform ,
     "Renderer"  : MainComponent.Renderer  ,
-    "Controller": MainComponent.Controller,
     "ConfigData": MainComponent.ConfigData,
     "Collider"  : MainComponent.Collider  ,
     "RigidBody" : MainComponent.RigidBody ,
-}) # type: ignore
-class Character():
-    def start__(self) -> object:
-        return Character.create__()
+}
+
 
     @initializeOnStartWrapper_
-    def create__() -> object:
-        print("Ran")
-        character = Main.createObject("Character", Character)
-        character.ConfigData = MainComponent.ConfigData(     # type: ignore
+    def create__(self, name:str="Character") -> object:
+        ConfigData = MainComponent.ConfigData(
             dirFileName = 'CharacterProperties',
             fileType = "toml"
             )
-        character.Transform = MainComponent.Transform(     # type: ignore
-            xPosition=character.ConfigData.configFile["body"]["xpos"],    
-            yPosition=character.ConfigData.configFile["body"]["ypos"],    
-            zPosition=character.ConfigData.configFile["body"]["zpos"],    
+        Transform = MainComponent.Transform(
+            xPosition=ConfigData.configFile["body"]["xpos"],    
+            yPosition=ConfigData.configFile["body"]["ypos"],    
+            zPosition=ConfigData.configFile["body"]["zpos"],    
             )
-        character.Renderer = MainComponent.Renderer(     # type: ignore
-            Transform = character.Transform,    
+        Renderer = MainComponent.Renderer(
+            Transform = Transform,    
             xOffset=0,
             yOffset=0,
             xLength=20,
@@ -43,50 +40,41 @@ class Character():
             path="Assets\\Images\\hehe.png",
             tier=5,
             )
-        character.Controller = MainComponent.Controller()    
-        character.Collider = MainComponent.Collider(     # type: ignore
-            Transform = character.Transform,    
+        Collider = MainComponent.Collider(
+            Transform = Transform,    
             xLength = 20,
             yLength = 20,
             Objects = Main.Objects,
             )
-        character.RigidBody = MainComponent.RigidBody(     # type: ignore
-            Transform = character.Transform,    
-            Collider = character.Collider,    
+        RigidBody = MainComponent.RigidBody(
+            Transform = Transform,    
+            Collider = Collider,    
             mass = 5,
             )
-        character.character=Character(     # type: ignore
-            ConfigData = character.ConfigData,    
-            Transform = character.Transform,    
-            Renderer = character.Renderer,    
-            Controller = character.Controller,    
-            Collider = character.Collider,    
-            RigidBody = character.RigidBody,    
+        Character_ = Main.createComplexObject(
+            name, class_=Character,
+            ConfigData = ConfigData,    
+            Transform = Transform,      
+            Renderer = Renderer,      
+            Collider = Collider,      
+            RigidBody = RigidBody,    
             )
-        character = Main.createComplexObject("Character", class_=Character,
-            Controller = character.Controller,    
-            ConfigData = character.ConfigData,    
-            Transform = character.Transform,      
-            Renderer = character.Renderer,      
-            Collider = character.Collider,      
-            RigidBody = character.RigidBody,    
-            character = character.Character     
-            )
-        if not isinstance(character, Character):
-            return
-        return character
+        return Character_
 
     @initializationWrapper_
-    def initialize__(self, dependencies, **kwargs) -> None:
-        print("InitDir", dir(self))
-        self.Transform = dependencies["Transform"]
-        self.Renderer = dependencies["Renderer"]
-        self.ConfigData = dependencies["ConfigData"]
-        self.Controller = dependencies["Controller"]
-        self.Collider = dependencies["Collider"]
-        self.RigidBody = dependencies["RigidBody"]
+    def initialize__(self, 
+            ConfigData: MainComponent.ConfigData,    
+            Transform : MainComponent.Transform,      
+            Renderer  : MainComponent.Renderer,      
+            Collider  : MainComponent.Collider,      
+            RigidBody : MainComponent.RigidBody, **kwargs) -> None:
         
-        print(self.ConfigData)
+        self.ConfigData = ConfigData    
+        self.Transform = Transform      
+        self.Renderer = Renderer      
+        self.Collider = Collider     
+        self.RigidBody = RigidBody   
+
         configFile = self.ConfigData.configFile
         
         self.allowControl = True
@@ -113,7 +101,7 @@ class Character():
         self.DCsuper = 0
         self.DChyper = 0
 
-    def update__(self):
+    def update__(self) -> None:
         #Makes checks to see if the character is able to reset the dash
         if Timer.get('dashcool') == True \
             and self.RigidBody.grounded \
@@ -124,8 +112,8 @@ class Character():
             self.color = self.Renderer.colors["red"]
 
         #Left and right movement
-        if self.Controller.getKeyHeld('left') \
-            and not self.Controller.getKeyHeld('right'):
+        if Input.getHeld('left') \
+            and not Input.getHeld('right'):
             self.direction = 'left'
             
             if  self.Transform .xVelocity >- self.speed:
@@ -134,8 +122,8 @@ class Character():
             else:
                 self.Transform .xVelocity += self.decel
 
-        elif    self.Controller.getKeyHeld('right') \
-            and not self.Controller.getKeyHeld('left' ) :
+        elif    Input.getHeld('right') \
+            and not Input.getHeld('left' ) :
             self.direction = 'right'
 
             if  self.Transform .xVelocity <  self.speed:
@@ -157,26 +145,26 @@ class Character():
         
 
         #Increases gravity if down is held
-        if self.Controller.getKeyHeld("down"):
+        if Input.getHeld("down"):
             self.RigidBody.mass = 14
         else:
             self.RigidBody.mass = 7
 
         #Actions
-        if self.Controller.getKeyHeld("jump") \
+        if Input.getHeld("jump") \
             and self.RigidBody.grounded \
-        or self.Controller.getKeyHeld("jump") \
+        or Input.getHeld("jump") \
             and Timer.get("CoyoteTime", True) < Main.p.coyoteTime:
             print("Jump!")
             Timer.set("CoyoteTime", Main.p.coyoteTime, True)
             self.jump()
 
-        elif self.Controller.getKeyHeld("jump") \
+        elif Input.getHeld("jump") \
             and self.canWalljump:
             print("Walljump!")
             self.walljump(self.wallCollisions)
 
-        if self.Controller.getKeyHeld("dash") \
+        if Input.getHeld("dash") \
             and self.dashes > 0 \
             and Timer.get("dashcool"):
             Timer.set("dashcool", self.dashCooldown )
@@ -243,7 +231,7 @@ class Character():
         self.dashes -= 1
         self.dashSlow = 2
         for i in range(4):
-            if self.Controller.getKeyHeld(input[i]):
+            if Input.getHeld(input[i]):
                 self.dashList[i] = True
         if self.dashList == [False, False, False, False]:
             self.dashList[2] = True

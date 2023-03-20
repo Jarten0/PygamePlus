@@ -1,5 +1,5 @@
 SceneType = "main"
-LogInConsole = true
+LogInConsole = false
 
 [Screen]
 screen_width = 1000

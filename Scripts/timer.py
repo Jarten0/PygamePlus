@@ -1,53 +1,59 @@
-def NextID(itemList:dict, name:str='') -> str:
+def _NextID(itemList:dict, name:str='') -> str:
     keylist = itemList.keys()
     for i in range(len(itemList)):
         if not name+str(i) in keylist:
             return name+str(i)
     return name+str(len(itemList))
 
-UpList = {}
-DownList = {}
+_UpList = {}
+_DownList = {}
 
-def tick() -> None:
-    for i in UpList:
-        UpList[i] += 1
-    for i in DownList:
-        if not DownList[i] == True:
-            DownList[i] -= 1
-        if DownList[i] == 0:
-            DownList[i] = True
+def _tick() -> None:
+    for i in _UpList:
+        _UpList[i] += 1
+    for i in _DownList:
+        if not _DownList[i] == True:
+            _DownList[i] -= 1
+        if _DownList[i] == 0:
+            _DownList[i] = True
 
-def set(name = None, value = None, up = None) -> None:
+def _set(name = None, value = None, up = None) -> None:
     if value == None or not up == True:
-        DownList[name] = value
+        _DownList[name] = value
         return
 
     if name == None:
-        name = NextID(UpList)
+        name = _NextID(_UpList)
 
     if value == None:
         value = 0
 
-    UpList[name] = value
+    _UpList[name] = value
     return
 
-def get(name, up = False) -> bool:
+def _get(name, up = False) -> bool:
     if up:
-        return UpList[name]
-    if DownList[name] == True:
+        return _UpList[name]
+    if _DownList[name] == True:
         return True 
     else:
         return False
 
-def getvalue(name, up) -> int:
+def _getvalue(name, up) -> int:
     if up:
-        return UpList[name]
-    return DownList[name]
+        return _UpList[name]
+    return _DownList[name]
 
-def __str__() -> None:
+def ___str__() -> None:
     print("Current Timers:")
-    for i in UpList:
-        print(UpList)
-        print(i,":", UpList[i])
-    for i in DownList:
-        print(i,":", DownList[i])
+    for i in _UpList:
+        print(_UpList)
+        print(i,":", _UpList[i])
+    for i in _DownList:
+        print(i,":", _DownList[i])
+
+class Timer():
+    set = _set
+    get = _get
+    getValue = _getvalue
+    tick = _tick

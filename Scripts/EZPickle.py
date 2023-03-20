@@ -5,7 +5,7 @@ from os import getcwd
 #Used to easily pickle/save a single variable in a particular file
 #Use by calling EZPickle.save([variable you wish to save], [file you wish to save it in])
 #If you want to save multiple variables, then learn to get creative with lists/dictionaries/tuples
-def save(value, filename):
+def _save(value, filename) -> None:
     try:    
         with open(filename, "wb") as file:
             pkd(value, file)
@@ -15,7 +15,7 @@ def save(value, filename):
 
 #Used to easily fetch a single pickled variable in a specified file
 #Use by calling EZPickle.load([name of the file where data is stored])
-def load(file, type = "pickle", programPath=getcwd()) -> dict | bool:
+def _load(file, type = "pickle", programPath=getcwd()) -> dict | bool:
     if type == "toml":
         with open(file, "rb") as f:
             return tomllib.load(f)
@@ -37,3 +37,7 @@ def load(file, type = "pickle", programPath=getcwd()) -> dict | bool:
                 pkd(False, filename)
             return False
     return False
+
+class FileManager():
+    save = _save
+    load = _load

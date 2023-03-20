@@ -1,5 +1,6 @@
-temp = {}
-perm = {
+from typing import Any
+_temp: dict[str|int, Any] = {}
+_perm: dict[str|int, Any] = {
     "jump": False,
     "jumpbuffer": 5,
     "left": False,
@@ -10,32 +11,38 @@ perm = {
     "dashcool": 0,
 }
 
-def appendToTemp(value, key = None):
+def _appendToTemp(value, key: str|None = None) -> str | int:
     if not key == None:
         try:
-            temp[key] = value
+            _temp[key] = value
             return key
         except KeyError:
-            temp[len(temp)] = value
-            return len(temp) - 1    
+            _temp[len(_temp)] = value
+            return len(_temp) - 1    
     else:
-        temp[len(temp)] = value
-        return len(temp) - 1
+        _temp[len(_temp)] = value
+        return len(_temp) - 1
 
-def appendToPerm(value, key = ""):
+def _appendToPerm(value, key: str|None = None) -> str | int:
     if not key == None:
         try:
-            perm[key] = value
+            _perm[key] = value
             return key
         except KeyError:
-            perm[len(temp)] = value
-            return len(perm) - 1    
+            _perm[len(_perm)] = value
+            return len(_perm) - 1    
     else:
-        perm[len(temp)] = value
-        return len(perm) - 1
+        _perm[len(_temp)] = value
+        return len(_perm) - 1
 
-def getFromTemp(key):
-    return perm[key]
+def _getFromTemp(key):
+    return _perm[key]
 
-def getFromPerm(key):
-    return perm[key]
+def _getFromPerm(key):
+    return _perm[key]
+
+class Boards():
+    appendToTemp = _appendToTemp
+    appendToPerm = _appendToPerm
+    getFromTemp = _getFromTemp
+    getFromPerm = _getFromPerm 

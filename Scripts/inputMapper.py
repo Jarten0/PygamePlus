@@ -1,5 +1,13 @@
 import pygame as pyg
-defaultInputs = {
+from Scripts.EZPickle import FileManager
+import Scripts.boards as Boards
+import Scripts.timer as Timer
+from typing import Any
+from os import getcwd
+programPath = getcwd()
+_Main = __import__('__main__')
+
+_defaultInputs: dict[str, list[str]] = {
 #To add or modify an input, simply add or modify a string in the array
 #Keybinds for dev tools (save, load, etc.) are currently not modifiable
 #If your keybind does not have an entry in the keybindlist, add it in the next list below
@@ -16,67 +24,128 @@ defaultInputs = {
     "DOWN":  ["DOWN",  ],
     "RIGHT": ["RIGHT", ], 
     }
-defaultInputKeys = defaultInputs.keys()   
+_defaultInputKeys = _defaultInputs.keys()   
         
-keyBindList = {
+_keyBindList: dict[str, int] = {
     #If you wish to use a button not displayed here, add it by following the examples shown
     #Use pygame documentation if you need to add a unique button
-        "a": pyg.K_a,
-        "b": pyg.K_b,
-        "c": pyg.K_c,
-        "d": pyg.K_d,
-        "e": pyg.K_e,
-        "f": pyg.K_f,
-        "g": pyg.K_g,
-        "h": pyg.K_h,
-        "i": pyg.K_i,
-        "j": pyg.K_j,
-        "k": pyg.K_k,
-        "l": pyg.K_l,
-        "m": pyg.K_m,
-        "n": pyg.K_n,
-        "o": pyg.K_o,
-        "p": pyg.K_p,
-        "q": pyg.K_q,
-        "r": pyg.K_r,
-        "s": pyg.K_s,
-        "t": pyg.K_t,
-        "u": pyg.K_u,
-        "v": pyg.K_v,
-        "w": pyg.K_w,
-        "x": pyg.K_x,
-        "y": pyg.K_y,
-        "z": pyg.K_z,
+    "a": pyg.K_a,
+    "b": pyg.K_b,
+    "c": pyg.K_c,
+    "d": pyg.K_d,
+    "e": pyg.K_e,
+    "f": pyg.K_f,
+    "g": pyg.K_g,
+    "h": pyg.K_h,
+    "i": pyg.K_i,
+    "j": pyg.K_j,
+    "k": pyg.K_k,
+    "l": pyg.K_l,
+    "m": pyg.K_m,
+    "n": pyg.K_n,
+    "o": pyg.K_o,
+    "p": pyg.K_p,
+    "q": pyg.K_q,
+    "r": pyg.K_r,
+    "s": pyg.K_s,
+    "t": pyg.K_t,
+    "u": pyg.K_u,
+    "v": pyg.K_v,
+    "w": pyg.K_w,
+    "x": pyg.K_x,
+    "y": pyg.K_y,
+    "z": pyg.K_z,
 
-        "0": pyg.K_0,
-        "1": pyg.K_1,
-        "2": pyg.K_2,
-        "3": pyg.K_3,
-        "4": pyg.K_4,
-        "5": pyg.K_5,
-        "6": pyg.K_6,
-        "7": pyg.K_7,
-        "8": pyg.K_8,
-        "9": pyg.K_9,
+    "0": pyg.K_0,
+    "1": pyg.K_1,
+    "2": pyg.K_2,
+    "3": pyg.K_3,
+    "4": pyg.K_4,
+    "5": pyg.K_5,
+    "6": pyg.K_6,
+    "7": pyg.K_7,
+    "8": pyg.K_8,
+    "9": pyg.K_9,
 
-        "LEFT": pyg.K_LEFT,
-        "RIGHT": pyg.K_RIGHT,
-        "UP": pyg.K_UP,
-        "DOWN": pyg.K_DOWN,
-        "SHIFT": pyg.K_LSHIFT,
-        "SPACE": pyg.K_SPACE,
-        "TAB": pyg.K_TAB,
-        "BACKSPACE": pyg.K_BACKSPACE,
-        "`": pyg.K_RALT
-        }
-keyBindListKeys = keyBindList.keys()
+    "LEFT": pyg.K_LEFT,
+    "RIGHT": pyg.K_RIGHT,
+    "UP": pyg.K_UP,
+    "DOWN": pyg.K_DOWN,
+    "SHIFT": pyg.K_LSHIFT,
+    "SPACE": pyg.K_SPACE,
+    "TAB": pyg.K_TAB,
+    "BACKSPACE": pyg.K_BACKSPACE,
+    "`": pyg.K_RALT
+}
+_keyBindListKeys = _keyBindList.keys()
 #================================================================================================
 #===== FURTHER CODE SHOULD NOT BE MODIFIED IF YOU ONLY WISH TO CHANGE KEYBINDS ==================
 #================================================================================================
 
-def main():
+_currentInputs = {
+"up":    False, 
+"left":  False, 
+"down":  False,
+"right": False,
+"jump":  False,
+"dash":  False, 
+"UP":    False, 
+"LEFT":  False,
+"DOWN":  False,
+"RIGHT": False,
+}
+_keyBindList = {}
+
+_eventsGet: list[Any] = []
+_eventsGetHeld: Any = None
+
+def _getDown(key) -> bool:
+    if Boards._getFromPerm(key) == True:
+        return True
+    return False
+
+def _getHeld(key) -> bool:
+    return(_currentInputs[key])
+
+def _getKeyDown(input, events = _eventsGet) -> bool:
+    for event in events:
+        if not event.type == pyg.KEYDOWN:
+            return False
+        if not event.key == _keyBindList[input]:
+            return False
+        return True
+    return False
+
+def _getKeyHeld(input, events = _eventsGetHeld) -> bool:
+    if not events[_keyBindList[input]]:
+        return False
+    return True
+
+def _Update_() -> None:
+    _eventsGet = pyg.event.get()
+    _eventsGetHeld = pyg.key.get_pressed()
+    for actionToCheck in _defaultInputKeys:
+        for keyToCheck in range(len(_Main.input[actionToCheck])):
+            if _getKeyHeld(_Main.input[actionToCheck][keyToCheck], _eventsGetHeld):
+                Boards._appendToPerm(True, actionToCheck)
+                _currentInputs[actionToCheck] = True
+                break
+            else:
+                Boards._appendToPerm(False, actionToCheck)
+
+def _setInputMappings() -> None:
+    _input = FileManager.load(programPath+"\\Save Data\\input mappings.dat")
+    if _input == False:
+        _input = _defaultInputs
+    
+
+
+
+
+
+def _main():
     import os, tomllib
-    with open(os.getcwd()+'\ConfigFiles\characterProperties.toml', "rb") as f:
+    with open(os.getcwd()+"\\ConfigFiles\\characterProperties.toml", "rb") as f:
         configFile = tomllib.load(f)
         print(configFile)
     stop = False
@@ -120,13 +189,13 @@ def main():
     while True:
         if stop:
             break
-        for i in defaultInputKeys:
+        for i in _defaultInputKeys:
             if stop:
                 break
             while True:
                 print("\n")
                 word = ''
-                for i2 in defaultInputKeys:
+                for i2 in _defaultInputKeys:
                     if i == i2:
                         word += ">"
                     word += i2 
@@ -145,8 +214,8 @@ def main():
                         if inputFromUser == 'cancel':
                             break
                         elif inputFromUser == 'list':
-                            print("Available input options: ", keyBindListKeys)
-                        elif inputFromUser in keyBindListKeys:
+                            print("Available input options: ", _keyBindListKeys)
+                        elif inputFromUser in _keyBindListKeys:
                             print(f"Binded {inputFromUser} to {i}")
                             configFile[i].append(inputFromUser)
                             break
@@ -170,7 +239,7 @@ def main():
                         print(f"No buttons currently mapped to {i}")
                 elif inputFromUser.lower() == "reset" or inputFromUser == "4":
                     print(f"Reset {i} to default bindings")
-                    configFile[i] = defaultInputKeys[i]
+                    configFile[i] = _defaultInputs[i]
                 elif inputFromUser.lower() == "save" or inputFromUser == "5":
                     print(f"Saving current progress...")
                     
@@ -196,5 +265,17 @@ FileManager.save(configFile, 'Save Data/input mappings.dat')
                 elif inputFromUser == "next" or inputFromUser == "":
                     break
         
+
+
+#Good old interface
+class Input():
+    getDown = _getDown
+    getKeyDown = _getKeyDown
+    getHeld = _getHeld
+    getHeld = _getKeyHeld
+    setInputMappings = _setInputMappings
+    runInputMapper = _main
+
+
 if __name__ == "__main__":
-    main()
+    _main()
