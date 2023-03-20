@@ -6,14 +6,6 @@ from Scripts.inputMapper import Input
 from Scripts.componentManager import *
 Main = __import__("__main__")
 
-def NextID(platformList) -> int:
-    keylist = platformList.keys()
-    #print(keylist, platformList)
-    for i in range(len(platformList)):
-        if not i in keylist:
-            name = i
-            return name
-    return len(platformList)
 
 #This is responsible for all of the actions a Character can do
 #Mostly used for the player character
@@ -21,11 +13,12 @@ def NextID(platformList) -> int:
 class Platform():
     requiredDependencies={
         "Transform" : MainComponent.Transform ,
-        "Renderer"  : MainComponent.Renderer  ,
+        "Renderer"  : False ,
         "ConfigData": False ,
-        "Collider"  : False ,
+        "Collider"  : MainComponent.Collider ,
         "RigidBody" : False ,
     }
+
     
     placeprop = {
     0: {
@@ -50,10 +43,21 @@ class Platform():
         "yl": 10,
         "#object": True},
     }
+
+    def create__(
+        Transform:MainComponent.Transform=MainComponent.Transform,
+        Renderer :MainComponent.Renderer =MainComponent.Transform,
+        ):
+        Transform = Transform
+        Renderer  = Renderer
+
     @initializationWrapper_
-    def initialize__(self, Transform: MainComponent.Transform, Renderer: MainComponent.Renderer,
-    xLength:int, yLength:int, platformType:int) -> None:
+    def initialize__(self, Transform:MainComponent.Transform, Collider:MainComponent.Collider, 
+    xLength:int, yLength:int, platformType:int, Renderer:MainComponent.Renderer|None = None) -> None:
         self.Transform = Transform
+        self.Collider = C
+        self.Renderer = Renderer 
+
         self.xLength = xLength
         self.yLength = yLength
         self.type  = platformType

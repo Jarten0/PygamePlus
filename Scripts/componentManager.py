@@ -57,10 +57,8 @@ def initializationWrapper_(componentInitFunc) -> Callable[..., Callable[..., Non
     return wrapper
 
 def initializeOnStartWrapper_(componentCreate__Func, *args, **kwargs) -> Callable[..., None]:
-    initOnStart__ = True
-    def wrapper() -> None:
-        return componentCreate__Func(*args, **kwargs)
-        
+    def wrapper(*args2, **kwargs2) -> None:
+        return componentCreate__Func(*args, *args2, **kwargs, **kwargs2)
     wrapper.__name__ = componentCreate__Func.__name__
     return wrapper
 
@@ -88,7 +86,6 @@ def dependencyWrapper_(initialComponent):
         try:
             @initialComponent.initialize__
             def __init__(self, *args, **kwargs) -> None:
-                # print(args, kwargs)
                 self.dependencies = {}
                 for i in Component.missLog:
                     try:
