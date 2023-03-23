@@ -1,34 +1,60 @@
 import os, importlib.util
 from typing import Any, Callable
-Main = __import__('__main__')
-def _findNextAvailableID(List) -> int:
-    KeyList = List.keys()
-    for i in range(len(List) + 1):
-        if not i in KeyList:
-            return i
-    return len(List)
+from random import randint
+from main import *; from main import _Components
+def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
+    """Will find an available key in a list. 
+    \nSet randomize to attempt to pick a random ID, and it will set a number between 1 and 10,000,000,000
+    If the size somehow exceeds that length, the list will exit. It also has a cap of such.
+    \nAlso, the list is slightly weird in that it has an impossibly small chance of failing if the
+    amount of attempts to find an untaken ID goes over 10 billion. 
+    You can inspect the code to see what I mean, but it's so insignificant you don't have to worry
+    about it unless your list is for whatever reason billions of items large
+    \nAnd it has a lengthOfList/10billion chance to delay for a completley insignificant amount of time.
+    \nJust know that it's not a perfect solution but that the chances of it going wrong are so small
+    that it basically doesn't even matter at all."""
+    if randomize == False:
+        for i in range(len(List_) + 1):
+            if not i in List_:
+                return i
+    else:
+        if not isinstance(start, int) or not isinstance(stop, int): raise Exception("Invalid argument types! Start/Stop must be int!")
+        else: attempts:set = set(())
                 
-componentList = {}
+        while True:
+            i = int(random.random()*(10**10))
+            if not i in _Components: return i
+            if i in attempts: continue
+            if len(List_) > 10**10 or len(attempts) > 10**10: raise Exception("This list is really big. Like, REALLY BIG. Bigger than 10^10 items. Thats more than 80 GIGABYTES. What in the WORLD did you do to fill it up THIS much?")
+            attempts.append(i)
+    return None
+        
 
 def _init() -> None:
+    blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__'}
     for i in os.listdir(os.getcwd()+"\\Scripts\\Components"):
-        if i in {"templateCutscene.py", "__pycache__"}:
-            continue
+        if i in {"templateCutscene.py", "__pycache__"}:continue
+
         moduleSpec = importlib.util.spec_from_file_location(name=i, location=os.getcwd()+"\\Scripts\\Components\\" + i)
-        if isinstance(moduleSpec, None.__class__):
-            continue
-        if isinstance(moduleSpec.loader, None.__class__):
-            continue
+        
+        if isinstance(moduleSpec, None.__class__):continue
+        if isinstance(moduleSpec.loader, None.__class__):continue
+
         module = importlib.util.module_from_spec(moduleSpec)
         moduleSpec.loader.exec_module(module)
-        componentList[i] = module
+        
+        for i in set(dir(module)):
+            if i in blacklist: continue 
+            _Components[i.ID] = i
+            _ComponentNames[i.__name__] = i.ID
+        
         if 'init_' in module.__dir__():        
             if module.init__['OnStart'] == True:
                 module.create__()
+        
         if 'start__' in module.__dir__():
             module.start__()
-        print(module.__name__, dir(module))
-    
+        
 
 # def _parametrized(dec: Callable[..., Any]) -> Callable[Any, Callable[Any, None]]: #This is not my code but it works #type: ignore
 #     def layer(*args2, **kwargs2) -> Callable[..., None]:
@@ -46,9 +72,6 @@ def initializationWrapper_(componentInitFunc) -> Callable[..., Callable[..., Non
         
         #Run on creation of object
         def initialize(self, *args, **kwargs) -> None:
-            # if __import__('__main__').LogInConsole:
-                # print("Created", self.__str__(), args, kwargs)
-
             self.__name__ = self.__str__()+"Instance"
             dependencyAdder(self, *args, **kwargs)
             componentInitFunc(self=self, dependencies=self.dependencies, *args, **kwargs)
@@ -63,47 +86,60 @@ def initializeOnStartWrapper_(componentCreate__Func, *args, **kwargs) -> Callabl
     return wrapper
 
 def dependencyWrapper_(initialComponent):
+    """Add this decorater to your class to automatically add in custom initialize functions."""
     name = initialComponent.__name__
     if not 'requiredDependencies' in dir(initialComponent):
         initialComponent.requiredDependencies = {}
-        if Main.LogInConsole: print(f"'requiredDependencies' dictionary is missing in {name} definition!") 
+        if LogInConsole_: print(f"'requiredDependencies' dictionary is missing in {name} definition!") 
 
     class Component(initialComponent):  
-        missLog = []
-        active = True
+        missLog_ = []
+        ID = _findNextAvailableID(_Components, randomize=True)
+
         def __new__(cls, givenDependencies:dict={}, *args, **kwargs) -> Any: 
             for i in initialComponent.requiredDependencies.keys():              
                 try:
                     if kwargs[i] == None \
                     and initialComponent.requiredDependencies[i] == True:
-                        Component.missLog.append(initialComponent.requiredDependencies[i])
+                        Component.missLog_.append(initialComponent.requiredDependencies[i])
                 except KeyError as ke:
-                    Component.missLog.append(initialComponent.requiredDependencies[i])
-            if len(Component.missLog) > 0:            
-                if Main.LogInConsole: print(f"ComponentDependencyError: Missing dependencies for {name} initialization!")
+                    Component.missLog_.append(initialComponent.requiredDependencies[i])
+            if len(Component.missLog_) > 0:            
+                if LogInConsole_: print(f"ComponentDependencyError: Missing dependencies for {name} initialization!")
             return super(Component, cls).__new__(cls)
         
         try:
             @initialComponent.initialize__
             def __init__(self, *args, **kwargs) -> None:
                 self.dependencies = {}
-                for i in Component.missLog:
+                for i in Component.missLog_:
                     try:
                         self.dependencies[f"{i}"] = i()
                     except:
                         print("Dependency Adder failed! Make sure that:")
-                        for i in Component.missLog:
+                        for i in Component.missLog_:
                             print(i.__name__)
                         print("Are all present inside of:", name)
                         raise
                 for i in initialComponent.requiredDependencies:
                     self.dependencies[f"{i}"] = i
+
         except AttributeError as ae:
             error = f"InitializationFunctionMissing: No initialize function in {name}! Add missing function using template (run script as main for template)"
             raise Exception(error)
         except TypeError as te:
             error = f"InitializationWrapperMissing: No @initializationWrapper_ decorater in {name}! Add missing @decorater using template (run script as main for template)"
             raise Exception(error)
+
+
+        def rename_(self, newName:str):
+            """Takes in a name to set the object as and tries to set the object's name as it.
+            \nIf it is already taken, it will try appending parenthesis with 
+            a number to try to find an available key. It will return the new name
+            \nExample: \n
+            object.rename_() """
+            Object.get(self)
+
 
     Component.__name__ = name+"(Wrapped)"
     return Component
@@ -121,6 +157,8 @@ class <componentName>:
     def _initialize(self, dependencies):
         <add below for each dependency>
         self.<dependencyName> = dependencies["<dependencyName>"]  """)
+
+
 
 if __name__ == '__main__':
     _main()

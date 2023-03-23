@@ -4,8 +4,7 @@ from Scripts.timer import Timer
 import Scripts.boards as Boards
 from Scripts.inputMapper  import Input
 from Scripts.componentManager import *
-Main = __import__("__main__")
-
+from main import *
 
 #This is responsible for all of the actions a Character can do
 #Mostly used for the player character
@@ -22,16 +21,16 @@ class Character():
 
     @initializeOnStartWrapper_
     def create__(self, name:str="Character") -> object:
-        ConfigData = MainComponent.ConfigData(
+        ConfigData = Component.new('ConfigData',
             dirFileName = 'CharacterProperties',
             fileType = "toml"
             )
-        Transform = MainComponent.Transform(
+        Transform = Component.new('Transform',
             xPosition=ConfigData.configFile["body"]["xpos"],    
             yPosition=ConfigData.configFile["body"]["ypos"],    
             zPosition=ConfigData.configFile["body"]["zpos"],    
             )
-        Renderer = MainComponent.Renderer(
+        Renderer = Component.new('Renderer',
             Transform = Transform,    
             xOffset=0,
             yOffset=0,
@@ -40,18 +39,17 @@ class Character():
             path="Assets\\Images\\hehe.png",
             tier=5,
             )
-        Collider = MainComponent.Collider(
+        Collider = Component.new('Collider',
             Transform = Transform,    
             xLength = 20,
             yLength = 20,
-            Objects = Main.Objects,
             )
-        RigidBody = MainComponent.RigidBody(
+        RigidBody = Component.new('RigidBody',
             Transform = Transform,    
             Collider = Collider,    
             mass = 5,
             )
-        Character_ = Main.createComplexObject(
+        Character_ = Object.new(
             name, class_=Character,
             ConfigData = ConfigData,    
             Transform = Transform,      

@@ -59,12 +59,12 @@ class Collider():
     }
 
     @initializationWrapper_
-    def initialize__(self, dependencies:dict, Objects:dict={}, 
+    def initialize__(self, dependencies:dict,
     xLength:int=50, yLength:int=50, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.xLength = xLength
         self.yLength = yLength
-        self.Objects = Objects #Used as a pointer
+        self.Objects = Object.getAll()
         self.collideList = []
 
     def update__(self):

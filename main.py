@@ -1,6 +1,5 @@
-if __name__ == "__main__":
-    LogInConsole = True
-    print("\n" * 10)
+if __name__ == "__main__": LogInConsole_ = True; print("\n" * 10)
+else: raise ImportError("You cannot import main! do 'from main import *' to get main interfaces.")
 
 #Import And Initialize ===========================================================================================================
 import os
@@ -56,87 +55,151 @@ def NextID(itemList:dict, name:str|int='') -> str:
     for i in range(len(itemList)):
         if not name+str(i) in keylist:
             return name+str(i)
-    return name+str(len(itemList))
+    return name+str(len(itemList))    
 
-def createObject(
+def _newComponent(_class:type = MainComponent.Transform, *args, **kwargs) -> object:
+    """Creates a component instance using its built in initializer
+
+\n  Input the components class from its module by using Component.get statments
+  and feed it into the _class argument
+
+\n  The component it returns will NOT be stored elsewhere, so make sure you assign it to a variable
+  or use it right away
+
+\n  You can also leave _class blank to get a new simple Transform component.
+\n  If the component has any dependencies, make sure you feed them
+  in as keyword arguments. 
+
+\n  Example use case:
+
+\n  from main import *       #imports the Component interface
+\n<...component initiation...>
+\ndef create__()
+\n  transformComponent= Component.new()         #empty parenthesis creates a transform component by default
+\n  colliderComponent = Component.new(Component.get('Collider'), xLength)      #you can either use Component.get('componentName') or
+simply type in the string. Any keywords will also go directly to the object's initializer
+
+\n  rigidBodyComponent = Component.new(Component.get('RigidBody'),
+\n\t  Transform= transformComponent,
+\n\t  Collider = colliderComponent, 
+    \t)
+\n)
+
+\n  SquareObject = Object.new() 
+"""
+    return _class(*args, **kwargs)
+
+def _getComponent(_name:int|str) -> type:
+    """Fetches a class using a name or the component's ID.
+    Returns the class so you can initialize it or set attributes
+    Example"""
+    if isinstance(_name, str):
+        _ID = _ComponentNames[_name]
+    component = _Components[_ID]
+    return component
+
+def _newObject(
 name_:str | int | None = None, 
 class_:type = MainComponent.DependenciesTemplate, 
 *args, **kwargs) -> object:
+    """Takes in a name and optionally a class/component and returns an instance of it. \n
+    If the class/component has a create__() function it will automatically detect it and 
+    attempt to use it to create the object. Otherwise, it will rely on the class's initialize function. \n
+    You can also feed in args/keyword args that will go directly to the component's initializer"""
 
-    if name_ == None or name_ in Objects:
-        name_ = NextID(Objects, 'New Object')
+
+    if name_ == None or name_ in _Objects:
+        name_ = NextID(_Objects, 'New Object')
 
     if 'create__' in dir(class_):
         try:
-            createdObject = class_.create__(*args, **kwargs) #type: ignore
+            createdObject:object = class_.create__(*args, **kwargs) #type: ignore
         except:
             print("\n\n!!!!!!!!!!\n", class_.__name__, " create__ error: Something went wrong, go fix it.\n", sep='')
             raise
         if not isinstance(createdObject, class_):
             raise Exception(f"{dir(class_), args, kwargs}\n\n\nError?? {createdObject, class_.__name__} had an issue. It should only return an object. Check to see if its ")
-        Objects[name_] = createdObject
+        _Objects[name_] = createdObject
+    
         return createdObject
 
-    return createFromTemplate(name=name_, class_=class_, *args, **kwargs)
+    else:
+        return _createFromTemplate(name=name_, class_=class_, *args, **kwargs)
 
-def createFromTemplate(name:str|int="", 
+def _getObject(name) -> object|None:
+    """Finds an object via it's name\n
+    If no such object exists, returns None."""
+    if name in _Objects: return _Objects[name]
+    else: return None
+
+def _returnObjects():
+    return _Objects
+
+def _createFromTemplate(name:str|int="", 
         class_:type=MainComponent.DependenciesTemplate,
-        *args, **kwargs) -> None:
-    if name == "" or name in Objects:
+        *args, **kwargs) -> object:
+    """Used to initialize a simple object"""
+    if name == "" or name in _Objects:
         if name == "":
-            NextID(Objects, 'New Object') 
+            NextID(_Objects, 'New Object') 
         else:
-            NextID(Objects, name=name)
-    object = class_(*args, **kwargs)
-    Objects[name] = object
-    return object
+            NextID(_Objects, name=name)
+    object_:object = class_(*args, **kwargs)
+    _Objects[name] = object_
+    return object_
 
-def createComplexObject(
+def _createSpecialObject(
     name:str = '', 
     class_:type = MainComponent.DependenciesTemplate, 
-    *args, **kwargs) ->  type | bool:
-    
+    *args, **kwargs) -> object:
+    """ Used by components and 
+    Takes in a name and a class and returns an instance of that object
+    while also adding it to the Objects dictionary. You can also input arguments and
+    keyword arguments if the object's initialize function uses them. 
+    If the init function returns something other than the instance it will raise a default 
+    Exception in order to prevent wrong types from leaking. """
     print("Creating Complex Object: ", class_)
-    object = class_(*args, **kwargs)
+    object_:object = class_(*args, **kwargs)
     if not isinstance(object, class_):
-        return False
-    Objects[name] = object
-    return object
+        raise Exception("He")
+    _Objects[name] = object_
+    return object_
 
-async def loadingScreen() -> None:
+async def _loadingScreen() -> None:
+    """Manually displays a loading screen to keep busy while the game starts up"""
     loadingImage = pyg.image.load(programPath+'\\Assets\\Images\\loading.png')
     state = 0
-    while readyToGo == False:
-        screen.fill((0,0,0))
-        screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
+    while _readyToGo == False:
+        _Screen.fill((0,0,0))
+        _Screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
         pyg.display.flip()
-        clock.tick(24)
+        _Clock.tick(24)
         state += 1
         if state >= 8:
             state = 0
 
-        
-        
-#---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
-async def drawCurrentFrame(renderQueue:dict) -> None:
+async def _drawCurrentFrame(renderQueue:dict) -> None:
     
-    sortRenderQueue(renderQueue)
+    renderQueue = _sortRenderQueue(renderQueue)
     
     asyncioRenderTasks = {}
     
-    for i in renderQueue:
-        if isinstance(i, dict):
-            asyncioRenderTasks [ NextID(asyncioRenderTasks) ] = asyncio.create_task( renderWithDict(i) )
-        elif isinstance(i, MainComponent.Renderer):
-            asyncioRenderTasks [ NextID(asyncioRenderTasks) ] = asyncio.create_task( renderWithObj(i)  ) 
+    
+    for i in reversed(renderQueue):
+        if isinstance(i, MainComponent.Renderer):
+            asyncioRenderTasks [ NextID(asyncioRenderTasks) ] = asyncio.create_task( _renderWithObj(i)  ) 
+        elif isinstance(i, dict):
+            asyncioRenderTasks [ NextID(asyncioRenderTasks) ] = asyncio.create_task( _renderWithDict(i) )
         else:
-            print(f"RenderQueue: {i} does not have a function for rendering and thus failed to render.")
+            print(f"RenderQueue: {i.__name__} does not have a function for rendering and thus failed to render.")
     
     await asyncio.wait(asyncioRenderTasks)
     pyg.display.flip()
 
-def sortRenderQueue(renderQueue) -> dict:
+def _sortRenderQueue(renderQueue: dict[str, MainComponent.Renderer]) -> dict:
+    """Takes a dict and for each item takes each objects tier, zPosition, and self and sorts the dictionary using those values
+    in priority of tier>zposition>object"""
     tempRenderQueue = []
     returnedRenderQueue = {}
 
@@ -145,12 +208,12 @@ def sortRenderQueue(renderQueue) -> dict:
     tempRenderQueue.sort()
     
     for i in tempRenderQueue:
-        tier, zPosition, value = i
+        _, _, value = i
         returnedRenderQueue[tempRenderQueue.index(i)] = value
 
     return returnedRenderQueue
 
-async def renderWithDict(dictObj) -> None:
+async def _renderWithDict(dictObj:dict) -> None:
     if not 'image' in dictObj \
         and 'path' in dictObj:
         
@@ -160,62 +223,49 @@ async def renderWithDict(dictObj) -> None:
             dictObj['image'] = missingImage
     
     if not 'path' in dictObj:
-        drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
+        _drawRect(dictObj["color"], dictObj["xPosition"], dictObj["yPosition"], dictObj["xLength"], dictObj["yLength"], )
         return
     
-    drawImage(dictObj['image'], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
+    _drawImage(dictObj['image'], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
         
-async def renderWithObj(rendererObj) -> None:
-    drawImage(rendererObj.surface, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset,
+async def _renderWithObj(rendererObj:object) -> None:
+    _drawImage(rendererObj.surface, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset,
     )
 
-def drawRect(color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
-    pyg.draw.rect(screen, color, (int(x) - int(Camera.Transform.xPosition), int(y) - int(Camera.Transform.yPosition), int(xl), int(yl)))
+def _drawRect(color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
+    pyg.draw.rect(_Screen, color, (int(x) - int(Camera.Transform.xPosition), int(y) - int(Camera.Transform.yPosition), int(xl), int(yl)))
 
-def drawImage(imageObject:pyg.Surface, x:int|float = 0, y:int|float = 0, xOffset:int|float = 0, yOffset:int|float = 0, alpha:int|float = 0) -> None:
-    if 'Camera' in Objects:
-        Camera = Objects['Camera']
+def _drawImage(imageObject:pyg.Surface, x:int|float = 0, y:int|float = 0, xOffset:int|float = 0, yOffset:int|float = 0, alpha:int|float = 0) -> None:
+    
+    if 'Camera' in _Objects:
+        Camera = _Objects['Camera']
     else:
         raise Exception("Camera object is not initialized! Render failed.")
-    screen.blit(source=imageObject, dest=(int(x) - int(xOffset) - Camera.xpos, int(y) - int(yOffset) - Camera.ypos))
+    _Screen.blit(source=imageObject, dest=(int(x) - int(xOffset) - Camera.xpos, int(y) - int(yOffset) - Camera.ypos))
 
-#---------------------------------------------------------------------------------------------------------------------------
 @timeFunction
-def startPlatformingScene() -> str:
+def _startPlatformingScene() -> str:
     global fREEZEFRAMES, level, devMode, sky, \
-    Settings, Character, Camera, renderQueue, missingImage, Mouse, font, \
-    Objects, UpdateObjects, renderQueue
+    Settings, Character, Camera, missingImage, Mouse, font
 
     devMode = False
-    Objects       = {}
-    UpdateObjects = {}
-    renderQueue   = {}
+    ComponentManager._init()
+    CutsceneManager.init()
 
-    
-    Character = createObject(name_="Character", class_=CharacterComponent.Character)
-    print("Where error")
 
-    Camera = createObject("Camera", CameraComponent.Camera)
+    Character = _newObject(name_="Character", class_=Component.get('Character'))
 
     missingImage = pyg.image.load(programPath+"\\Assets\\Images\\MissingImage.png").convert()
 
-    Mouse = createObject('Mouse', MainComponent.Mouse)
+    Mouse = _newObject('Mouse', MainComponent.Mouse)
     font = pyg.font.Font('freesansbold.ttf', 32)
-    sky = createObject\
-    (
-    'sky', 
-        MainComponent.Renderer \
-        ( 
+    sky = _newObject('sky', 
+        Component.new('Renderer', 
             tier = 99,
             zPosition=99,
-            surface = pyg.image.load \
-            (
+            surface = pyg.image.load(
                 programPath+'\\Assets\\Images\\SkyBox.png'
-            ).convert(),
-
-
-        )
-    )
+            ).convert()   )   )
 
     platData = {
         0: None,
@@ -238,8 +288,6 @@ def startPlatformingScene() -> str:
 
     
 
-    ComponentManager._init()
-    CutsceneManager.init()
     Settings = FileManager.load('ConfigFiles\settings.toml', type="toml")
     level = Level("Level 0", platData[100], 500, 500)
     data = FileManager.load('Save Data\platform info.dat')
@@ -249,19 +297,22 @@ def startPlatformingScene() -> str:
 
     
     #Add all objects with update__ functions to main
-    for i in Objects:
-        if 'update__' in dir(Objects[i]):
-            UpdateObjects[i] = Objects[i]
+    for i in _Objects:
+        if 'update__' in dir(_Objects[i]):
+            _UpdateObjects[i] = _Objects[i]
     
     return "Done"
 
-async def platformingTick():
+async def _platformingTick():
     print("\n")
 
     if dev.devpause:
         textRect = p.font.get_rect()
         inputFromKeyboard = ''
-        letter = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "BACKSPACE", "TAB"]    
+        letter = [
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", 
+            "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", 
+            "BACKSPACE", "TAB"]    
         for i in range(len(input)):
             if InputManager.k(letter[i], eventsGet):
                 if letter[i] == "BACKSPACE":
@@ -271,9 +322,9 @@ async def platformingTick():
                 else:
                     inputFromKeyboard.join(letter[i])
         text = font.render(inputFromKeyboard, True, p.white)
-        screen.blit(text, textRect)
+        _Screen.blit(text, textRect)
         pyg.display.flip()
-        clock.tick(60)
+        _Clock.tick(60)
         return "devpause"
 
     if fREEZEFRAMES > 0:
@@ -362,11 +413,11 @@ async def platformingTick():
         Mouse.down = False
 
 #Component Handler
-    for objectToRender in Objects:
+    for objectToRender in _Objects:
         if MainComponent.Renderer in dir(objectToRender):
-            renderQueue[str(objectToRender)] = objectToRender.Renderer
+            _renderQueue[str(objectToRender)] = objectToRender.Renderer
 
-    for obj in UpdateObjects.values():
+    for obj in _UpdateObjects.values():
         obj.update__()
     
 
@@ -374,6 +425,7 @@ async def platformingTick():
 
 
     Timer.tick()
+    _Clock.tick(60)
     
     Settings['gameTimer' ] += 1 / 60 # type: ignore
     Settings['totalTicks'] += 1  # type: ignore
@@ -381,37 +433,37 @@ async def platformingTick():
     return 'complete'
 
 #---------------------------------------------------------------------------------------------------------------------------
-async def main():
-    global Settings, clock, screen, LogInConsole, programPath, readyToGo
+async def _main():
 
     programPath = os.getcwd()
-    Settings = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml')
-    if isinstance(Settings, bool):
-        raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
-    LogInConsole = Settings['LogInConsole']
+    
+    Settings:dict = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml')
+    if isinstance(Settings, bool): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
+    LogInConsole_ = Settings['LogInConsole']
     
     pyg.init()
-    screen = pyg.display.set_mode((Settings["Screen"]["screen_width"], Settings["Screen"]["screen_height"]))
+
+    _Screen = pyg.display.set_mode((Settings["Screen"]["screen_width"], Settings["Screen"]["screen_height"]))
     pyg.display.set_icon(pyg.image.load(programPath+"\\Assets\\Images\\loading.png").convert())
     pyg.display.set_caption('Platformer')
 
-    clock = pyg.time.Clock()
-    readyToGo = False
+    _Clock = pyg.time.Clock()
+    _readyToGo = False
 
 
 
     #Activate Loading screen
-    asyncioTasks = [asyncio.create_task(loadingScreen())] 
+    asyncioTasks = [asyncio.create_task(_loadingScreen())] 
     
 
     print("Hiya")
-    startPlatformingScene()
+    _startPlatformingScene()
     
     print("Did we make it?")
 
     #Leave loading screen
-    clock.tick(0.2)
-    readyToGo = True
+    _Clock.tick(0.2)
+    _readyToGo = True
     await asyncio.wait(asyncioTasks)
 
     print("We did?!")
@@ -419,18 +471,23 @@ async def main():
     #Run physics 60 times per second
     while True:
         asyncioTasks = [
-            asyncio.create_task(platformingTick()), 
-            asyncio.create_task(drawCurrentFrame(deepcopy(renderQueue)))]     
+            asyncio.create_task(_platformingTick()), 
+            asyncio.create_task(_drawCurrentFrame(deepcopy(_renderQueue)))]     
         done, pending = await asyncio.wait(asyncioTasks)
-        for task in done:
-            if not task.result() == None:
-                print(
-                    "Done:", done, "\n",
-                    "Result:", task.result(), "\n",
-                    )
-        clock.tick(60)
-        
-if __name__ == "__main__":
-    print("\n"*3)
-    asyncio.run(main())
-    
+
+_Objects: dict[str|int, object] = {}
+_UpdateObjects: dict[str|int, object] = {}
+_renderQueue: dict[str|int, object|dict] = {}
+_Components: dict[int, object] = {}
+_ComponentNames: dict[str, int] = {}
+
+class Object():
+    new:function = _newObject
+    get:function = _getObject
+    getAll = _returnObjects
+  
+class Component():
+    new:function = _newComponent
+    get:function = _getComponent
+
+if __name__ == "__main__": asyncio.run(_main())

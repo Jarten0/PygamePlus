@@ -1,6 +1,10 @@
 SceneType = "main"
 LogInConsole = false
 
+[Camera]
+speed = 10
+acc = 3
+
 [Screen]
 screen_width = 1000
 screen_height = 1000
