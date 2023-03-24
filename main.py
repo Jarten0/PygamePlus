@@ -6,6 +6,7 @@ import os
 import time
 from copy import copy, deepcopy
 from sys import exit
+from typing import instance
 
 import pygame as pyg
 import Scripts.dev as dev
@@ -301,20 +302,12 @@ async def _platformingTick():
     print("\n")
 
     if dev.devpause:
-        textRect = p.font.get_rect()
+        textRect = font.get_rect()
         inputFromKeyboard = ''
         letter = [
             "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", 
             "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", 
             "BACKSPACE", "TAB"]    
-        for i in range(len(input)):
-            if InputManager.k(letter[i], eventsGet):
-                if letter[i] == "BACKSPACE":
-                    inputFromKeyboard.pop()
-                elif letter[i] == "TAB":
-                    dev.devpause = False
-                else:
-                    inputFromKeyboard.join(letter[i])
         text = font.render(inputFromKeyboard, True, p.white)
         _Screen.blit(text, textRect)
         pyg.display.flip()
@@ -408,11 +401,11 @@ async def _platformingTick():
 
 #Component Handler
     for objectToRender in _Objects:
-        if MainComponent.Renderer in dir(objectToRender):
-            _renderQueue[str(objectToRender)] = objectToRender.Renderer
+        if MainComponent.Renderer in dir(_Objects[objectToRender]):
+            _renderQueue[str(objectToRender)] = _Objects[objectToRender].Renderer
 
     for obj in _UpdateObjects.values():
-        obj.update__()
+        obj.update__() # type: ignore
     
 
 
@@ -428,7 +421,8 @@ async def _platformingTick():
 
 #---------------------------------------------------------------------------------------------------------------------------
 async def _main():
-    global LogInConsole_, _Screen
+    global LogInConsole_, _Screen, _Clock, _readyToGo, programPath
+
     programPath = os.getcwd()
     
     Settings:dict = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml', _type=dict)
