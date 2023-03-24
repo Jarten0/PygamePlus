@@ -20,9 +20,10 @@ def _init() -> None:
 
 def _setFocusPoint(_obj:object|None = None, xPos:float=0, yPos:float=0):
     if isinstance(_obj, None):
-        
+        _focusPoint.Transform.xPosition = xPos
+        _focusPoint.Transform.yPosition = yPos
     else:
-
+        _focusPoint.Transform = _obj
 
 def _update() -> None:
     if Input.getHeld("LEFT"):
@@ -46,7 +47,8 @@ def _update() -> None:
     
     if _xPosition < 0:
         _xPosition = 0
-    elif _xPosition > _level.xLength - 
+    elif _xPosition > _level.xLength - _Settings['screen_width']:
+        _xPosition = _level.xLength - _Settings['screen_width']
 
 
 

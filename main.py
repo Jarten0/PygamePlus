@@ -95,23 +95,21 @@ def _getComponent(_name:int|str) -> type:
 
 def _newObject(
 name_:str | int | None = None, 
-class_:type = MainComponent.DependenciesTemplate, 
+class_:type|str = MainComponent.DependenciesTemplate, 
 *args, **kwargs) -> object:
     """Takes in a name and optionally a class/component and returns an instance of it. \n
     If the class/component has a create__() function it will automatically detect it and 
     attempt to use it to create the object. Otherwise, it will rely on the class's initialize function. \n
     You can also feed in args/keyword args that will go directly to the component's initializer"""
 
+    if isinstance(class_, str): class_ = Component.get(class_)
 
-    if name_ == None or name_ in _Objects:
-        name_ = NextID(_Objects, 'New Object')
+    if name_ == None or name_ in _Objects: name_ = NextID(_Objects, 'New Object')
 
     if 'create__' in dir(class_):
-        try:
-            createdObject:object = class_.create__(*args, **kwargs) #type: ignore
-        except:
-            print("\n\n!!!!!!!!!!\n", class_.__name__, " create__ error: Something went wrong, go fix it.\n", sep='')
-            raise
+        try: createdObject:object = class_.create__(*args, **kwargs) #type: ignore
+        except: print("\n\n!!!!!!!!!!\n\n", class_.__name__, " create__ error: Something went wrong, go fix it.\n", sep=''); raise
+        
         if not isinstance(createdObject, class_):
             raise Exception(f"{dir(class_), args, kwargs}\n\n\nError?? {createdObject, class_.__name__} had an issue. It should only return an object. Check to see if its ")
         _Objects[name_] = createdObject
@@ -252,7 +250,7 @@ def _startPlatformingScene() -> str:
 
     missingImage = pyg.image.load(programPath+"\\Assets\\Images\\MissingImage.png").convert()
 
-    Mouse = _newObject('Mouse', MainComponent.Mouse)
+    Mouse = _newObject('Mouse', Component.get('Mouse'))
     font = pyg.font.Font('freesansbold.ttf', 32)
     sky = _newObject('sky', 
         Component.new('Renderer', 

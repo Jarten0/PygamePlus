@@ -2,6 +2,7 @@ import os, importlib.util
 from typing import Any, Callable
 from random import randint
 from main import *; from main import _Components
+
 def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
     """Will find an available key in a list. 
     \nSet randomize to attempt to pick a random ID, and it will set a number between 1 and 10,000,000,000
@@ -27,8 +28,7 @@ def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
             if i in attempts: continue
             if len(List_) > 10**10 or len(attempts) > 10**10: raise Exception("This list is really big. Like, REALLY BIG. Bigger than 10^10 items. Thats more than 80 GIGABYTES. What in the WORLD did you do to fill it up THIS much?")
             attempts.append(i)
-    return None
-        
+    return None        
 
 def _init() -> None:
     blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__'}
@@ -54,29 +54,22 @@ def _init() -> None:
         
         if 'start__' in module.__dir__():
             module.start__()
-        
 
-# def _parametrized(dec: Callable[..., Any]) -> Callable[Any, Callable[Any, None]]: #This is not my code but it works #type: ignore
-#     def layer(*args2, **kwargs2) -> Callable[..., None]:
-
-#         def repl(f) -> Any:
-#             return dec(f, *args2, **kwargs2)
-
-#         return repl
-#     return layer 
-
-def initializationWrapper_(componentInitFunc) -> Callable[..., Callable[..., None]]:
+def initializationWrapper_(componentInitFunc: Callable[..., None]) -> Callable[..., Callable[..., None]]:
     if __import__('__main__').LogInConsole: 
         print("Loaded Component: ", [componentInitFunc])
+
     def wrapper(dependencyAdder) -> Callable[..., None]:
         
         #Run on creation of object
         def initialize(self, *args, **kwargs) -> None:
-            self.__name__ = self.__str__()+"Instance"
+            self.__name__ = componentInitFunc.__class__.__name__+" > Instance"
+
             dependencyAdder(self, *args, **kwargs)
             componentInitFunc(self=self, dependencies=self.dependencies, *args, **kwargs)
 
         return initialize
+    wrapper.__name__ = 'initialize__'
     return wrapper
 
 def initializeOnStartWrapper_(componentCreate__Func, *args, **kwargs) -> Callable[..., None]:
@@ -158,7 +151,10 @@ class <componentName>:
         <add below for each dependency>
         self.<dependencyName> = dependencies["<dependencyName>"]  """)
 
-
+class ComponentTools():
+    newClass = dependencyWrapper_
+    init = initializationWrapper_
+    create = initializeOnStartWrapper_
 
 if __name__ == '__main__':
     _main()

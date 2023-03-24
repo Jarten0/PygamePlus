@@ -3,26 +3,33 @@ if __name__ == "__main__":
     print(r"Cannot run components script as main :/")
     exit()
 import pygame         as pyg
-import Scripts.timer  as Timer
-import Scripts.boards as Boards
+from Scripts.componentManager import ComponentTools as comTools
+from Scripts.timer  import Timer
+from Scripts.boards import Boards
 from Scripts.inputMapper import Input
-from   os         import getcwd
-from   tomllib    import load       
-from Scripts.componentManager import *
+from os         import getcwd
+from tomllib    import load       
 from typing import Any
 Main = __import__("__main__")
 
-#Handles all positioning aspects of an object in world space
-@dependencyWrapper_
+@comTools.newClass
 class Transform():
+    """Handles all positioning aspects of an object in world space
+    Units are in pixels, 1 unit = 1 pixel
+    X: - -> + = left -> right
+    Y: - -> + = up   -> down
+    Z: - -> + = back -> front
+ 
+    Rotation: 0 - 360, clockwise
+    """
     requiredDependencies={}
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self,
     xPosition:float=0, yPosition:float=0, zPosition:int=0, \
-        xVelocity:float=0, yVelocity:float=0, rotation:float = 0, **kwargs) -> None:
+    xVelocity:float=0, yVelocity:float=0, rotation:float = 0, **kwargs) -> None:
         self.xPosition = xPosition
         self.yPosition = yPosition
-        self.zPosition = zPosition #Z position is used for rendering order purposes, the lower the higher priority
+        self.zPosition = zPosition
         self.xVelocity = xVelocity
         self.yVelocity = yVelocity
         self.rotation  = rotation
@@ -31,41 +38,45 @@ class Transform():
         self.xPosition += self.xVelocity
         self.yPosition += self.yVelocity
 
-@dependencyWrapper_
-class DependenciesTemplate():   
+@comTools.newClass
+class DependenciesTemplate():
     requiredDependencies={}
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self, dependencies, *args, **kwargs) -> None: 
         pass
 
-#Is responsible for containing all of a room's data
-@dependencyWrapper_
+@comTools.newClass
 class PlatformSceneData():
+    """ Is responsible for containing all of a room's data
+    """
     requiredDependencies={}
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self, dependencies, name, plat: dict, length: int = 20000, height: int = 20000):
         self.name = name
         self.plat = plat
         self.length = length
         self.height = height
 
-#Used to check as to whether the selected item is colliding with the object
-#This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
-#activation area. If you want to add collisions, use this in tangent with RigidBody
-@dependencyWrapper_
+@comTools.newClass
 class Collider():
+    """Used to check as to whether the selected item is colliding with the object
+    This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
+    activation area. If you want to add collisions, use this in tangent with RigidBody
+    
+    collideList = list[isColliding, colTop, colBottom, colLeft, colRight]"""
+
     requiredDependencies={
     "Transform": Transform 
     }
 
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self, dependencies:dict,
     xLength:int=50, yLength:int=50, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.xLength = xLength
         self.yLength = yLength
         self.Objects = Object.getAll()
-        self.collideList = []
+        self.collideList: list[bool, bool, bool, bool, bool] = []
 
     def update__(self):
         for i in self.Objects:
@@ -109,15 +120,20 @@ class Collider():
         
         return lis
 
-#Used to handle collisions, gravity and other physical forces
-#Use with a Collider to properly collide with other objects that have Colliders 
-@dependencyWrapper_
+@comTools.newClass
 class RigidBody():
+    """Used to handle collisions, gravity and other physical forces
+    Use with a Collider to properly collide with other objects that have Colliders 
+    
+    mass = weight of object
+
+    grounded = is touching ground and is unaffected by gravity until leaving ground again. 
+    """
     requiredDependencies={
     "Transform": Transform, "Collider": Collider
     }
 
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self, dependencies: dict, mass:int=0, **kwargs) -> None:
         self.Transform = dependencies["Transform"]
         self.Collider = dependencies["Collider"]
@@ -148,9 +164,38 @@ class RigidBody():
                 self.Transform.xVelocity = 0
                 self.Transform.xPosition = item.yPosition - item.Collider.yLength
 
-#Renders an object either via image or rectangle
-@dependencyWrapper_
+@comTools.newClass
 class Renderer():
+    """Draws an image, sprite from spritesheet, or rectangle to the screen. Has quite a few arguments.
+
+    Required:
+
+    path: str # example = '\\Assets\\Images\\[image name], pull from root of framework, ie where main.py is located
+    tier: int # used for increased render ordering capabilities. Refer to the renderer tier txt
+
+    Optional:
+
+    xOffset:float=0 # Offsets are used for rendering offsetted from the Transform point 
+    yOffset:float=0
+
+    <These next ones are used for selecting what part of the image is going to be used.
+    Still functional with spritesheets, but you must keep these in mind>
+    
+    xStart :float=0 # Used to pick from where in an image the render point starts. Anything before that is cropped out
+    yStart :float=0
+
+    xLength:float=0 # Used to pick how much of an image is used. Anything outside of that is cropped out
+    yLength:float=0
+
+    surfaceRows: int = 1 # This is important if you want to use images from a spritesheet. This is how many horizontal sprites are in the image.
+    surfaceColumns: int = 1 # Same as rows, but vertically.
+
+    <the rest of these are a bit more advanced, change if you so wish>
+    surface: Pygame Surface, if you want to handle loading of images yourself
+    alpha = int, 0-100, if you want to change the opacity of the object 
+
+    autoCulling: bool=True, optimization that stops from rendering if the object is off screen
+    """
     requiredDependencies={
     "Transform": Transform
     }
@@ -162,11 +207,11 @@ class Renderer():
     "gray":  (30,  30,  30 ),
     }
 
-    @initializeOnStartWrapper_
+    @comTools.create
     def create__(self, name:str='New Renderer', 
         xPosition:float=0,
         yPosition:float=0,
-        zPosition:int=0,
+        zPosition:int  =0,
         xVelocity:float=0,
         yVelocity:float=0,
         *args, **kwargs
@@ -184,14 +229,12 @@ class Renderer():
             )
 
         return Renderer_
-    
 
-
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self, dependencies: dict={},
         path: str = '', tier: int = 3, xOffset:float=0, yOffset:float=0, xLength:float=0, yLength:float=0, 
         color=colors["gray"], surface:pyg.Surface|None = None,  alpha: int = 0, 
-        surfaceRows:int = 1, surfaceColumns:int = 1, **kwargs) -> None:
+        surfaceRows:int = 1, surfaceColumns:int = 1, autoCulling:bool = True, **kwargs) -> None:
             
         if path == '':    
             self.path = "\\Assets\\Images\\MissingImage.png"
@@ -213,13 +256,21 @@ class Renderer():
         self.yLength = yLength
         self.color   = color
         self.alpha   = alpha
+        self.autoCull = autoCulling
 
         self.flags = {
         "flipHorizontal": False,
         "flipVertical"  : False,
         }
 
+    Camera = Object.get('Camera')
+    Level = Object.get('Level')
+
     def update__(self):
+        if self.autoCull: 
+            if self.Transform.xPosition + xLength < 0 \
+            or self.Transform.yPosition > 0:
+                return
 
         Main.renderQueue[self] = (self, self.tier, self.Transform.zPosition)
     
@@ -237,18 +288,27 @@ class Renderer():
         except KeyError as ke:
             return ke
         
-
-#Grabs data from a config file for use
-@dependencyWrapper_
+@comTools.newClass
 class ConfigData():
+    """     Grabs data from a toml or other type config file. It checks for files located in the ConfigFiles directory,
+so input dirFileName as the name with a backslash before it. If it is located in a folder, input the path from
+    \\ConfigFiles to locate the file you wish to load. Also, omit the .toml from the file name.
+    \nExample: 
+
+    ConfigFile = Component.new(Component.get('ConfigData')(dirFileName = '\\settings'))
+    
+    dirFileName: str, the name of the config file you wish to pull from.
+    fileType; str = "toml", the file extension of the file you wish to pull from,
+    """
     requiredDependencies={}
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self, dependencies, dirFileName: str = "", fileType: str = "toml", *args, **kwargs) -> None:
         try:
+            if not list(dirFileName)[0] == "\\": dirFileName = "\\" + dirFileName
             self.fileName = dirFileName
             self.fileType = fileType
             if self.fileType == "toml":
-                with open(getcwd()+"\\ConfigFiles\\" + self.fileName + '.toml', "rb" ) as f:
+                with open(getcwd()+"\\ConfigFiles" + self.fileName + '.toml', "rb" ) as f:
                     self.configFile = load(f)
 
         except FileNotFoundError as fnfe:
@@ -259,10 +319,10 @@ class ConfigData():
             print("\n"*10, dependencies, dirFileName, fileType, args, kwargs)
             raise
 
-@dependencyWrapper_
+@comTools.newClass
 class Mouse():
     requiredDependencies={}
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self, dependencies) -> None:
         print("A?")
         print("Objects", Main.Objects)
