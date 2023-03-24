@@ -1,33 +1,28 @@
 if __name__ == "__main__": LogInConsole_ = True; print("\n" * 10)
 else: raise ImportError("You cannot import main! do 'from main import *' to get main interfaces.")
 
-#Import And Initialize ===========================================================================================================
-import os
 import asyncio
+import os
 import time
+from copy import copy, deepcopy
+from sys import exit
 
-from Scripts.EZPickle import FileManager
-import Scripts.cutsceneManager as CutsceneManager
-import Scripts.componentManager as ComponentManager
-
-import pygame as pyg # type: ignore
+import pygame as pyg
 import Scripts.dev as dev
 
+import Scripts.componentManager as ComponentManager
+import Scripts.cutsceneManager as CutsceneManager
+
+from Scripts.boards import Boards
+from Scripts.camera import Camera
+from Scripts.EZPickle import FileManager
+from Scripts.inputMapper import Input
+from Scripts.timer import Timer
 
 import Scripts.Components.character as CharacterComponent
-import Scripts.Components.components as MainComponent 
-import Scripts.Components.camera as CameraComponent
-import Scripts.platforms as platform
+import Scripts.Components.components as MainComponent
+import Scripts.Components.platforms as PlatformComponent
 
-from Scripts.boards     import  Boards
-from Scripts.timer      import  Timer
-from Scripts.inputMapper import Input
-
-
-from sys import exit
-from copy import copy, deepcopy
-
-#Setup ====================================================================================================================
 def logFunc(func):
     def wrapper(*args, **kwargs):
         print(f"""LOGFUNC: 
@@ -53,8 +48,7 @@ def NextID(itemList:dict, name:str|int='') -> str:
     name = str(name)
     keylist = itemList.keys()
     for i in range(len(itemList)):
-        if not name+str(i) in keylist:
-            return name+str(i)
+        if not name + str(i) in keylist: return name+str(i)
     return name+str(len(itemList))    
 
 def _newComponent(_class:type = MainComponent.Transform, *args, **kwargs) -> object:
@@ -93,10 +87,10 @@ def _getComponent(_name:int|str) -> type:
     """Fetches a class using a name or the component's ID.
     Returns the class so you can initialize it or set attributes
     Example"""
-    if isinstance(_name, str):
-        _ID = _ComponentNames[_name]
-    component = _Components[_ID]
-    return component
+    if isinstance(_name, int): _ID = _name
+    elif isinstance(_name, str): _ID = _ComponentNames[_name]
+    else: exit() 
+    return _Components[_ID]
 
 def _newObject(
 name_:str | int | None = None, 
@@ -288,7 +282,7 @@ def _startPlatformingScene() -> str:
 
     
 
-    Settings = FileManager.load('ConfigFiles\settings.toml', type="toml")
+    Settings = FileManager.load('ConfigFiles\settings.toml', _filetype="toml")
     level = Level("Level 0", platData[100], 500, 500)
     data = FileManager.load('Save Data\platform info.dat')
     if data == False:
@@ -434,10 +428,10 @@ async def _platformingTick():
 
 #---------------------------------------------------------------------------------------------------------------------------
 async def _main():
-
+    global LogInConsole_, _Screen
     programPath = os.getcwd()
     
-    Settings:dict = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml')
+    Settings:dict = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml', _type=dict)
     if isinstance(Settings, bool): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
     LogInConsole_ = Settings['LogInConsole']
     
@@ -448,7 +442,7 @@ async def _main():
     pyg.display.set_caption('Platformer')
 
     _Clock = pyg.time.Clock()
-    _readyToGo = False
+    
 
 
 
@@ -475,19 +469,20 @@ async def _main():
             asyncio.create_task(_drawCurrentFrame(deepcopy(_renderQueue)))]     
         done, pending = await asyncio.wait(asyncioTasks)
 
-_Objects: dict[str|int, object] = {}
+_Objects:       dict[str|int, object] = {}
 _UpdateObjects: dict[str|int, object] = {}
-_renderQueue: dict[str|int, object|dict] = {}
-_Components: dict[int, object] = {}
-_ComponentNames: dict[str, int] = {}
+_renderQueue:   dict[str|int, object|dict] = {}
+_Components:    dict[int,     type] = {}
+_ComponentNames:dict[str,     int] = {}
+_readyToGo = False
 
 class Object():
-    new:function = _newObject
-    get:function = _getObject
+    new = _newObject
+    get = _getObject
     getAll = _returnObjects
   
 class Component():
-    new:function = _newComponent
-    get:function = _getComponent
+    new = _newComponent
+    get = _getComponent
 
 if __name__ == "__main__": asyncio.run(_main())

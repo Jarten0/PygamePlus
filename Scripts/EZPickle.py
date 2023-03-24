@@ -1,5 +1,6 @@
 from pickle import dump as pkd, load as pkl
 import tomllib
+from typing import Any
 from os import getcwd
 
 #Used to easily pickle/save a single variable in a particular file
@@ -15,21 +16,38 @@ def _save(value, filename) -> None:
 
 #Used to easily fetch a single pickled variable in a specified file
 #Use by calling EZPickle.load([name of the file where data is stored])
-def _load(file, type = "pickle", programPath=getcwd()) -> dict | bool:
-    if type == "toml":
+def _load(file, _filetype = "pickle", _returnType:type = dict) -> Any:
+    if _filetype == "toml":
         with open(file, "rb") as f:
             return tomllib.load(f)
-    elif type == "pickle":
+    elif _filetype == "pickle":
         try:
             with open(file, "rb") as filename:
                 value = pkl(filename)
             return value
-        except FileNotFoundError:
+        except FileNotFoundError as fnfe:
             print(f"{file}: FileNotFoundError(Excepted): Failed to load data, no file currently present. Creating a new one...")
-            open(file, "x")
+            if not input("Handle the error? >[Y/n, default n] >").lower() == 'y': raise fnfe
+            if input("Create a new file to insert a new value into? [Y/n, default n] >").lower() == 'y': 
+                datatypeNames: dict[str, type] = {
+                    "str": str,
+                    "int": int,
+                    "bool": bool,
+                    "list": list,
+                    "dict": dict,
+                    "set":  set,
+                    "none": type(None),
+                }
+                print("Data type names: ", datatypeNames)
+                dt = input('What data type do you want to use >')
+                datatype = datatypeNames[dt] 
+                value = datatype(input("What value do you want to put in (it will make a string to the datatype conversion) >"))
+                with open(file, "x") as f:
+                    pkd(value, f)
+            
             with open(file, "wb") as filename:
-                pkd(False, filename)
-            return False
+                pkd(value, filename)
+            return value
         except EOFError:
             print("File data error, resetting propereties to default...")
             open(file, "w")

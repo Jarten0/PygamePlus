@@ -7,8 +7,7 @@ from Scripts.componentManager import *
 Main = __import__("__main__")
 
 
-#This is responsible for all of the actions a Character can do
-#Mostly used for the player character
+#wrappa
 @dependencyWrapper_
 class Platform():
     requiredDependencies={
