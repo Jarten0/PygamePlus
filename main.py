@@ -1,18 +1,18 @@
 if __name__ == "__main__": LogInConsole_ = True; print("\n" * 10)
-else: raise ImportError("You cannot import main! do 'from main import *' to get main interfaces.")
 
 import asyncio
 import os
 import time
-from copy import copy, deepcopy
+from copy import deepcopy
 from sys import exit
-from typing import instance
+from typing import Callable, Any
 
 import pygame as pyg
-import Scripts.dev as dev
 
 import Scripts.componentManager as ComponentManager
 import Scripts.cutsceneManager as CutsceneManager
+
+import Scripts.dev as dev
 
 from Scripts.boards import Boards
 from Scripts.camera import Camera
@@ -128,6 +128,31 @@ def _getObject(name) -> object|None:
 def _returnObjects():
     return _Objects
 
+def returnGlobals(var='all'):
+    if var == 'all': return {
+        'obj':_Objects, 
+        'updobj':_UpdateObjects, 
+        'renque':_renderQueue, 
+        'com':_Components, 
+        'comnam':_ComponentNames, 
+        'rdytg':_readyToGo}
+    else: 
+        if var in {
+        'obj':_Objects, 
+        'updobj':_UpdateObjects, 
+        'renque':_renderQueue, 
+        'com':_Components, 
+        'comnam':_ComponentNames, 
+        'rdytg':_readyToGo}:
+            return {
+        'obj':_Objects, 
+        'updobj':_UpdateObjects, 
+        'renque':_renderQueue, 
+        'com':_Components, 
+        'comnam':_ComponentNames, 
+        'rdytg':_readyToGo}[var]
+        else: return None
+
 def _createFromTemplate(name:str|int="", 
         class_:type=MainComponent.DependenciesTemplate,
         *args, **kwargs) -> object:
@@ -221,12 +246,12 @@ async def _renderWithDict(dictObj:dict) -> None:
     
     _drawImage(dictObj['image'], dictObj["xPosition"], dictObj["yPosition"], dictObj["xOffset"], dictObj["yOffset"])
         
-async def _renderWithObj(rendererObj:object) -> None:
+async def _renderWithObj(rendererObj:MainComponent.Renderer) -> None:
     _drawImage(rendererObj.surface, rendererObj.Transform.xPosition, rendererObj.Transform.yPosition, rendererObj.xOffset, rendererObj.yOffset,
     )
 
 def _drawRect(color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
-    pyg.draw.rect(_Screen, color, (int(x) - int(Camera.Transform.xPosition), int(y) - int(Camera.Transform.yPosition), int(xl), int(yl)))
+    pyg.draw.rect(_Screen, color, (int(x) - int(Camera.xPosition), int(y) - int(Camera.Transform.yPosition), int(xl), int(yl)))
 
 def _drawImage(imageObject:pyg.Surface, x:int|float = 0, y:int|float = 0, xOffset:int|float = 0, yOffset:int|float = 0, alpha:int|float = 0) -> None:
     
@@ -238,7 +263,7 @@ def _drawImage(imageObject:pyg.Surface, x:int|float = 0, y:int|float = 0, xOffse
 
 @timeFunction
 def _startPlatformingScene() -> str:
-    global fREEZEFRAMES, level, devMode, sky, \
+    global freezeFrames, level, devMode, sky, \
     Settings, Character, Camera, missingImage, Mouse, font
 
     devMode = False
@@ -252,13 +277,7 @@ def _startPlatformingScene() -> str:
 
     Mouse = _newObject('Mouse', Component.get('Mouse'))
     font = pyg.font.Font('freesansbold.ttf', 32)
-    sky = _newObject('sky', 
-        Component.new('Renderer', 
-            tier = 99,
-            zPosition=99,
-            surface = pyg.image.load(
-                programPath+'\\Assets\\Images\\SkyBox.png'
-            ).convert()   )   )
+    sky = _newObject('sky', class_ = Component.get('Renderer'))   
 
     platData = {
         0: None,
@@ -275,7 +294,7 @@ def _startPlatformingScene() -> str:
         ("CoyoteTime", 0, True), ("dash", 0, False), ("dashleave", 4, False)}:
         (name, value, up) = i
         Timer.set(name, value, up)
-    fREEZEFRAMES = 0
+    freezeFrames = 0
 
     
 
@@ -312,8 +331,8 @@ async def _platformingTick():
         _Clock.tick(60)
         return "devpause"
 
-    if fREEZEFRAMES > 0:
-        fREEZEFRAMES -= 1
+    if freezeFrames > 0:
+        freezeFrames -= 1
         return "freezeFrame"
 
     
@@ -321,81 +340,81 @@ async def _platformingTick():
 
 #Extra Input From Player (For dev use) =========================================================================================================
 
-    if devMode == True:
-        if InputManager.k("z", eventsGet):
-            platData[100] = level.plat
-            FileManager.save(platData, platformfilename)
-            print("Saved Platform Data")
-        if InputManager.k("x", eventsGet):
-            data = FileManager.load(platformfilename)
-            level = Level(data[100], data[100])
-        if InputManager.k("c", eventsGet):
-            level.plat = {}
-        if InputManager.k("q", eventsGet):
-            pyg.quit()
-            exit()
-        if InputManager.k("r", eventsGet):
-            settings= defaultProperties(defaultProperties.lis)
-            FileManager.save(p, properetiesFileName)
-            print("Saved Propereties")        
-        if InputManager.k("`", eventsGet):
-            FileManager.save(p, "prop.dat")
-            print("Saved Propereites")
+    # if devMode == True:
+    #     if InputManager.k("z", eventsGet):
+    #         platData[100] = level.plat
+    #         FileManager.save(platData, platformfilename)
+    #         print("Saved Platform Data")
+    #     if InputManager.k("x", eventsGet):
+    #         data = FileManager.load(platformfilename)
+    #         level = Level(data[100], data[100])
+    #     if InputManager.k("c", eventsGet):
+    #         level.plat = {}
+    #     if InputManager.k("q", eventsGet):
+    #         pyg.quit()
+    #         exit()
+    #     if InputManager.k("r", eventsGet):
+    #         settings= defaultProperties(defaultProperties.lis)
+    #         FileManager.save(p, properetiesFileName)
+    #         print("Saved Propereties")        
+    #     if InputManager.k("`", eventsGet):
+    #         FileManager.save(p, "prop.dat")
+    #         print("Saved Propereites")
 
-    for i in range(10):
-        if InputManager.keyDownHeld(str(i), eventsGetHeld):
-            select = i
-            print(i)
+    # for i in range(10):
+    #     if InputManager.keyDownHeld(str(i), eventsGetHeld):
+    #         select = i
+    #         print(i)
         
-    if InputManager.k("TAB", eventsGet):
-        devMode = True
-        # settings= dev.cmd()
+    # if InputManager.k("TAB", eventsGet):
+    #     devMode = True
+    #     # settings= dev.cmd()
     
-    if Mouse.list[0]:
-        if not Mouse.down:
-            print("Click!")
-            if select == 0:
-                for platformThing in level.plat:
-                    platformToBeDeleted = level.plat[platformThing]
-                    if platform.collision.check(Mouse.posx, Mouse.posy, 1, 1, platformToBeDeleted.x, platformToBeDeleted.y, platformToBeDeleted.xl, platformToBeDeleted.yl)[0]:
-                        del level.plat[platformThing]
-                        break
+    # if Mouse.list[0]:
+    #     if not Mouse.down:
+    #         print("Click!")
+    #         if select == 0:
+    #             for platformThing in level.plat:
+    #                 platformToBeDeleted = level.plat[platformThing]
+    #                 if platform.collision.check(Mouse.posx, Mouse.posy, 1, 1, platformToBeDeleted.x, platformToBeDeleted.y, platformToBeDeleted.xl, platformToBeDeleted.yl)[0]:
+    #                     del level.plat[platformThing]
+    #                     break
             
-            elif placestage == 0:
-                placestage = 1
-                Mouse.tempx = Mouse.posx
-                Mouse.tempy = Mouse.posy
-                print(f"({Mouse.tempx}, {Mouse.tempy})")
+    #         elif placestage == 0:
+    #             placestage = 1
+    #             Mouse.tempx = Mouse.posx
+    #             Mouse.tempy = Mouse.posy
+    #             print(f"({Mouse.tempx}, {Mouse.tempy})")
                 
             
-            elif placestage == 1:
-                Mouse.tempx2 = Mouse.posx
-                Mouse.tempy2 = Mouse.posy
-                if Mouse.tempx > Mouse.tempx2:
-                    Mouse.xstate = Mouse.tempx2
-                else:
-                    Mouse.xstate = Mouse.tempx
-                if Mouse.tempy > Mouse.tempy2:
-                    Mouse.ystate = Mouse.tempy2
-                else:
-                    Mouse.ystate = Mouse.tempy
+    #         elif placestage == 1:
+    #             Mouse.tempx2 = Mouse.posx
+    #             Mouse.tempy2 = Mouse.posy
+    #             if Mouse.tempx > Mouse.tempx2:
+    #                 Mouse.xstate = Mouse.tempx2
+    #             else:
+    #                 Mouse.xstate = Mouse.tempx
+    #             if Mouse.tempy > Mouse.tempy2:
+    #                 Mouse.ystate = Mouse.tempy2
+    #             else:
+    #                 Mouse.ystate = Mouse.tempy
                 
-                if platform.placeprop[select]["#HasPlaceReq"]:
-                    if not platform.placeprop[select]["xl"] == False:
-                        Mouse.tempx2 = platform.placeprop[select]["xl"]
-                        Mouse.tempx = 0
-                    if not platform.placeprop[select]["yl"] == False:
-                        Mouse.tempy2 = platform.placeprop[select]["yl"]
-                        Mouse.tempy = 0
-                if platform.placeprop[select]["#object"]:
-                    level.plat[platform.NextID(level.plat)] = platform.create(Mouse.posx, Mouse.posy, Mouse.tempx2, Mouse.tempy2, select)
-                elif not abs(Mouse.tempx2 - Mouse.tempx) == 0 and not abs(Mouse.tempy2 - Mouse.tempy) == 0:
-                    level.plat[platform.NextID(level.plat)] = platform.create(Mouse.xstate, Mouse.ystate, abs(Mouse.tempx2 - Mouse.tempx), abs(Mouse.tempy2 - Mouse.tempy), select)  
-                placestage = 0
-            Mouse.down = True
+    #             if platform.placeprop[select]["#HasPlaceReq"]:
+    #                 if not platform.placeprop[select]["xl"] == False:
+    #                     Mouse.tempx2 = platform.placeprop[select]["xl"]
+    #                     Mouse.tempx = 0
+    #                 if not platform.placeprop[select]["yl"] == False:
+    #                     Mouse.tempy2 = platform.placeprop[select]["yl"]
+    #                     Mouse.tempy = 0
+    #             if platform.placeprop[select]["#object"]:
+    #                 level.plat[platform.NextID(level.plat)] = platform.create(Mouse.posx, Mouse.posy, Mouse.tempx2, Mouse.tempy2, select)
+    #             elif not abs(Mouse.tempx2 - Mouse.tempx) == 0 and not abs(Mouse.tempy2 - Mouse.tempy) == 0:
+    #                 level.plat[platform.NextID(level.plat)] = platform.create(Mouse.xstate, Mouse.ystate, abs(Mouse.tempx2 - Mouse.tempx), abs(Mouse.tempy2 - Mouse.tempy), select)  
+    #             placestage = 0
+    #         Mouse.down = True
     
-    else:
-        Mouse.down = False
+    # else:
+    #     Mouse.down = False
 
 #Component Handler
     for objectToRender in _Objects:
@@ -423,7 +442,7 @@ async def _main():
 
     programPath = os.getcwd()
     
-    Settings:dict = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml', _type=dict)
+    Settings:dict = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml', _returnType=dict)
     if isinstance(Settings, bool): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
     LogInConsole_ = Settings['LogInConsole']
     
@@ -441,12 +460,9 @@ async def _main():
     #Activate Loading screen
     asyncioTasks = [asyncio.create_task(_loadingScreen())] 
     
-
-    print("Hiya")
     _startPlatformingScene()
     
-    print("Did we make it?")
-
+    
     #Leave loading screen
     _Clock.tick(0.2)
     _readyToGo = True
@@ -458,7 +474,8 @@ async def _main():
     while True:
         asyncioTasks = [
             asyncio.create_task(_platformingTick()), 
-            asyncio.create_task(_drawCurrentFrame(deepcopy(_renderQueue)))]     
+            asyncio.create_task(_drawCurrentFrame(deepcopy(_renderQueue)))
+            ]
         done, pending = await asyncio.wait(asyncioTasks)
 
 _Objects:       dict[str|int, object] = {}
@@ -469,9 +486,9 @@ _ComponentNames:dict[str,     int] = {}
 _readyToGo = False
 
 class Object():
-    new = _newObject
-    get = _getObject
-    getAll = _returnObjects
+    new: Callable[..., object] = _newObject
+    get: Callable[..., object|None] = _getObject
+    getAll: Callable[..., dict[str | int, object]] = _returnObjects
   
 class Component():
     new = _newComponent

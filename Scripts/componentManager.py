@@ -1,7 +1,8 @@
 import os, importlib.util
 from typing import Any, Callable
-from random import randint
-from main import *; from main import _Components
+import random
+from main import _ComponentNames, _Components
+from main import *
 
 def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
     """Will find an available key in a list. 
@@ -19,16 +20,15 @@ def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
             if not i in List_:
                 return i
     else:
-        if not isinstance(start, int) or not isinstance(stop, int): raise Exception("Invalid argument types! Start/Stop must be int!")
-        else: attempts:set = set(())
-                
+        attempts:set = set(())
         while True:
             i = int(random.random()*(10**10))
-            if not i in _Components: return i
+            if not i in List_: return i
             if i in attempts: continue
             if len(List_) > 10**10 or len(attempts) > 10**10: raise Exception("This list is really big. Like, REALLY BIG. Bigger than 10^10 items. Thats more than 80 GIGABYTES. What in the WORLD did you do to fill it up THIS much?")
-            attempts.append(i)
-    return None        
+            attempts.add(i)
+    
+    raise Exception("This list is really big. Like, REALLY BIG. Bigger than 10^10 items. Thats more than 80 GIGABYTES. What in the WORLD did you do to fill it up THIS much?")
 
 def _init() -> None:
     blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__'}
@@ -43,10 +43,11 @@ def _init() -> None:
         module = importlib.util.module_from_spec(moduleSpec)
         moduleSpec.loader.exec_module(module)
         
-        for i in set(dir(module)):
+        for componentStr in set(dir(module)):
+            component = module.__getattr__(componentStr)
             if i in blacklist: continue 
-            _Components[i.ID] = i
-            _ComponentNames[i.__name__] = i.ID
+            _Components[component.ID] = component
+            _ComponentNames[i] = component.ID
         
         if 'init_' in module.__dir__():        
             if module.init__['OnStart'] == True:
@@ -131,7 +132,7 @@ def dependencyWrapper_(initialComponent):
             a number to try to find an available key. It will return the new name
             \nExample: \n
             object.rename_() """
-            Object.get(self)
+            main.Object.get(self)
 
 
     Component.__name__ = name+"(Wrapped)"
