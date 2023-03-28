@@ -3,15 +3,13 @@ import Scripts.Components.components as MainComponent
 from Scripts.timer import Timer
 from Scripts.boards import Boards
 from Scripts.inputMapper  import Input
-from Scripts.componentManager import *
-from main import *
 from Scripts.componentManager import ComponentTools as comTools
 
-@comTools.classWrapper
+@comTools.newClass
 class devTools():
 
-    def create(): pass
+    def create(self): pass
         
-    @comTools.initWrapper
-    def initialization__(self):
+    @comTools.init #type: ignore
+    def initialize__(self) -> None:
         pass

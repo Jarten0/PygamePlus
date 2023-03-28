@@ -1,18 +1,29 @@
 import pygame as pyg
-import Scripts.Components.components as MainComponent
-import Scripts.Components.character  as CharacterComponent
 from Scripts.timer          import Timer
 from Scripts.boards         import Boards
 from Scripts.inputMapper    import Input
-from main   import *
+from typing import Any
 
 class _cam():
-    _Settings = Settings
-    _xOffset:float = 0
-    _yOffset:float = 0
-    _level:  Any|None = level
-    _focusPointTransform = Object.new()
-    
+    _Settings: Any
+    _xOffset: float
+    _yOffset: float
+    _Transform: Any
+    _level: Any
+    _focusPointTransform: Any
+
+    @classmethod
+    def _init(cls) -> None:
+        import main
+        from main import settings, Object#, level
+        from Scripts.Components.components import Transform
+        _cam._Settings = settings
+        _cam._xOffset = 0
+        _cam._yOffset = 0
+        # _cam._level = level
+        _cam._Transform = Object.new('Transform', Transform)
+        _cam._focusPointTransform = Object.new('Transform', Transform)
+
 def _setFocusPoint(_obj:object|None = None, xPos:float=0, yPos:float=0):
     if isinstance(_obj, type(None)):
         _cam._focusPointTransform.xPosition = xPos
@@ -35,20 +46,28 @@ def _update() -> None:
         _yOffset = 0
 
 
-    
-    _xPosition = _cam._focus + _cam._xOffset
-    _yPosition = _cam.ydefault + _cam._yOffset
+
+    # _xSpeed = _cam._Transform.xVelocity
+    # _xPosition = _cam._focusPointTransform.xPosition + _cam._xOffset
+    # _yPosition = _cam.ydefault + _cam._yOffset
 
     
-    if _xPosition < 0:
-        _xPosition = 0
-    elif _xPosition > _cam._level.xLength - _cam._Settings['screen_width']:
-        _xPosition = _cam._level.xLength - _cam._Settings['screen_width']
+    # if _xPosition < 0:
+    #     _xPosition = 0
+    # elif _xPosition > _cam._level.xLength - _cam._Settings['screen_width']:
+    #     _xPosition = _cam._level.xLength - _cam._Settings['screen_width']
 
 
+def _getPosition() -> tuple[int|float, int|float]:
+    return (_cam._Transform.xPosition, _cam._Transform.yPosition)
 
 
 class Camera():
-    init = _init
+    @classmethod
+    def init(cls) -> None:
+        _cam._init()
     update = _update
+    get = _getPosition
+    xPosition = 0
+    yPosition = 0
     setFocusPoint = _setFocusPoint

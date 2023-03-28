@@ -7,7 +7,7 @@ from Scripts.componentManager import *
 Main = __import__("__main__")
 
 
-#wrappa
+
 @dependencyWrapper_
 class Platform():
     requiredDependencies={
@@ -43,7 +43,7 @@ class Platform():
         "#object": True},
     }
 
-    def create__(
+    def create__(self,
         Transform:MainComponent.Transform=MainComponent.Transform,
         Renderer :MainComponent.Renderer =MainComponent.Transform,
         ):
@@ -54,7 +54,7 @@ class Platform():
     def initialize__(self, Transform:MainComponent.Transform, Collider:MainComponent.Collider, 
     xLength:int, yLength:int, platformType:int, Renderer:MainComponent.Renderer|None = None) -> None:
         self.Transform = Transform
-        self.Collider = C
+        self.Collider = Collider
         self.Renderer = Renderer 
 
         self.xLength = xLength

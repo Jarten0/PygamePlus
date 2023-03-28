@@ -1,8 +1,6 @@
 import os, importlib.util
 from typing import Any, Callable
 import random
-from main import _ComponentNames, _Components
-from main import *
 
 def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
     """Will find an available key in a list. 
@@ -30,46 +28,62 @@ def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
     
     raise Exception("This list is really big. Like, REALLY BIG. Bigger than 10^10 items. Thats more than 80 GIGABYTES. What in the WORLD did you do to fill it up THIS much?")
 
-def _init() -> None:
-    blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__'}
-    for i in os.listdir(os.getcwd()+"\\Scripts\\Components"):
-        if i in {"templateCutscene.py", "__pycache__"}:continue
+def _init():
+    from main import Components, ComponentNames
+    import typing, main
+    blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__',
+    }
 
-        moduleSpec = importlib.util.spec_from_file_location(name=i, location=os.getcwd()+"\\Scripts\\Components\\" + i)
-        
-        if isinstance(moduleSpec, None.__class__):continue
-        if isinstance(moduleSpec.loader, None.__class__):continue
+    directories = {
+        "\\Scripts\\Components"
+    }
 
-        module = importlib.util.module_from_spec(moduleSpec)
-        moduleSpec.loader.exec_module(module)
-        
-        for componentStr in set(dir(module)):
-            component = module.__getattr__(componentStr)
-            if i in blacklist: continue 
-            _Components[component.ID] = component
-            _ComponentNames[i] = component.ID
-        
-        if 'init_' in module.__dir__():        
-            if module.init__['OnStart'] == True:
-                module.create__()
-        
-        if 'start__' in module.__dir__():
-            module.start__()
+    for directory in directories:
+        for file in os.listdir(os.getcwd()+directory):
+            _getComponentsFromFile(directory, file, blacklist, Components, ComponentNames, main)
 
-def initializationWrapper_(componentInitFunc: Callable[..., None]) -> Callable[..., Callable[..., None]]:
-    if __import__('__main__').LogInConsole: 
-        print("Loaded Component: ", [componentInitFunc])
+    return Components, ComponentNames
+
+def _getComponentsFromFile(directory, file, blacklist, Components, ComponentNames, main:Any=None) -> None:
+    if file in {"templateCutscene.py", "__pycache__"}: return
+
+    moduleSpec = importlib.util.spec_from_file_location(name=file, location=os.getcwd() + directory + "\\" + file)
+    
+    if isinstance(moduleSpec, None.__class__): return
+    if isinstance(moduleSpec.loader, None.__class__): return
+
+    module = importlib.util.module_from_spec(moduleSpec)
+    moduleSpec.loader.exec_module(module)
+
+    for componentStr in set(dir(module)):
+
+        if componentStr in blacklist: continue
+        blacklist.add(componentStr) 
+
+        component = getattr(module, componentStr)
+        if not 'ID' in dir(component): continue 
+
+        file = file.removesuffix(".py")
+        main.addComponent(component, file + "\\" + componentStr, component.ID)
+
+        if 'start__' in dir(component):
+            component.start__()
+
+def initializationWrapper_(componentInitFunc) -> Callable[..., Callable[..., Any]]:
+    #Wraps around the init function to add a bit of functionality
 
     def wrapper(dependencyAdder) -> Callable[..., None]:
         
-        #Run on creation of object
+        #This replaces the function that initializes all of the values (not dependencies)
         def initialize(self, *args, **kwargs) -> None:
-            self.__name__ = componentInitFunc.__class__.__name__+" > Instance"
-
+            self.__name__ = componentInitFunc.__str__()+" > Instance"
             dependencyAdder(self, *args, **kwargs)
             componentInitFunc(self=self, dependencies=self.dependencies, *args, **kwargs)
 
         return initialize
+
+    # if __import__('__main__').logInConsole: print("Wrapped Component: ", [componentInitFunc])
+
     wrapper.__name__ = 'initialize__'
     return wrapper
 
@@ -84,11 +98,13 @@ def dependencyWrapper_(initialComponent):
     name = initialComponent.__name__
     if not 'requiredDependencies' in dir(initialComponent):
         initialComponent.requiredDependencies = {}
-        if LogInConsole_: print(f"'requiredDependencies' dictionary is missing in {name} definition!") 
 
     class Component(initialComponent):  
         missLog_ = []
+        from main import Object, Component
+        _Components, _ComponentNames = Component.getAll()
         ID = _findNextAvailableID(_Components, randomize=True)
+        
 
         def __new__(cls, givenDependencies:dict={}, *args, **kwargs) -> Any: 
             for i in initialComponent.requiredDependencies.keys():              
@@ -98,8 +114,6 @@ def dependencyWrapper_(initialComponent):
                         Component.missLog_.append(initialComponent.requiredDependencies[i])
                 except KeyError as ke:
                     Component.missLog_.append(initialComponent.requiredDependencies[i])
-            if len(Component.missLog_) > 0:            
-                if LogInConsole_: print(f"ComponentDependencyError: Missing dependencies for {name} initialization!")
             return super(Component, cls).__new__(cls)
         
         try:
@@ -125,14 +139,13 @@ def dependencyWrapper_(initialComponent):
             error = f"InitializationWrapperMissing: No @initializationWrapper_ decorater in {name}! Add missing @decorater using template (run script as main for template)"
             raise Exception(error)
 
-
-        def rename_(self, newName:str):
+        def rename_(self, newName:str) -> None:
             """Takes in a name to set the object as and tries to set the object's name as it.
             \nIf it is already taken, it will try appending parenthesis with 
             a number to try to find an available key. It will return the new name
             \nExample: \n
             object.rename_() """
-            main.Object.get(self)
+            Component.Object.get(self)
 
 
     Component.__name__ = name+"(Wrapped)"
@@ -151,6 +164,8 @@ class <componentName>:
     def _initialize(self, dependencies):
         <add below for each dependency>
         self.<dependencyName> = dependencies["<dependencyName>"]  """)
+
+  
 
 class ComponentTools():
     newClass = dependencyWrapper_

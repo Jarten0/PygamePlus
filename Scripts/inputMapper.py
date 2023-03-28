@@ -94,7 +94,6 @@ _currentInputs = {
 "DOWN":  False,
 "RIGHT": False,
 }
-_keyBindList = {}
 
 _eventsGet: list[Any] = []
 _eventsGetHeld: Any = None
@@ -117,13 +116,13 @@ def _getKeyDown(input, events = _eventsGet) -> bool:
     return False
 
 def _getKeyHeld(input, events = _eventsGetHeld) -> bool:
-    if not events[_keyBindList[input]]:
-        return False
-    return True
+    return events[_keyBindList[input]]
 
 def _Update_() -> None:
+    global _eventsGet, _eventsGetHeld
     _eventsGet = pyg.event.get()
     _eventsGetHeld = pyg.key.get_pressed()
+    
     for actionToCheck in _defaultInputKeys:
         for keyToCheck in range(len(_Main.input[actionToCheck])):
             if _getKeyHeld(_Main.input[actionToCheck][keyToCheck], _eventsGetHeld):
@@ -275,6 +274,7 @@ class Input():
     getHeld = _getKeyHeld
     setInputMappings = _setInputMappings
     runInputMapper = _main
+    update = _Update_
 
 
 if __name__ == "__main__":

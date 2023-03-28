@@ -17,7 +17,9 @@ def init():
             "__pycache__",
         }:
             continue
-        module = importlib.util.spec_from_file_location("platformingInitializeCutscene", "Cutscenes\platformingInitializeCutscene.py")
+        module = importlib.util.spec_from_file_location("platformingInitializeCutscene", "Cutscenes\\platformingInitializeCutscene.py")
+        if isinstance(module, type(None)): exit()
+        elif isinstance(module.loader, type(None)): exit()
         moduleProper = importlib.util.module_from_spec(module)
         module.loader.exec_module(moduleProper)
         cutsceneList[findNextAvailableID(cutsceneList)] = moduleProper    

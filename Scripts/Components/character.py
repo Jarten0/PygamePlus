@@ -3,12 +3,12 @@ import Scripts.Components.components as MainComponent
 from Scripts.timer import Timer
 import Scripts.boards as Boards
 from Scripts.inputMapper  import Input
-from Scripts.componentManager import *
+from Scripts.componentManager import ComponentTools as comTools
 from main import *
 
 #This is responsible for all of the actions a Character can do
 #Mostly used for the player character
-@dependencyWrapper_
+@comTools.newClass
 class Character():
     requiredDependencies={
     "Transform" : MainComponent.Transform ,
@@ -18,20 +18,20 @@ class Character():
     "RigidBody" : MainComponent.RigidBody ,
 }
 
-
-    @initializeOnStartWrapper_
-    def create__(self, name:str="Character") -> object:
-        ConfigData = Component.new('ConfigData',
+    @classmethod
+    @comTools.create
+    def create__(cls, name:str="Character") -> object:
+        ConfigData = Component.new('components\\ConfigData',
             dirFileName = 'CharacterProperties',
             fileType = "toml"
             )
-        Transform = Component.new('Transform',
-            xPosition=ConfigData.configFile["body"]["xpos"],    
-            yPosition=ConfigData.configFile["body"]["ypos"],    
-            zPosition=ConfigData.configFile["body"]["zpos"],    
+        Transform = Component.new('components\\Transform',
+            xPosition=ConfigData.configFile["body"]["xpos"],     # type: ignore
+            yPosition=ConfigData.configFile["body"]["ypos"],     # type: ignore
+            zPosition=ConfigData.configFile["body"]["zpos"],     # type: ignore
             )
-        Renderer = Component.new('Renderer',
-            Transform = Transform,    
+        Renderer = Component.new('components\\Renderer',
+            Transform = Transform,  
             xOffset=0,
             yOffset=0,
             xLength=20,
@@ -39,18 +39,18 @@ class Character():
             path="Assets\\Images\\hehe.png",
             tier=5,
             )
-        Collider = Component.new('Collider',
+        Collider = Component.new('components\\Collider',
             Transform = Transform,    
             xLength = 20,
             yLength = 20,
             )
-        RigidBody = Component.new('RigidBody',
+        RigidBody = Component.new('components\\RigidBody',
             Transform = Transform,    
             Collider = Collider,    
             mass = 5,
             )
-        Character_ = Object.new(
-            name, class_=Character,
+        Character_ = Object.initialize(
+            name, class_=cls,
             ConfigData = ConfigData,    
             Transform = Transform,      
             Renderer = Renderer,      
@@ -59,14 +59,14 @@ class Character():
             )
         return Character_
 
-    @initializationWrapper_
+    @comTools.init
     def initialize__(self, 
             ConfigData: MainComponent.ConfigData,    
             Transform : MainComponent.Transform,      
             Renderer  : MainComponent.Renderer,      
             Collider  : MainComponent.Collider,      
             RigidBody : MainComponent.RigidBody, **kwargs) -> None:
-        
+        from main import settings, level
         self.ConfigData = ConfigData    
         self.Transform = Transform      
         self.Renderer = Renderer      
@@ -74,6 +74,8 @@ class Character():
         self.RigidBody = RigidBody   
 
         configFile = self.ConfigData.configFile
+        self.settings = settings
+        self.level = level
         
         self.allowControl = True
         self.st = False
@@ -100,6 +102,7 @@ class Character():
         self.DChyper = 0
 
     def update__(self) -> None:
+        return
         #Makes checks to see if the character is able to reset the dash
         if Timer.get('dashcool') == True \
             and self.RigidBody.grounded \
@@ -152,9 +155,9 @@ class Character():
         if Input.getHeld("jump") \
             and self.RigidBody.grounded \
         or Input.getHeld("jump") \
-            and Timer.get("CoyoteTime", True) < Main.p.coyoteTime:
+            and Timer.get("CoyoteTime", True) < settings['coyoteTime']:
             print("Jump!")
-            Timer.set("CoyoteTime", Main.p.coyoteTime, True)
+            Timer.set("CoyoteTime", settings['coyoteTime'], True)
             self.jump()
 
         elif Input.getHeld("jump") \
@@ -168,7 +171,7 @@ class Character():
             Timer.set("dashcool", self.dashCooldown )
             Timer.set("dash", self.dashLength )
             self.dashState = True
-            Main.fREEZEFRAMES += 2
+            # Main.fREEZEFRAMES += 2
             self.dash()            
 
         self.dashManager()
@@ -177,13 +180,13 @@ class Character():
         self.canWalljump = False
         
         #Death from void        
-        if self.Transform.yPosition > Main.level.height:
+        if self.Transform.yPosition > self.level.height: # type: ignore
             self.die()
 
         #Wrap the character around if they reach the end, but only one way
         if self.Transform.xPosition < 0:
             self.Transform.xPosition = 0
-        elif self.Transform.xPosition > Main.p.screen_width + Main.level.length:
+        elif self.Transform.xPosition > settings.screen_width + level.length: # type: ignore
             self.Transform.xPosition = 0
 
     def die(self):
