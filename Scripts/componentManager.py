@@ -132,9 +132,9 @@ def newComponent(initialComponent) -> type:
             
 
         @classmethod
-        def create__(cls, name, *args, **kwargs) -> object | None:
+        def create__(cls, name, *args, **kwargs) -> object:
             """Initializes a new object and sends it back using a create script. Returns None if no create script exists"""
-            if 'create' not in dir(initialComponent): return 
+            if not 'create' in dir(initialComponent): raise Exception("Uhoh: Ran create__ on a non-object component.")
             name, cls, kwargs = initialComponent.create(name)
             return NewComponent.Object.initialize(name, NewComponent, addToList_=True, *args, **kwargs)
 

@@ -1,5 +1,9 @@
 if __name__ == "__main__": logInConsole = False; print("\n"*60)
 
+from os import system
+system('pip3 install pygame')
+system('cls')
+
 import os, time, asyncio, pygame as pyg
 from copy import deepcopy
 from sys import exit
@@ -146,7 +150,7 @@ class Object():
     
     @classmethod
     def initialize(cls, name:str|int, 
-            class_:type, addToList_:bool,
+            class_:type, addToList_:bool=True,
             *args, **kwargs) -> object:
         if name == "" or name in Objects:
             if name == "":
@@ -155,7 +159,11 @@ class Object():
                 NextID(Objects, name=name)
 
         object_:object = class_(*args, **kwargs)
-        if addToList_: Objects[name] = object_
+        if not addToList_: return object_
+        
+        Objects[name] = object_
+        print(f"Created {name} object:{object}")
+
         return object_
 
     @classmethod
@@ -244,7 +252,7 @@ class Render():
         readyRenderQueue = cls._sortRenderQueue(renderQueue)
         
         asyncioRenderTasks = []
-        Screen.fill((10, 10, 10))
+        Screen.fill((50, 50, 50))
         for i in reversed(readyRenderQueue):
             if 'render' in dir(readyRenderQueue[i]):
                 asyncioRenderTasks.append( asyncio.create_task( cls._renderWithObj(readyRenderQueue[i]) )) 
@@ -297,7 +305,7 @@ def _startPlatformingScene() -> str:
     Components, ComponentNames = ComponentManager.init()
     Input.init()
     Camera.init()
-    CutsceneManager.init()
+    # CutsceneManager.init()
     missingImage = pyg.image.load(programPath+"\\Assets\\Images\\MissingImage.png").convert()
 
 
@@ -305,8 +313,6 @@ def _startPlatformingScene() -> str:
 
 
     Character = Object.new(name_="Character", class_=Component.get('character\\Character'))
-
-
     Mouse = Object.new('Mouse', Component.get('components\\Mouse'))
     Font = pyg.font.Font('freesansbold.ttf', 32)
     sky = Object.new(
@@ -320,6 +326,8 @@ def _startPlatformingScene() -> str:
             zPosition=99,
         )
     )   
+
+    print(Objects)
 
     platData = {
         0: None,
@@ -351,90 +359,90 @@ async def _platformingTick():
         Clock.tick(60)
         return "devpause"
 
-    # if FreezeFrames > 0:
-    #     FreezeFrames -= 1
-    #     return "freezeFrame"
+    """if FreezeFrames > 0:
+        FreezeFrames -= 1
+        return "freezeFrame"
 
     
 
 
-#Extra Input From Player (For dev use) =========================================================================================================
+Extra Input From Player (For dev use) =========================================================================================================
 
-    # if devMode == True:
-    #     if InputManager.k("z", eventsGet):
-    #         platData[100] = level.plat
-    #         FileManager.save(platData, platformfilename)
-    #         print("Saved Platform Data")
-    #     if InputManager.k("x", eventsGet):
-    #         data = FileManager.load(platformfilename)
-    #         level = Level(data[100], data[100])
-    #     if InputManager.k("c", eventsGet):
-    #         level.plat = {}
-    #     if InputManager.k("q", eventsGet):
-    #         pyg.quit()
-    #         exit()
-    #     if InputManager.k("r", eventsGet):
-    #         settings= defaultProperties(defaultProperties.lis)
-    #         FileManager.save(p, properetiesFileName)
-    #         print("Saved Propereties")        
-    #     if InputManager.k("`", eventsGet):
-    #         FileManager.save(p, "prop.dat")
-    #         print("Saved Propereites")
+    if devMode == True:
+        if InputManager.k("z", eventsGet):
+            platData[100] = level.plat
+            FileManager.save(platData, platformfilename)
+            print("Saved Platform Data")
+        if InputManager.k("x", eventsGet):
+            data = FileManager.load(platformfilename)
+            level = Level(data[100], data[100])
+        if InputManager.k("c", eventsGet):
+            level.plat = {}
+        if InputManager.k("q", eventsGet):
+            pyg.quit()
+            exit()
+        if InputManager.k("r", eventsGet):
+            settings= defaultProperties(defaultProperties.lis)
+            FileManager.save(p, properetiesFileName)
+            print("Saved Propereties")        
+        if InputManager.k("`", eventsGet):
+            FileManager.save(p, "prop.dat")
+            print("Saved Propereites")
 
-    # for i in range(10):
-    #     if InputManager.keyDownHeld(str(i), eventsGetHeld):
-    #         select = i
-    #         print(i)
+    for i in range(10):
+        if InputManager.keyDownHeld(str(i), eventsGetHeld):
+            select = i
+            print(i)
         
-    # if InputManager.k("TAB", eventsGet):
-    #     devMode = True
-    #     # settings= dev.cmd()
+    if InputManager.k("TAB", eventsGet):
+        devMode = True
+        # settings= dev.cmd()
     
-    # if Mouse.list[0]:
-    #     if not Mouse.down:
-    #         print("Click!")
-    #         if select == 0:
-    #             for platformThing in level.plat:
-    #                 platformToBeDeleted = level.plat[platformThing]
-    #                 if platform.collision.check(Mouse.posx, Mouse.posy, 1, 1, platformToBeDeleted.x, platformToBeDeleted.y, platformToBeDeleted.xl, platformToBeDeleted.yl)[0]:
-    #                     del level.plat[platformThing]
-    #                     break
+    if Mouse.list[0]:
+        if not Mouse.down:
+            print("Click!")
+            if select == 0:
+                for platformThing in level.plat:
+                    platformToBeDeleted = level.plat[platformThing]
+                    if platform.collision.check(Mouse.posx, Mouse.posy, 1, 1, platformToBeDeleted.x, platformToBeDeleted.y, platformToBeDeleted.xl, platformToBeDeleted.yl)[0]:
+                        del level.plat[platformThing]
+                        break
             
-    #         elif placestage == 0:
-    #             placestage = 1
-    #             Mouse.tempx = Mouse.posx
-    #             Mouse.tempy = Mouse.posy
-    #             print(f"({Mouse.tempx}, {Mouse.tempy})")
+            elif placestage == 0:
+                placestage = 1
+                Mouse.tempx = Mouse.posx
+                Mouse.tempy = Mouse.posy
+                print(f"({Mouse.tempx}, {Mouse.tempy})")
                 
             
-    #         elif placestage == 1:
-    #             Mouse.tempx2 = Mouse.posx
-    #             Mouse.tempy2 = Mouse.posy
-    #             if Mouse.tempx > Mouse.tempx2:
-    #                 Mouse.xstate = Mouse.tempx2
-    #             else:
-    #                 Mouse.xstate = Mouse.tempx
-    #             if Mouse.tempy > Mouse.tempy2:
-    #                 Mouse.ystate = Mouse.tempy2
-    #             else:
-    #                 Mouse.ystate = Mouse.tempy
+            elif placestage == 1:
+                Mouse.tempx2 = Mouse.posx
+                Mouse.tempy2 = Mouse.posy
+                if Mouse.tempx > Mouse.tempx2:
+                    Mouse.xstate = Mouse.tempx2
+                else:
+                    Mouse.xstate = Mouse.tempx
+                if Mouse.tempy > Mouse.tempy2:
+                    Mouse.ystate = Mouse.tempy2
+                else:
+                    Mouse.ystate = Mouse.tempy
                 
-    #             if platform.placeprop[select]["#HasPlaceReq"]:
-    #                 if not platform.placeprop[select]["xl"] == False:
-    #                     Mouse.tempx2 = platform.placeprop[select]["xl"]
-    #                     Mouse.tempx = 0
-    #                 if not platform.placeprop[select]["yl"] == False:
-    #                     Mouse.tempy2 = platform.placeprop[select]["yl"]
-    #                     Mouse.tempy = 0
-    #             if platform.placeprop[select]["#object"]:
-    #                 level.plat[platform.NextID(level.plat)] = platform.create(Mouse.posx, Mouse.posy, Mouse.tempx2, Mouse.tempy2, select)
-    #             elif not abs(Mouse.tempx2 - Mouse.tempx) == 0 and not abs(Mouse.tempy2 - Mouse.tempy) == 0:
-    #                 level.plat[platform.NextID(level.plat)] = platform.create(Mouse.xstate, Mouse.ystate, abs(Mouse.tempx2 - Mouse.tempx), abs(Mouse.tempy2 - Mouse.tempy), select)  
-    #             placestage = 0
-    #         Mouse.down = True
+                if platform.placeprop[select]["#HasPlaceReq"]:
+                    if not platform.placeprop[select]["xl"] == False:
+                        Mouse.tempx2 = platform.placeprop[select]["xl"]
+                        Mouse.tempx = 0
+                    if not platform.placeprop[select]["yl"] == False:
+                        Mouse.tempy2 = platform.placeprop[select]["yl"]
+                        Mouse.tempy = 0
+                if platform.placeprop[select]["#object"]:
+                    level.plat[platform.NextID(level.plat)] = platform.create(Mouse.posx, Mouse.posy, Mouse.tempx2, Mouse.tempy2, select)
+                elif not abs(Mouse.tempx2 - Mouse.tempx) == 0 and not abs(Mouse.tempy2 - Mouse.tempy) == 0:
+                    level.plat[platform.NextID(level.plat)] = platform.create(Mouse.xstate, Mouse.ystate, abs(Mouse.tempx2 - Mouse.tempx), abs(Mouse.tempy2 - Mouse.tempy), select)  
+                placestage = 0
+            Mouse.down = True
     
-    # else:
-    #     Mouse.down = False
+    else:
+        Mouse.down = False"""
 
 #Component Handler
     for obj in UpdateObjects.values():

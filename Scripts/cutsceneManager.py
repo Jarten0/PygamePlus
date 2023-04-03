@@ -11,6 +11,7 @@ cutsceneID = 0
 cutsceneList = {}
 
 def init():
+    return
     for i in os.listdir(os.getcwd()+r"\Cutscenes"):
         if i in {
             "templateCutscene.py",
