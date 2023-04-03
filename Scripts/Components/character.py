@@ -1,26 +1,29 @@
 import pygame as pyg
-import Scripts.Components.components as MainComponent
-from Scripts.timer import Timer
-import Scripts.boards as Boards
-from Scripts.inputMapper  import Input
-from Scripts.componentManager import ComponentTools as comTools
+from Scripts import Input
+from Scripts.componentManager import newComponent
 from main import *
-
+from typing import Type
 #This is responsible for all of the actions a Character can do
 #Mostly used for the player character
-@comTools.newClass
+@newComponent
 class Character():
-    requiredDependencies={
-    "Transform" : MainComponent.Transform ,
-    "Renderer"  : MainComponent.Renderer  ,
-    "ConfigData": MainComponent.ConfigData,
-    "Collider"  : MainComponent.Collider  ,
-    "RigidBody" : MainComponent.RigidBody ,
-}
-
+    import Scripts.Components.components as cmp
+    requiredDependencies = {
+        'ConfigData': cmp.ConfigData,    
+        'Transform' : cmp.Transform,      
+        'Renderer'  : cmp.Renderer,      
+        'Collider'  : cmp.Collider,      
+        'RigidBody' : cmp.RigidBody,
+    }
+    optionalArguments = {
+        'ConfigData',    
+        'Transform',      
+        'Renderer',      
+        'Collider',      
+        'RigidBody',
+    }
     @classmethod
-    @comTools.create
-    def create__(cls, name:str="Character") -> object:
+    def create(cls, name:str="Character") -> object:
         ConfigData = Component.new('components\\ConfigData',
             dirFileName = 'CharacterProperties',
             fileType = "toml"
@@ -36,7 +39,7 @@ class Character():
             yOffset=0,
             xLength=20,
             yLength=20,
-            path="Assets\\Images\\hehe.png",
+            path="\\Assets\\Images\\hehe.png",
             tier=5,
             )
         Collider = Component.new('components\\Collider',
@@ -49,23 +52,20 @@ class Character():
             Collider = Collider,    
             mass = 5,
             )
-        Character_ = Object.initialize(
-            name, class_=cls,
-            ConfigData = ConfigData,    
-            Transform = Transform,      
-            Renderer = Renderer,      
-            Collider = Collider,      
-            RigidBody = RigidBody,    
-            )
-        return Character_
-
-    @comTools.init
-    def initialize__(self, 
-            ConfigData: MainComponent.ConfigData,    
-            Transform : MainComponent.Transform,      
-            Renderer  : MainComponent.Renderer,      
-            Collider  : MainComponent.Collider,      
-            RigidBody : MainComponent.RigidBody, **kwargs) -> None:
+        return name, cls, \
+           {'ConfigData': ConfigData,
+            'Transform': Transform,
+            'Renderer': Renderer,
+            'Collider': Collider,
+            'RigidBody': RigidBody}
+            
+    def init(self, 
+            ConfigData,    
+            Transform ,      
+            Renderer  ,      
+            Collider  ,      
+            RigidBody , 
+            *args, **kwargs) -> None:
         from main import settings, level
         self.ConfigData = ConfigData    
         self.Transform = Transform      
@@ -97,14 +97,19 @@ class Character():
         self.dashSpeed = configFile['dash']['dashSpeed']
         self.dashList = [False, False, False, False]
         self.dashSlow = configFile['dash']['dashDeceleration']
-        self.color = self.Renderer.colors["red"]
+        self.color = self.Renderer.colors["red"] # type: ignore
         self.DCsuper = 0
         self.DChyper = 0
 
-    def update__(self) -> None:
+    def update(self) -> None:
+        print("YE")
+        if Input.getHeld('left'):
+            self.Transform.xPosition -= 3
+        if Input.getHeld('right'):
+            self.Transform.xPosition += 3
         return
         #Makes checks to see if the character is able to reset the dash
-        if Timer.get('dashcool') == True \
+        if Timer.getValue('dashcool', inc=False) \
             and self.RigidBody.grounded \
             and self.dashState == False \
             and self.dashLeave == False:
@@ -152,13 +157,9 @@ class Character():
             self.RigidBody.mass = 7
 
         #Actions
-        if Input.getHeld("jump") \
-            and self.RigidBody.grounded \
-        or Input.getHeld("jump") \
-            and Timer.get("CoyoteTime", True) < settings['coyoteTime']:
-            print("Jump!")
-            Timer.set("CoyoteTime", settings['coyoteTime'], True)
-            self.jump()
+        if Input.getHeld("jump"):
+            if Timer.getValue("CoyoteTime", False) < settings['coyoteTime'] or self.RigidBody.grounded:
+                self.jump()
 
         elif Input.getHeld("jump") \
             and self.canWalljump:
@@ -197,6 +198,9 @@ class Character():
         self.dead = True
 
     def jump(self):
+        print("Jump!")
+        Timer.setDec("CoyoteTime", 0)
+
         self.Transform.yVelocity = self.jumppower
         self.RigidBody.grounded = False
         self.dashSlow = 1
@@ -282,6 +286,7 @@ class Character():
         self.dashes = 1
         self.dashState = False
         self.dashLeave = False
-        Timer.set("dashLeave", True)
-        Timer.set("dash", True)
-        Timer.set("dashcool", True)
+        Timer.setDec("dashLeave", True)
+        Timer.setDec("dash",      True)
+        Timer.setDec("dashcool",  True)
+    

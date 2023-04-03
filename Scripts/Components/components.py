@@ -1,22 +1,26 @@
+"""Contains a group of basic components for fundamental level design. Includes essential components like Transform and ConfigData, among a few other useful ones."""
+
 from sys import exit
-if __name__ == "__main__":
-    print(r"Cannot run components script as main :/")
-    exit()
+if __name__ == "__main__": print(r"Cannot run components script as main :/"); exit()
 import pygame         as pyg
-from Scripts.componentManager import ComponentTools as comTools
+from Scripts.componentManager import newComponent
+from Scripts import Board
+
 from os         import getcwd
 from typing import Any
+from main import Object, Component
 
-@comTools.newClass
+@newComponent
 class Transform():
     """Handles all positioning aspects of an object in world space
     Units are in pixels, 1 unit = 1 pixel
-    X: - -> + = left -> right
-    Y: - -> + = up   -> down
-    Z: - -> + = back -> front
+    X: - <> + = left <> right
+    Y: - <> + = up   <> down
+    Z: - <> + = back <> front
  
     Rotation: 0 - 360, clockwise
     """
+    
     requiredDependencies={}
     arguments = {
         "xPosition":0.0, 
@@ -26,29 +30,47 @@ class Transform():
         "yVelocity":0.0, 
         "rotation": 0.0
     }
-    @comTools.init 
-    def initialize__(self,
-    xPosition:float=0, yPosition:float=0, zPosition:int=0, \
-    xVelocity:float=0, yVelocity:float=0, rotation:float = 0, **kwargs) -> None:
-        self.xPosition = xPosition
-        self.yPosition = yPosition
-        self.zPosition = zPosition
-        self.xVelocity = xVelocity
-        self.yVelocity = yVelocity
-        self.rotation  = rotation
+    optionalArguments = {
+        "xPosition", 
+        "yPosition", 
+        "zPosition",
+        "xVelocity", 
+        "yVelocity", 
+        "rotation"
+    }
     
-    def update__(self) -> None:
+    class Vector:
+        def __init__(self, x, y) -> None:
+            self.xPosition = self.xPos = self.x = x
+            self.yPosition = self.yPos = self.y = y
+    
+
+    def init(self,
+            xPosition:float=0, yPosition:float=0, zPosition:int=0, 
+            xVelocity:float=0, yVelocity:float=0, rotation:float = 0, 
+            *args, **kwargs) -> None:
+        self.xPosition = self.xPos = self.x = xPosition
+        self.yPosition = self.yPos = self.y = yPosition
+        self.zPosition = self.zPos = self.z = zPosition
+        self.xVelocity = self.xv = xVelocity
+        self.yVelocity = self.yv = yVelocity
+        self.rotation  = self.r = rotation
+    
+    def update(self) -> None:
         self.xPosition += self.xVelocity
         self.yPosition += self.yVelocity
 
-@comTools.newClass
+    def set(self, vector:Vector):
+        self.xPosition
+
+@newComponent
 class DependenciesTemplate():
     requiredDependencies={}
-    @comTools.init 
-    def initialize__(self, dependencies, *args, **kwargs) -> None: 
+ 
+    def init(self, *args, **kwargs) -> None: 
         pass
 
-@comTools.newClass
+@newComponent
 class Collider():
     """Used to check as to whether the selected item is colliding with the object
     This will NOT handle collisions, incase it should be used as a collisionless trigger that has an
@@ -62,16 +84,17 @@ class Collider():
     "Transform": Transform 
     }
 
-    @comTools.init 
-    def initialize__(self, dependencies:dict,
-    xLength:int=50, yLength:int=50, **kwargs) -> None:
-        self.Transform = dependencies["Transform"]
+ 
+    def init(self, 
+            Transform,
+            xLength:int=50, yLength:int=50, **kwargs) -> None:
+        self.Transform = Transform
         self.xLength = xLength
         self.yLength = yLength
-        self.Objects = Collider.Object.getAll()
+        self.Objects = Object.getAll()
         self.collideList: list[tuple[object, list[bool]]] = []
 
-    def update__(self) -> None:
+    def update(self) -> None:
         for i in self.Objects:
             checkList = self.check(i)
             if checkList[0]:
@@ -113,7 +136,7 @@ class Collider():
         
         return lis
 
-@comTools.newClass
+@newComponent
 class RigidBody():
     """Used to handle collisions, gravity and other physical forces
     Use with a Collider to properly collide with other objects that have Colliders 
@@ -126,14 +149,19 @@ class RigidBody():
     "Transform": Transform, "Collider": Collider
     }
 
-    @comTools.init 
-    def initialize__(self, dependencies: dict, mass:int=0, **kwargs) -> None:
-        self.Transform = dependencies["Transform"]
-        self.Collider = dependencies["Collider"]
+ 
+    def init(self,  
+            Transform,
+            Collider,
+            mass:int=0,
+            
+            **kwargs) -> None:
+        self.Transform = Transform
+        self.Collider = Collider
         self.mass = mass
         self.grounded = True
 
-    def update__(self) -> None:
+    def update(self) -> None:
         if not self.grounded:
             if self.Transform.yVelocity < self.mass: 
                 self.Transform.yVelocity += self.mass / 100
@@ -157,7 +185,7 @@ class RigidBody():
                 self.Transform.xVelocity = 0
                 self.Transform.xPosition = item.yPosition - item.Collider.yLength
 
-@comTools.newClass
+@newComponent
 class Renderer():
     """Draws an image, sprite from spritesheet, or rectangle to the screen. Has quite a few arguments.
 
@@ -196,21 +224,24 @@ class Renderer():
     "Transform": Transform
     }
     arguments = {
-        "Transform": Transform, 
-        "dependencies": {},
-        "path": "''", 
-        "tier": 3, 
-        "xOffset":0, 
-        "yOffset":0, 
-        "xLength":0, 
-        "yLength":0, 
-        "color":(30, 30, 30), 
-        "surface":pyg.Surface|None,  
-        "alpha": 0, 
-        "surfaceRows": 1, 
+        "path        ": "''", 
+        "tier        ": 3, 
+        "xOffset     ":0.0, 
+        "yOffset     ":0.0, 
+        "xLength     ":0.0, 
+        "yLength     ":0.0, 
+        "color       ":(30, 30, 30), 
+        "surface     ": pyg.image.load(getcwd()+"\\Assets\\Images\\MissingImage.png"),  
+        "alpha       ": 0.0, 
+        "surfaceRows ": 1, 
         "surfaceColumns": 1, 
-        "autoCulling": True
+        "autoCulling ": True
     }
+    optionalArguments = {
+        "xOffset     ",
+        "yOffset     ",
+    }
+
     colors = {
     "red":   (255, 0,   0  ),
     "green": (0,   255, 0  ),
@@ -222,26 +253,26 @@ class Renderer():
     Level = Object.get('Level')
     
     @classmethod
-    @comTools.create
-    def create__(cls, name:str='New Renderer', 
-        *args, **kwargs) -> Any:
-
-        Renderer_ = Renderer.Object.initialize(
-            name, class_=Renderer, *args, **kwargs)
-
-        return Renderer_
-
-    @comTools.init 
-    def initialize__(self, Transform:Transform, dependencies:dict={},
-        path: str = '', tier: int = 3, xOffset:float=0, yOffset:float=0, xLength:float=0, yLength:float=0, 
+    def create(cls, name:str='New Renderer') -> Any:
+        return name, cls, {
+            'Transform': Component.new(
+                Transform, 
+                xPosition=0, yPosition=0
+            )
+        }
+ 
+    def init(self, Transform:Transform,
+        path: str|None = None, tier: int = 3, xOffset:float=0, yOffset:float=0, xLength:float=0, yLength:float=0, 
         color:tuple[int]=colors["gray"], surface:pyg.Surface|None = None,  alpha: int = 0, 
-        surfaceRows:int = 1, surfaceColumns:int = 1, autoCulling:bool = True) -> None:
-            
-        if path == '':    
+        surfaceRows:int = 1, surfaceColumns:int = 1, autoCulling:bool = True, **kwargs) -> None:
+        if path == None:    
             self.path = "\\Assets\\Images\\MissingImage.png"
-        if surface == None:
-            self.surface = pyg.image.load(Renderer.programPath+"\\Assets\\Images\\SkyBox.png")
+            self.surface = pyg.image.load(getcwd()+self.path)
+        elif isinstance(path, str):
+            self.surface = pyg.image.load(getcwd()+path)
         else:
+            if surface == None:
+                exit("No available path or surface"+ str(path))
             self.surface = surface
 
         self.area    = ()
@@ -262,16 +293,14 @@ class Renderer():
         "flipVertical"  : False,
         }
 
-    def render__(self, Screen: pyg.Surface, Camera, **kwargs):
+    def render(self, Screen: pyg.Surface, Camera, **kwargs):
         Screen.blit(
     source=self.surface, 
-    dest=(int(self.Transform.xPosition) - int(self.xOffset) - Camera.xPosition, 
-          int(self.Transform.yPosition) - int(self.yOffset) - Camera.yPosition)
+    dest=(int(self.Transform.xPosition) - int(self.xOffset) - Camera.xPosition,  # type: ignore
+          int(self.Transform.yPosition) - int(self.yOffset) - Camera.yPosition) # type: ignore
           )
 
-    def renderupdate__(self):
-        return self
-    
+
     def flip(self, flipVertically: bool = False, value: str | bool = "invert"):
         try:
             direction = 'flipHorizontal'
@@ -286,7 +315,7 @@ class Renderer():
         except KeyError as ke:
             return ke
         
-@comTools.newClass
+@newComponent
 class ConfigData():
     """     Grabs data from a toml or other type config file. It checks for files located in the ConfigFiles directory,
 so input dirFileName as the name with a backslash before it. If it is located in a folder, input the path from
@@ -299,33 +328,32 @@ so input dirFileName as the name with a backslash before it. If it is located in
     fileType; str = "toml", the file extension of the file you wish to pull from,
     """
     from tomllib    import load
-    requiredDependencies={}
-    @comTools.init 
-    def initialize__(self, dependencies, dirFileName: str = "", fileType: str = "toml", *args, **kwargs) -> None:
+ 
+    def init(self, dirFileName: str = "settings", fileType: str = "toml", *args, **kwargs) -> None:
         try:
             if not list(dirFileName)[0] == "\\": dirFileName = "\\" + dirFileName
             self.fileName = dirFileName
             self.fileType = fileType
             if self.fileType == "toml":
                 with open(getcwd()+"\\ConfigFiles" + self.fileName + '.toml', "rb" ) as f:
-                    self.configFile = ConfigData.load(f)
+                    self.configFile = ConfigData.load(f) # type: ignore
 
         except FileNotFoundError as fnfe:
             print(f"{dirFileName}: Invalid Config File. Make sure that the file is located in '\\ConfigFiles' and is typed as the name without the file extension. \nExample: 'assetData.toml'")
             raise fnfe
 
         except:
-            print("\n"*10, dependencies, dirFileName, fileType, args, kwargs)
+            print("\n"*10, dirFileName, fileType, args, kwargs)
             raise
 
-@comTools.newClass
+@newComponent
 class Mouse():
 
     requiredDependencies={}
-    @comTools.init 
-    def initialize__(self, dependencies) -> None:
+ 
+    def init(self) -> None:
         from main import Object, settings
-        from Scripts.camera import Camera
+        from Scripts import Camera
         self.Object, self._Settings, self.Camera = Object, settings, Camera
         self.placestage = 0
         self.select = 1
@@ -338,7 +366,7 @@ class Mouse():
         self.posy = round((self.pos[1]), 0)
         self.list = pyg.mouse.get_pressed(num_buttons=5)
 
-    def update__(self):
+    def update(self):
         self.pos =  pyg.mouse.get_pos()
         cameraXOffset, cameraYOffset = self.Camera.get()
         self.pos = (self.pos[0] + cameraXOffset, self.pos[1] + cameraYOffset)

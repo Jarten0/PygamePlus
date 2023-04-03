@@ -1,7 +1,4 @@
-import Scripts.EZPickle as FileManager
-#import Scripts.platforms as platform
-import pygame as pyg
-#from main import drawRect
+
 devpause = False
 def cmd():
     devpause = True

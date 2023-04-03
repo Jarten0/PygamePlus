@@ -28,7 +28,7 @@ def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
     
     raise Exception("This list is really big. Like, REALLY BIG. Bigger than 10^10 items. Thats more than 80 GIGABYTES. What in the WORLD did you do to fill it up THIS much?")
 
-def _init():
+def init():
     from main import Components, ComponentNames
     import typing, main
     blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__',
@@ -49,7 +49,7 @@ def _getComponentsFromFile(directory, file, blacklist, Components, ComponentName
 
     moduleSpec = importlib.util.spec_from_file_location(name=file, location=os.getcwd() + directory + "\\" + file)
     
-    if isinstance(moduleSpec, None.__class__): return
+    if isinstance(moduleSpec, type(None)): return
     if isinstance(moduleSpec.loader, None.__class__): return
 
     module = importlib.util.module_from_spec(moduleSpec)
@@ -69,75 +69,75 @@ def _getComponentsFromFile(directory, file, blacklist, Components, ComponentName
         if 'start__' in dir(component):
             component.start__()
 
-def initializationWrapper_(componentInitFunc) -> Callable[..., Callable[..., Any]]:
-    #Wraps around the init function to add a bit of functionality
-
-    def wrapper(dependencyAdder) -> Callable[..., None]:
-        
-        #This replaces the function that initializes all of the values (not dependencies)
-        def initialize(self, *args, **kwargs) -> None:
-            self.__name__ = componentInitFunc.__str__()+" > Instance"
-            dependencyAdder(self, *args, **kwargs)
-            componentInitFunc(self=self, dependencies=self.dependencies, *args, **kwargs)
-
-        return initialize
-
-    # if __import__('__main__').logInConsole: print("Wrapped Component: ", [componentInitFunc])
-
-    wrapper.__name__ = 'initialize__'
-    return wrapper
-
-def initializeOnStartWrapper_(componentCreate__Func, *args, **kwargs) -> Callable[..., None]:
-    def wrapper(*args2, **kwargs2) -> None:
-        return componentCreate__Func(*args, *args2, **kwargs, **kwargs2)
-    wrapper.__name__ = componentCreate__Func.__name__
-    return wrapper
-
-def dependencyWrapper_(initialComponent):
-    """Add this decorater to your class to automatically add in custom initialize functions."""
+def newComponent(initialComponent) -> type:
+    """Add this decorater to your class to automatically add in component functionality.
+    \nSome specific useful functions:
+    \ninit(self, **kwargs): Will run on creation of component, used to initialize values and set flags and whatnot.
+    \ncreate(cls, name=''): Will run on creation of an object, used to initialize multiple components and to run scripts upon
+    object creation. Read the doc for more detail.
+    \nupdate(self): Run on every frame for every component. Do whatever you want with this.
+    \nrender(self, Screen, Camera): Can be used to create custom rendering components, runs on every frame if it exists
+    and allows you to render objects however you will via the Pygame engine.
+    """
     name = initialComponent.__name__
     if not 'requiredDependencies' in dir(initialComponent):
         initialComponent.requiredDependencies = {}
 
-    class Component(initialComponent):  
+    class NewComponent(initialComponent):  
         missLog_ = []
+        if not "requiredDependencies" in dir(initialComponent): requiredDependencies = {} 
+        if not "optionalArguments" in dir(initialComponent): optionalArguments = {} 
         from main import Object, Component
         _Components, _ComponentNames = Component.getAll()
         ID = _findNextAvailableID(_Components, randomize=True)
-        
+        NAME = initialComponent.__name__
 
-        def __new__(cls, givenDependencies:dict={}, *args, **kwargs) -> Any: 
-            for i in initialComponent.requiredDependencies.keys():              
+        def __new__(cls, *args, **kwargs) -> Any: 
+            for reqDependency in cls.requiredDependencies.keys():              
+                if reqDependency in NewComponent.optionalArguments:
+                    continue
+                
+                if reqDependency not in kwargs:
+                    NewComponent.missLog_.append(cls.requiredDependencies[reqDependency])
+                    continue
+
+                if not isinstance(kwargs[reqDependency], cls.requiredDependencies[reqDependency]):
+                    NewComponent.missLog_.append(cls.requiredDependencies[reqDependency])
+                continue
+
+            return super(NewComponent, cls).__new__(cls)
+        
+        def __init__(self, *args, **kwargs) -> None:
+            for missedComponent in NewComponent.missLog_:
                 try:
-                    if kwargs[i] == None \
-                    and initialComponent.requiredDependencies[i] == True:
-                        Component.missLog_.append(initialComponent.requiredDependencies[i])
-                except KeyError as ke:
-                    Component.missLog_.append(initialComponent.requiredDependencies[i])
-            return super(Component, cls).__new__(cls)
+                    kwargs[f"{missedComponent.NAME}"] = NewComponent.Component.new(missedComponent)
+                except:
+                    print("Dependency Adder failed! Make sure that:")
+                    for missedComponent in NewComponent.missLog_:
+                        print(missedComponent.__name__)
+                    print("Are all present inside of:", name)
+                    raise
         
-        try:
-            @initialComponent.initialize__
-            def __init__(self, *args, **kwargs) -> None:
-                self.dependencies = {}
-                for i in Component.missLog_:
-                    try:
-                        self.dependencies[f"{i}"] = i()
-                    except:
-                        print("Dependency Adder failed! Make sure that:")
-                        for i in Component.missLog_:
-                            print(i.__name__)
-                        print("Are all present inside of:", name)
-                        raise
-                for i in initialComponent.requiredDependencies:
-                    self.dependencies[f"{i}"] = i
+            try:
+                initialComponent.init(self, *args, **kwargs)
 
-        except AttributeError as ae:
-            error = f"InitializationFunctionMissing: No initialize function in {name}! Add missing function using template (run script as main for template)"
-            raise Exception(error)
-        except TypeError as te:
-            error = f"InitializationWrapperMissing: No @initializationWrapper_ decorater in {name}! Add missing @decorater using template (run script as main for template)"
-            raise Exception(error)
+            except AttributeError as ae:
+                error = f"InitializationFunctionMissing: No initialize function in {name}! Add missing function using template (run script as main for template)"
+                print(error)
+                raise ae
+            except TypeError as te:
+                error = f"InitializationWrapperMissing: No init decorater in {name}! Add missing @decorater using template (run script as main for template)"
+                print(error)
+                raise te
+            
+
+        @classmethod
+        def create__(cls, name, *args, **kwargs) -> object | None:
+            """Initializes a new object and sends it back using a create script. Returns None if no create script exists"""
+            if 'create' not in dir(initialComponent): return 
+            name, cls, kwargs = initialComponent.create(name)
+            return NewComponent.Object.initialize(name, NewComponent, addToList_=True, *args, **kwargs)
+
 
         def rename_(self, newName:str) -> None:
             """Takes in a name to set the object as and tries to set the object's name as it.
@@ -145,11 +145,11 @@ def dependencyWrapper_(initialComponent):
             a number to try to find an available key. It will return the new name
             \nExample: \n
             object.rename_() """
-            Component.Object.get(self)
+            NewComponent.Object.get(self)
 
 
-    Component.__name__ = name+"(Wrapped)"
-    return Component
+    NewComponent.__name__ = name+"(Wrapped)"
+    return NewComponent
 
 def _main() -> None:
     print("""
@@ -165,12 +165,6 @@ class <componentName>:
         <add below for each dependency>
         self.<dependencyName> = dependencies["<dependencyName>"]  """)
 
-  
-
-class ComponentTools():
-    newClass = dependencyWrapper_
-    init = initializationWrapper_
-    create = initializeOnStartWrapper_
 
 if __name__ == '__main__':
     _main()

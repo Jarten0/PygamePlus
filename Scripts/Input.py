@@ -1,13 +1,12 @@
 import pygame as pyg
-from Scripts.EZPickle import FileManager
-import Scripts.boards as Boards
-import Scripts.timer as Timer
+from Scripts import FileManager, Board
 from typing import Any
 from os import getcwd
+from copy import deepcopy
 programPath = getcwd()
 _Main = __import__('__main__')
 
-_defaultInputs: dict[str, list[str]] = {
+_defaultInputMappings: dict[str, list[str]] = {
 #To add or modify an input, simply add or modify a string in the array
 #Keybinds for dev tools (save, load, etc.) are currently not modifiable
 #If your keybind does not have an entry in the keybindlist, add it in the next list below
@@ -24,9 +23,9 @@ _defaultInputs: dict[str, list[str]] = {
     "DOWN":  ["DOWN",  ],
     "RIGHT": ["RIGHT", ], 
     }
-_defaultInputKeys = _defaultInputs.keys()   
+_defaultInputMapping_keys = _defaultInputMappings.keys()   
         
-_keyBindList: dict[str, int] = {
+_pygameKeyToEvent: dict[str, int] = {
     #If you wish to use a button not displayed here, add it by following the examples shown
     #Use pygame documentation if you need to add a unique button
     "a": pyg.K_a,
@@ -77,7 +76,7 @@ _keyBindList: dict[str, int] = {
     "BACKSPACE": pyg.K_BACKSPACE,
     "`": pyg.K_RALT
 }
-_keyBindListKeys = _keyBindList.keys()
+_pyg_KtE_keys = _pygameKeyToEvent.keys()
 #================================================================================================
 #===== FURTHER CODE SHOULD NOT BE MODIFIED IF YOU ONLY WISH TO CHANGE KEYBINDS ==================
 #================================================================================================
@@ -95,54 +94,64 @@ _currentInputs = {
 "RIGHT": False,
 }
 
+_inputMappings: dict[str, list[str]]
 _eventsGet: list[Any] = []
 _eventsGetHeld: Any = None
 
-def _getDown(key) -> bool:
-    if Boards._getFromPerm(key) == True:
+def getDown(key) -> bool:
+    "Get any input from the list of actions. Activates for one frame on press"
+    if Board._getFromPerm(key) == True:
         return True
     return False
 
-def _getHeld(key) -> bool:
+def getHeld(key) -> bool:
+    "Get any input from the list of actions. Activates for the full duration of press. Raises KeyError if invalid action"
     return(_currentInputs[key])
 
-def _getKeyDown(input, events = _eventsGet) -> bool:
+def _setKeysDown(input, events = _eventsGet) -> bool:
     for event in events:
         if not event.type == pyg.KEYDOWN:
             return False
-        if not event.key == _keyBindList[input]:
+        if not event.key == _pygameKeyToEvent[input]:
             return False
         return True
     return False
 
-def _getKeyHeld(input, events = _eventsGetHeld) -> bool:
-    return events[_keyBindList[input]]
+def _setKeysHeld(input, events = _eventsGetHeld) -> bool:
+    return events[_currentInputs[input]]
 
-def _Update_() -> None:
+def add(key:str, value:str):
+    _inputMappings[key].append(value)
+    
+def reset(key:str):
+    _inputMappings[key] = deepcopy(_defaultInputMappings[key])
+
+def remove(key:str, value:str|int=-1):
+    """Removes the last binding from the key. You can also specify a specific key value, or specify an index if either are what you want. 
+    \nRemember that you can use negative index's to start from the end and go in reverse order"""
+    if isinstance(value, str): _inputMappings[key].remove(value); return
+    del _inputMappings[key][value]
+
+def update() -> None:
     global _eventsGet, _eventsGetHeld
     _eventsGet = pyg.event.get()
     _eventsGetHeld = pyg.key.get_pressed()
     
-    for actionToCheck in _defaultInputKeys:
+    for actionToCheck in _defaultInputMapping_keys:
         for keyToCheck in range(len(_Main.input[actionToCheck])):
-            if _getKeyHeld(_Main.input[actionToCheck][keyToCheck], _eventsGetHeld):
-                Boards._appendToPerm(True, actionToCheck)
+            if _setKeysHeld(_Main.input[actionToCheck][keyToCheck], events=_eventsGetHeld):
+                Board._appendToPerm(True, actionToCheck)
                 _currentInputs[actionToCheck] = True
                 break
             else:
-                Boards._appendToPerm(False, actionToCheck)
+                Board._appendToPerm(False, actionToCheck)
 
-def _setInputMappings() -> None:
-    _input = FileManager.load(programPath+"\\Save Data\\input mappings.dat")
-    if _input == False:
-        _input = _defaultInputs
-    
+def init():
+    global _inputMappings
 
+    _inputMappings = FileManager.load("\\SaveData\\input mappings.dat", _returnType = dict, _defaultValue=_defaultInputMappings)
 
-
-
-
-def _main():
+def runInputMapper():
     import os, tomllib
     with open(os.getcwd()+"\\ConfigFiles\\characterProperties.toml", "rb") as f:
         configFile = tomllib.load(f)
@@ -188,13 +197,13 @@ def _main():
     while True:
         if stop:
             break
-        for i in _defaultInputKeys:
+        for i in _defaultInputMapping_keys:
             if stop:
                 break
             while True:
                 print("\n")
                 word = ''
-                for i2 in _defaultInputKeys:
+                for i2 in _defaultInputMapping_keys:
                     if i == i2:
                         word += ">"
                     word += i2 
@@ -213,8 +222,8 @@ def _main():
                         if inputFromUser == 'cancel':
                             break
                         elif inputFromUser == 'list':
-                            print("Available input options: ", _keyBindListKeys)
-                        elif inputFromUser in _keyBindListKeys:
+                            print("Available input options: ", _pyg_KtE_keys)
+                        elif inputFromUser in _pyg_KtE_keys:
                             print(f"Binded {inputFromUser} to {i}")
                             configFile[i].append(inputFromUser)
                             break
@@ -238,7 +247,7 @@ def _main():
                         print(f"No buttons currently mapped to {i}")
                 elif inputFromUser.lower() == "reset" or inputFromUser == "4":
                     print(f"Reset {i} to default bindings")
-                    configFile[i] = _defaultInputs[i]
+                    configFile[i] = _defaultInputMappings[i]
                 elif inputFromUser.lower() == "save" or inputFromUser == "5":
                     print(f"Saving current progress...")
                     
@@ -264,18 +273,5 @@ FileManager.save(configFile, 'Save Data/input mappings.dat')
                 elif inputFromUser == "next" or inputFromUser == "":
                     break
         
-
-
-#Good old interface
-class Input():
-    getDown = _getDown
-    getKeyDown = _getKeyDown
-    getHeld = _getHeld
-    getHeld = _getKeyHeld
-    setInputMappings = _setInputMappings
-    runInputMapper = _main
-    update = _Update_
-
-
 if __name__ == "__main__":
-    _main()
+    runInputMapper()

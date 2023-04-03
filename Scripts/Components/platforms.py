@@ -1,23 +1,16 @@
-import pygame as pyg
 import Scripts.Components.components as MainComponent
-import Scripts.timer  as Timer
-import Scripts.boards as Boards
-from Scripts.inputMapper import Input
 from Scripts.componentManager import *
 Main = __import__("__main__")
 
 
 
-@dependencyWrapper_
+@newComponent
 class Platform():
     requiredDependencies={
         "Transform" : MainComponent.Transform ,
-        "Renderer"  : False ,
-        "ConfigData": False ,
         "Collider"  : MainComponent.Collider ,
-        "RigidBody" : False ,
     }
-
+    
     
     placeprop = {
     0: {
@@ -43,16 +36,19 @@ class Platform():
         "#object": True},
     }
 
-    def create__(self,
+    @classmethod
+    def create(cls,
         Transform:MainComponent.Transform=MainComponent.Transform,
-        Renderer :MainComponent.Renderer =MainComponent.Transform,
-        ):
-        Transform = Transform
-        Renderer  = Renderer
+        Collider :MainComponent.Collider|None = None, # type: ignore
+        ) -> object:
+        
+        return "New Platform", cls, {
+            'Transform': Transform,
+            'Collider': Collider
+        }
 
-    @initializationWrapper_
-    def initialize__(self, Transform:MainComponent.Transform, Collider:MainComponent.Collider, 
-    xLength:int, yLength:int, platformType:int, Renderer:MainComponent.Renderer|None = None) -> None:
+    def init(self, Transform:MainComponent.Transform, Collider:MainComponent.Collider, 
+    xLength:int=0, yLength:int=0, platformType:int=0, Renderer:MainComponent.Renderer|None = None, **kwargs) -> None: # type: ignore
         self.Transform = Transform
         self.Collider = Collider
         self.Renderer = Renderer 

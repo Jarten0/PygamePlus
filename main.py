@@ -1,35 +1,22 @@
-if __name__ == "__main__": logInConsole = False; print("\n")
+if __name__ == "__main__": logInConsole = False; print("\n"*60)
 
-import asyncio
-import threading
-import os
-import time
+import os, time, asyncio, pygame as pyg
 from copy import deepcopy
 from sys import exit
 from typing import NoReturn as _NoReturn, Any
-
-import pygame as pyg
-
-import Scripts.dev as dev
-from Scripts.boards import Boards
-from Scripts.camera import Camera
-from Scripts.EZPickle import FileManager
-from Scripts.inputMapper import Input
-from Scripts.timer import Timer
-from Scripts.level import Level
+from Scripts import FileManager, Board, Camera, Input, Level, Timer, dev
 
 programPath: str    = os.getcwd()
 FreezeFrames: int   = 0
 logInConsole: bool  = True
 ReadyToGo: bool     = False
-level: Any          = Level.createNewLevel("Level uno", 2000, 2000)
+level: Any          = Level.new("Level uno", 2000, 2000)
 settings:      dict[str, Any]        = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml', _returnType=dict)
 Objects:       dict[str|int, object] = {}
 UpdateObjects: dict[str|int, object] = {}
 Components:    dict[int,     type  ] = {}
 ComponentNames:dict[str,     int   ] = {}
 RenderQueue:   set [object|dict]     = set({})
-
 
 def timeFunction(func):
     def timerWrapper(*args2, **kwargs2) -> None:
@@ -108,20 +95,19 @@ async def _loadingScreen(programPath) -> None:
             state = 0
 
 async def _loadStuff() -> None:
-    await asyncio.sleep(2)
+    await asyncio.sleep(0.2)
     global ReadyToGo
     try:
         _startPlatformingScene()
     except: print("OhNo"); raise
     ReadyToGo = True
 
-
-
 class Object():
     @classmethod
     def new(cls,
     name_:str | int | None, 
     class_:type|str, 
+    addToList_:bool = True,
     *args, **kwargs) -> object:
         """Takes in a name and optionally a class/component and returns an instance of it. \n
         If the class/component has a create__() function it will automatically detect it and 
@@ -132,18 +118,20 @@ class Object():
 
         if name_ == None or name_ in Objects: name_ = NextID(Objects, 'New Object')
 
-        if 'create__' in dir(class_):
-            try: createdObject:object = class_.create__(*args, **kwargs) #type: ignore
-            except: print("\n\n!!!!!!!!!!\n\n", class_.__name__, " create__ error: Something went wrong, go fix it.\n", sep=''); raise
-            
+        if 'create' in dir(class_):
+            try: createdObject:object = class_.create__(name_, *args, **kwargs) #type: ignore
+            except: print("\n\n!!!!!!!!!!\n\n", class_.__name__, " create error: Something went wrong, go fix it.\n", sep=''); raise
+            # print(createdObject.NAME) 
+            # for i in dir(createdObject): 
+            #     if list(i)[0] == "_": continue 
+            #     else: print(i)
+            # time.sleep(3)
             if not isinstance(createdObject, class_):
-                raise Exception(f"{dir(class_), args, kwargs}\n\n\nError?? {createdObject, class_.__name__} had an issue. It should only return an object. Check to see if its ")
-            Objects[name_] = createdObject
-        
+                raise Exception(f"{class_.__name__}\n\n\nError?? {createdObject} had an issue. It should only return an object. Check to see if it is properly returning a value. ")
             return createdObject
 
         else:
-            return cls.initialize(name=name_, class_=class_, *args, **kwargs)
+            return cls.initialize(name=name_, class_=class_, addToList_=addToList_,*args, **kwargs)
     
     @classmethod
     def get(cls, name) -> object|None:
@@ -158,16 +146,16 @@ class Object():
     
     @classmethod
     def initialize(cls, name:str|int, 
-            class_:type,
+            class_:type, addToList_:bool,
             *args, **kwargs) -> object:
-        """Used to initialize a simple object"""
         if name == "" or name in Objects:
             if name == "":
                 NextID(Objects, 'New Object') 
             else:
                 NextID(Objects, name=name)
+
         object_:object = class_(*args, **kwargs)
-        Objects[name] = object_
+        if addToList_: Objects[name] = object_
         return object_
 
     @classmethod
@@ -236,14 +224,13 @@ class Component():
             return Components[_ID]
         except KeyError as ke:
             if isinstance(_name, int): raise KeyError(f"Key error: {_name} is not a valid ID.")
-            print(ComponentNames)
+            print(ComponentNames.keys())
             append = ""
             for i in ComponentNames:
                 if i.split(sep="\\")[-1].lower() == _name.lower():
                     if append: append += " Or maybe "
                     append += f"Did you mean: {i}?"
                 
-            
             raise KeyError(f"{_name} is not a valid name. {append}" )
 
     @classmethod    
@@ -257,8 +244,9 @@ class Render():
         readyRenderQueue = cls._sortRenderQueue(renderQueue)
         
         asyncioRenderTasks = []
+        Screen.fill((10, 10, 10))
         for i in reversed(readyRenderQueue):
-            if 'render__' in dir(readyRenderQueue[i]):
+            if 'render' in dir(readyRenderQueue[i]):
                 asyncioRenderTasks.append( asyncio.create_task( cls._renderWithObj(readyRenderQueue[i]) )) 
             else:
                 print(f"RenderQueue: {readyRenderQueue[i].__name__} does not have a function for rendering and thus failed to render.")
@@ -274,6 +262,7 @@ class Render():
         returnedRenderQueue = {}
 
         for i in renderQueue:
+            
             tempRenderQueue.append((i.tier, i.Transform.zPosition, i))
         tempRenderQueue.sort()
         
@@ -285,14 +274,12 @@ class Render():
 
     @classmethod     
     async def _renderWithObj(cls, rendererObj) -> None:
-        rendererObj.render__(Screen=Screen, Camera=Camera) # type: ignore
+        rendererObj.render(Screen=Screen, Camera=Camera) # type: ignore
 
     @classmethod
     def _drawRect(cls, color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
         pyg.draw.rect(Screen, color, (int(x) - int(Camera.xPosition), int(y) - int(Camera.yPosition), int(xl), int(yl)))
 
-
-# @timeFunction
 def _startPlatformingScene() -> str:
     global level, devMode, sky, \
     Character, missingImage, Mouse, Font, \
@@ -301,17 +288,21 @@ def _startPlatformingScene() -> str:
 
     devMode = False
         
-    import Scripts.componentManager as ComponentManager
-    import Scripts.cutsceneManager as CutsceneManager
+    from Scripts import componentManager as ComponentManager, cutsceneManager as CutsceneManager
 
     import Scripts.Components.character as CharacterComponent
     import Scripts.Components.components as MainComponent
     import Scripts.Components.platforms as PlatformComponent
     
-    Components, ComponentNames = ComponentManager._init()
+    Components, ComponentNames = ComponentManager.init()
+    Input.init()
     Camera.init()
     CutsceneManager.init()
     missingImage = pyg.image.load(programPath+"\\Assets\\Images\\MissingImage.png").convert()
+
+
+    # import componentDependencyFinder
+
 
     Character = Object.new(name_="Character", class_=Component.get('character\\Character'))
 
@@ -319,13 +310,13 @@ def _startPlatformingScene() -> str:
     Mouse = Object.new('Mouse', Component.get('components\\Mouse'))
     Font = pyg.font.Font('freesansbold.ttf', 32)
     sky = Object.new(
-        'sky', 
-        class_ = Component.get('components\\Renderer'), 
+        'sky', class_ = Component.get('components\\Renderer'), 
         tier=99,
-        
+        path = "Assets\\Images\\SkyBox.png",
 
         Transform=Component.new(
             Component.get('components\\Transform'),
+            xPosition= -500,
             zPosition=99,
         )
     )   
@@ -339,13 +330,6 @@ def _startPlatformingScene() -> str:
     }
 
 
-    
-    #Just initialize all the timers that need it
-    for i in { ("dashcool", 20, False), ("grace", 0, True),
-        ("CoyoteTime", 0, True), ("dash", 0, False), ("dashleave", 4, False)}:
-        (name, value, up) = i
-        Timer.set(name, value, up)
-
     #Add all objects with update__ functions to main
     for i in Objects:
         if 'update__' in dir(Objects[i]):
@@ -354,8 +338,6 @@ def _startPlatformingScene() -> str:
     return "Done"
 
 async def _platformingTick():
-    # print("\n")
-
     if dev.devpause:
         textRect = Font.get_rect() # type: ignore
         inputFromKeyboard = ''
@@ -457,12 +439,23 @@ async def _platformingTick():
 #Component Handler
     for obj in UpdateObjects.values():
         obj.update__() # type: ignore
-    
-    for obj in Objects.values():
-        if 'Renderer' in dir(obj):
-            if 'renderupdate__' in dir(obj.Renderer): # type: ignore
-                RenderQueue.add(obj.Renderer.renderupdate__())  # type: ignore
 
+
+    print(Objects.keys())
+    for obj in Objects.values():
+        if 'update' in dir(obj): obj.update() # type: ignore
+        for componentName in dir(obj):
+            objComponent = obj.__getattribute__(componentName)
+            if 'ID' not in dir(objComponent): continue
+            if isinstance(objComponent, type): continue
+            print(objComponent.NAME)
+            if 'update' in dir(objComponent):
+                # if objComponent.NAME == 'Character': continue
+                objComponent.update()
+    
+            if 'render' in dir(objComponent):
+                RenderQueue.add(objComponent)
+        
 
 
 
@@ -483,7 +476,7 @@ async def _main() -> _NoReturn|None:
     pyg.init()
 
     Screen = pyg.display.set_mode((settings["Screen"]["screen_width"], settings["Screen"]["screen_height"]))
-    pyg.display.set_icon(pyg.image.load(programPath+"\\Assets\\Images\\loading.png").convert())
+    pyg.display.set_icon(pyg.image.load(programPath+"\\Assets\\Images\\hehe.png").convert())
     pyg.display.set_caption('Platformer')
 
     Clock = pyg.time.Clock()
@@ -494,18 +487,19 @@ async def _main() -> _NoReturn|None:
 
 
 
-
+    i=0
     #Run physics 60 times per second
     while True:        
+        i += 1
         done = await asyncio.gather(
             _platformingTick(), 
             Render._drawCurrentFrame(RenderQueue),
-            asyncio.sleep(1/2)
+            asyncio.sleep(1/60)
         )
         # print(done)
             
         Timer.tick()
         try: raise
         except RuntimeError as re: pass
-
+        if i > 60*60*1/2: break
 if __name__ == "__main__": asyncio.run(_main())

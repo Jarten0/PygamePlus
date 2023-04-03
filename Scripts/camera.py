@@ -1,8 +1,8 @@
-import pygame as pyg
-from Scripts.timer          import Timer
-from Scripts.boards         import Boards
-from Scripts.inputMapper    import Input
+from Scripts import Input
 from typing import Any
+
+xPosition = 0
+yPosition = 0
 
 class _cam():
     _Settings: Any
@@ -24,14 +24,14 @@ class _cam():
         _cam._Transform = Object.new('Transform', Transform)
         _cam._focusPointTransform = Object.new('Transform', Transform)
 
-def _setFocusPoint(_obj:object|None = None, xPos:float=0, yPos:float=0):
+def setFocusPoint(_obj:object|None = None, xPos:float=0, yPos:float=0):
     if isinstance(_obj, type(None)):
         _cam._focusPointTransform.xPosition = xPos
         _cam._focusPointTransform.yPosition = yPos
     else:
         _cam._focusPointTransform = _obj
 
-def _update() -> None:
+def update() -> None:
     if Input.getHeld("LEFT"):
         _cam._xOffset -= 10
     elif Input.getHeld("RIGHT"):
@@ -57,17 +57,8 @@ def _update() -> None:
     # elif _xPosition > _cam._level.xLength - _cam._Settings['screen_width']:
     #     _xPosition = _cam._level.xLength - _cam._Settings['screen_width']
 
-
-def _getPosition() -> tuple[int|float, int|float]:
+def get() -> tuple[int|float, int|float]:
     return (_cam._Transform.xPosition, _cam._Transform.yPosition)
 
-
-class Camera():
-    @classmethod
-    def init(cls) -> None:
-        _cam._init()
-    update = _update
-    get = _getPosition
-    xPosition = 0
-    yPosition = 0
-    setFocusPoint = _setFocusPoint
+def init() -> None:
+    _cam._init()
