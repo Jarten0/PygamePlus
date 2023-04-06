@@ -16,14 +16,22 @@ logInConsole: bool  = True
 ReadyToGo: bool     = False
 level: Any          = Level.new("Level uno", 2000, 2000)
 settings:      dict[str, Any]        = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml', _returnType=dict)
-Objects:       dict[str|int, object] = {}
-UpdateObjects: dict[str|int, object] = {}
-Components:    dict[int,     type  ] = {}
-ComponentNames:dict[str,     int   ] = {}
+
+
 RenderQueue:   set [object|dict]     = set({})
 
 def timeFunction(func):
     def timerWrapper(*args2, **kwargs2) -> None:
+        print(f"Timing {func.__name__}...")
+        start = time.time()
+        func(*args2, **kwargs2)
+        end = time.time()
+        print(f"{func.__name__} took {end - start} seconds to run")
+    timerWrapper.__name__ = func.__name__
+    return timerWrapper
+
+def timeAsyncFunction(func):
+    async def timerWrapper(*args2, **kwargs2) -> None:
         print(f"Timing {func.__name__}...")
         start = time.time()
         func(*args2, **kwargs2)
@@ -51,37 +59,40 @@ def NextID(itemList:dict, name:str|int='') -> str:
         if not name + str(i) in keylist: return name+str(i)
     return name+str(len(itemList))    
 
-def returnGlobals(var='all'):
+"""def returnGlobals(var='all'):
     if var == 'all': return {
-        'obj':Objects, 
-        'updobj':UpdateObjects, 
+        'obj':Object.Objects, 
+        'updobj':UpdateObject.Objects, 
         'renque':RenderQueue, 
         'com':Components, 
         'comnam':ComponentNames, 
         'rdytg':ReadyToGo}
     else: 
         if var in {
-        'obj':Objects, 
-        'updobj':UpdateObjects, 
+        'obj':Object.Objects, 
+        'updobj':UpdateObject.Objects, 
         'renque':RenderQueue, 
         'com':Components, 
         'comnam':ComponentNames, 
         'rdytg':ReadyToGo}:
             return {
-        'obj':Objects, 
-        'updobj':UpdateObjects, 
+        'obj':Object.Objects, 
+        'updobj':UpdateObject.Objects, 
         'renque':RenderQueue, 
         'com':Components, 
         'comnam':ComponentNames, 
         'rdytg':ReadyToGo}[var]
-        else: return None
+        else: return None"""
 
 def addComponent(component, name, id) -> None:
     """Adds a new component to the list. NOT TO BE USED BY USER, but by the component dependency wrapper."""
     if not 'ID' in dir(component): exit("Do not use the add function")
-    Components[id] = component
-    ComponentNames[name] = id
-    if True: returnGlobals()
+    Component.Components[id] = component
+    Component.ComponentNames[name] = id
+
+def addObject(object, name):
+    Object.Objects[name] = object
+    print(f"Created {name} object:{object}!!")
 
 async def _loadingScreen(programPath) -> None:
     """Manually displays a loading screen to keep busy while the game starts up"""
@@ -107,6 +118,8 @@ async def _loadStuff() -> None:
     ReadyToGo = True
 
 class Object():
+    Objects:       dict[str|int, object] = {}
+    UpdateObjects: dict[str|int, object] = {}
     @classmethod
     def new(cls,
     name_:str | int | None, 
@@ -120,18 +133,14 @@ class Object():
 
         if isinstance(class_, str): class_ = Component.get(class_)
 
-        if name_ == None or name_ in Objects: name_ = NextID(Objects, 'New Object')
+        if name_ == None or name_ in cls.Objects: name_ = NextID(cls.Objects, 'New Object')
 
         if 'create' in dir(class_):
             try: createdObject:object = class_.create__(name_, *args, **kwargs) #type: ignore
             except: print("\n\n!!!!!!!!!!\n\n", class_.__name__, " create error: Something went wrong, go fix it.\n", sep=''); raise
-            # print(createdObject.NAME) 
-            # for i in dir(createdObject): 
-            #     if list(i)[0] == "_": continue 
-            #     else: print(i)
-            # time.sleep(3)
             if not isinstance(createdObject, class_):
                 raise Exception(f"{class_.__name__}\n\n\nError?? {createdObject} had an issue. It should only return an object. Check to see if it is properly returning a value. ")
+            addObject(createdObject, name_)
             return createdObject
 
         else:
@@ -141,33 +150,30 @@ class Object():
     def get(cls, name) -> object|None:
         """Finds an object via it's name\n
         If no such object exists, returns None."""
-        if name in Objects: return Objects[name]
+        if name in cls.Objects: return cls.Objects[name]
         else: return None
     
     @classmethod
     def getAll(cls) -> dict[str | int, object]:
-        return Objects
+        return cls.Objects
     
     @classmethod
     def initialize(cls, name:str|int, 
             class_:type, addToList_:bool=True,
             *args, **kwargs) -> object:
-        if name == "" or name in Objects:
+        if name == "" or name in cls.Objects:
             if name == "":
-                NextID(Objects, 'New Object') 
+                NextID(cls.Objects, 'New Object') 
             else:
-                NextID(Objects, name=name)
+                NextID(cls.Objects, name=name)
 
         object_:object = class_(*args, **kwargs)
-        if not addToList_: return object_
-        
-        Objects[name] = object_
-        print(f"Created {name} object:{object}")
+        if not addToList_: return object_        
 
         return object_
 
     @classmethod
-    def _createSpecialObject(cls,
+    def _unused_createSpecialObj(cls,
         name:str, 
         class_:type, 
         *args, **kwargs) -> object:
@@ -181,10 +187,12 @@ class Object():
         object_:object = class_(*args, **kwargs)
         if not isinstance(object, class_):
             raise Exception("He")
-        Objects[name] = object_
+        cls.Objects[name] = object_
         return object_
 
 class Component():
+    Components:    dict[int,     type  ] = {}
+    ComponentNames:dict[str,     int   ] = {}
     @classmethod
     def new(cls, class_:type|str, *args, **kwargs) -> object:
         """Creates a component instance using its built in initializer
@@ -227,14 +235,14 @@ class Component():
         Example"""
         try:
             if isinstance(_name, int): _ID = _name
-            elif isinstance(_name, str): _ID = ComponentNames[_name]
+            elif isinstance(_name, str): _ID = cls.ComponentNames[_name]
             else: exit() 
-            return Components[_ID]
+            return cls.Components[_ID]
         except KeyError as ke:
             if isinstance(_name, int): raise KeyError(f"Key error: {_name} is not a valid ID.")
-            print(ComponentNames.keys())
+            print(cls.ComponentNames.keys())
             append = ""
-            for i in ComponentNames:
+            for i in cls.ComponentNames:
                 if i.split(sep="\\")[-1].lower() == _name.lower():
                     if append: append += " Or maybe "
                     append += f"Did you mean: {i}?"
@@ -243,7 +251,7 @@ class Component():
 
     @classmethod    
     def getAll(cls) -> tuple[dict[int, type], dict[str, int]]:
-        return Components, ComponentNames
+        return cls.Components, cls.ComponentNames
 
 class Render():
     @classmethod
@@ -291,7 +299,6 @@ class Render():
 def _startPlatformingScene() -> str:
     global level, devMode, sky, \
     Character, missingImage, Mouse, Font, \
-    Components, ComponentNames, \
     MainComponent, CharacterComponent, PlatformComponent
 
     devMode = False
@@ -302,7 +309,7 @@ def _startPlatformingScene() -> str:
     import Scripts.Components.components as MainComponent
     import Scripts.Components.platforms as PlatformComponent
     
-    Components, ComponentNames = ComponentManager.init()
+    Component.Components, Component.ComponentNames = ComponentManager.init()
     Input.init()
     Camera.init()
     # CutsceneManager.init()
@@ -327,7 +334,7 @@ def _startPlatformingScene() -> str:
         )
     )   
 
-    print(Objects)
+    print(Object.Objects)
 
     platData = {
         0: None,
@@ -339,12 +346,12 @@ def _startPlatformingScene() -> str:
 
 
     #Add all objects with update__ functions to main
-    for i in Objects:
-        if 'update__' in dir(Objects[i]):
-            UpdateObjects[i] = Objects[i]
+    for i in Object.Objects:
+        if 'update__' in dir(Object.Objects[i]):
+            Object.UpdateObjects[i] = Object.Objects[i]
     
     return "Done"
-
+# @timeAsyncFunction
 async def _platformingTick():
     if dev.devpause:
         textRect = Font.get_rect() # type: ignore
@@ -444,19 +451,20 @@ Extra Input From Player (For dev use) ==========================================
     else:
         Mouse.down = False"""
 
+    Input.update()
 #Component Handler
-    for obj in UpdateObjects.values():
+    for obj in Object.UpdateObjects.values():
         obj.update__() # type: ignore
 
 
-    print(Objects.keys())
-    for obj in Objects.values():
+    # print(Object.Objects.keys())
+    for obj in Object.Objects.values():
         if 'update' in dir(obj): obj.update() # type: ignore
         for componentName in dir(obj):
             objComponent = obj.__getattribute__(componentName)
             if 'ID' not in dir(objComponent): continue
             if isinstance(objComponent, type): continue
-            print(objComponent.NAME)
+            # print(objComponent.NAME)
             if 'update' in dir(objComponent):
                 # if objComponent.NAME == 'Character': continue
                 objComponent.update()
@@ -498,16 +506,22 @@ async def _main() -> _NoReturn|None:
     i=0
     #Run physics 60 times per second
     while True:        
-        i += 1
+        # system('cls')
+        start = time.time()
+
         done = await asyncio.gather(
             _platformingTick(), 
             Render._drawCurrentFrame(RenderQueue),
             asyncio.sleep(1/60)
         )
-        # print(done)
             
         Timer.tick()
         try: raise
         except RuntimeError as re: pass
         if i > 60*60*1/2: break
+
+        end = time.time()
+        print(f"tick took {end - start} seconds")
+
+
 if __name__ == "__main__": asyncio.run(_main())

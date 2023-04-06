@@ -81,7 +81,7 @@ _pyg_KtE_keys = _pygameKeyToEvent.keys()
 #===== FURTHER CODE SHOULD NOT BE MODIFIED IF YOU ONLY WISH TO CHANGE KEYBINDS ==================
 #================================================================================================
 
-_currentInputs = {
+_currentlyActiveActions = {
 "up":    False, 
 "left":  False, 
 "down":  False,
@@ -106,7 +106,7 @@ def getDown(key) -> bool:
 
 def getHeld(key) -> bool:
     "Get any input from the list of actions. Activates for the full duration of press. Raises KeyError if invalid action"
-    return(_currentInputs[key])
+    return(_currentlyActiveActions[key])
 
 def _setKeysDown(input, events = _eventsGet) -> bool:
     for event in events:
@@ -118,7 +118,7 @@ def _setKeysDown(input, events = _eventsGet) -> bool:
     return False
 
 def _setKeysHeld(input, events = _eventsGetHeld) -> bool:
-    return events[_currentInputs[input]]
+    return events[_pygameKeyToEvent[input]]
 
 def add(key:str, value:str):
     _inputMappings[key].append(value)
@@ -137,14 +137,21 @@ def update() -> None:
     _eventsGet = pyg.event.get()
     _eventsGetHeld = pyg.key.get_pressed()
     
+    #For every set action that the dev has created:
     for actionToCheck in _defaultInputMapping_keys:
-        for keyToCheck in range(len(_Main.input[actionToCheck])):
-            if _setKeysHeld(_Main.input[actionToCheck][keyToCheck], events=_eventsGetHeld):
+        #For every keybinding set to that action by the dev or user:
+        for keyToCheck in range(len(_inputMappings[actionToCheck])):
+            #If the keybinding is currently being pressed
+            if _setKeysHeld(_inputMappings[actionToCheck][keyToCheck], events=_eventsGetHeld):
+                #Set the action to being currently active and move on to next action
                 Board._appendToPerm(True, actionToCheck)
-                _currentInputs[actionToCheck] = True
+                _currentlyActiveActions[actionToCheck] = True
                 break
             else:
+                #Keep trying until all keybinds have been checked
                 Board._appendToPerm(False, actionToCheck)
+                _currentlyActiveActions[actionToCheck] = False
+                
 
 def init():
     global _inputMappings

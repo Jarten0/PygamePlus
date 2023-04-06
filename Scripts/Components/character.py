@@ -71,7 +71,7 @@ class Character():
         self.Transform = Transform      
         self.Renderer = Renderer      
         self.Collider = Collider     
-        self.RigidBody = RigidBody   
+        # self.RigidBody = RigidBody   
 
         configFile = self.ConfigData.configFile
         self.settings = settings
@@ -102,11 +102,11 @@ class Character():
         self.DChyper = 0
 
     def update(self) -> None:
-        print("YE")
+        # print("YE")
         if Input.getHeld('left'):
-            self.Transform.xPosition -= 3
+            self.Transform.xPosition -= 10
         if Input.getHeld('right'):
-            self.Transform.xPosition += 3
+            self.Transform.xPosition += 10
         return
         #Makes checks to see if the character is able to reset the dash
         if Timer.getValue('dashcool', inc=False) \
@@ -189,7 +189,7 @@ class Character():
             self.Transform.xPosition = 0
         elif self.Transform.xPosition > settings.screen_width + level.length: # type: ignore
             self.Transform.xPosition = 0
-
+"""
     def die(self):
         self.Transform.xPosition = 500        
         self.Transform.yPosition = 0
@@ -289,4 +289,4 @@ class Character():
         Timer.setDec("dashLeave", True)
         Timer.setDec("dash",      True)
         Timer.setDec("dashcool",  True)
-    
+    """

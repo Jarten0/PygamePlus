@@ -29,8 +29,9 @@ def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
     raise Exception("This list is really big. Like, REALLY BIG. Bigger than 10^10 items. Thats more than 80 GIGABYTES. What in the WORLD did you do to fill it up THIS much?")
 
 def init():
-    from main import Components, ComponentNames
+    from main import Component
     import typing, main
+    Components, ComponentNames = Component.Components, Component.ComponentNames
     blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__',
     }
 
