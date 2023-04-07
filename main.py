@@ -16,8 +16,7 @@ logInConsole: bool  = True
 ReadyToGo: bool     = False
 level: Any          = Level.new("Level uno", 2000, 2000)
 settings:      dict[str, Any]        = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml', _returnType=dict)
-
-
+delta: float = 1.0
 RenderQueue:   set [object|dict]     = set({})
 
 def timeFunction(func):
@@ -117,7 +116,7 @@ async def _loadStuff() -> None:
     except: print("OhNo"); raise
     ReadyToGo = True
 
-class Object():
+class Object:
     Objects:       dict[str|int, object] = {}
     UpdateObjects: dict[str|int, object] = {}
     @classmethod
@@ -190,7 +189,7 @@ class Object():
         cls.Objects[name] = object_
         return object_
 
-class Component():
+class Component:
     Components:    dict[int,     type  ] = {}
     ComponentNames:dict[str,     int   ] = {}
     @classmethod
@@ -351,7 +350,7 @@ def _startPlatformingScene() -> str:
             Object.UpdateObjects[i] = Object.Objects[i]
     
     return "Done"
-# @timeAsyncFunction
+
 async def _platformingTick():
     if dev.devpause:
         textRect = Font.get_rect() # type: ignore
@@ -482,10 +481,12 @@ Extra Input From Player (For dev use) ==========================================
 
     return 'complete'
 
-#---------------------------------------------------------------------------------------------------------------------------
 async def _main() -> _NoReturn|None:
     global logInConsole, Screen, Clock, ReadyToGo
-
+    global delta
+    print(delta)
+    delta = 0
+    print(delta)
     if not isinstance(settings, dict): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
     logInConsole = settings['LogInConsole']
     
@@ -502,26 +503,23 @@ async def _main() -> _NoReturn|None:
     await asyncio.gather(_loadingScreen(programPath), _loadStuff())
 
 
-
-    i=0
     #Run physics 60 times per second
     while True:        
-        # system('cls')
         start = time.time()
 
         done = await asyncio.gather(
             _platformingTick(), 
             Render._drawCurrentFrame(RenderQueue),
-            asyncio.sleep(1/60)
+            # asyncio.sleep(1)
         )
             
         Timer.tick()
         try: raise
         except RuntimeError as re: pass
-        if i > 60*60*1/2: break
 
         end = time.time()
+        system('cls')
         print(f"tick took {end - start} seconds")
-
+        setattr(_main, 'delta', end - start)
 
 if __name__ == "__main__": asyncio.run(_main())

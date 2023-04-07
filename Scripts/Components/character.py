@@ -66,7 +66,7 @@ class Character():
             Collider  ,      
             RigidBody , 
             *args, **kwargs) -> None:
-        from main import settings, level
+        from main import settings, level, delta
         self.ConfigData = ConfigData    
         self.Transform = Transform      
         self.Renderer = Renderer      
@@ -100,13 +100,19 @@ class Character():
         self.color = self.Renderer.colors["red"] # type: ignore
         self.DCsuper = 0
         self.DChyper = 0
+        self.delta = delta
 
     def update(self) -> None:
-        # print("YE")
+        from main import delta
+        print(delta, "Hehe")
         if Input.getHeld('left'):
-            self.Transform.xPosition -= 10
+            self.Transform.xPosition -= self.speed * delta
         if Input.getHeld('right'):
-            self.Transform.xPosition += 10
+            self.Transform.xPosition += self.speed * delta
+        if Input.getHeld('up'):
+            self.Transform.yPosition -= self.speed * delta
+        if Input.getHeld('down'):
+            self.Transform.yPosition += self.speed * delta
         return
         #Makes checks to see if the character is able to reset the dash
         if Timer.getValue('dashcool', inc=False) \

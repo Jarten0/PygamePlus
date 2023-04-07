@@ -15,7 +15,7 @@ ylength = 20
 
 #Basic movement stats to tweak
 [run]
-runSpeed = 6
+runSpeed = 10
 runAcceleration = 1
 runDeceleration = 0.5
 
