@@ -352,6 +352,9 @@ def _startPlatformingScene() -> str:
     return "Done"
 
 async def _platformingTick():
+    if Input.getDown('jump'):
+        exit(system('cls'))
+
     if dev.devpause:
         textRect = Font.get_rect() # type: ignore
         inputFromKeyboard = ''
@@ -521,5 +524,8 @@ async def _main() -> _NoReturn|None:
         system('cls')
         print(f"tick took {end - start} seconds")
         setattr(_main, 'delta', end - start)
-
-if __name__ == "__main__": asyncio.run(_main())
+try:
+    if __name__ == "__main__": asyncio.run(_main())
+except SystemExit:
+    exit()
+print("Hi")
