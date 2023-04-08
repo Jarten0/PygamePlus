@@ -30,13 +30,15 @@ def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
 
 def init():
     from main import Component
+    import Scripts
     import typing, main
     Components, ComponentNames = Component.Components, Component.ComponentNames
     blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__',
     }
 
     directories = {
-        "\\Scripts\\Components"
+        "\\Scripts\\Components",
+        "\\Encryptor"
     }
 
     for directory in directories:
@@ -127,17 +129,20 @@ def newComponent(initialComponent) -> type:
                 print(error)
                 raise ae
             except TypeError as te:
-                error = f"InitializationWrapperMissing: No init decorater in {name}! Add missing @decorater using template (run script as main for template)"
+                error = f"InvalidArguments: Something went wrong in {name}'s init function with the arguments. Try adding *args before the keyword arguments/components or catching extra arguments with *args and **kwargs"
                 print(error)
                 raise te
             
 
         @classmethod
-        def create__(cls, name, *args, **kwargs) -> object:
+        def create__(cls, name, addToList_, *args, **kwargs) -> object:
             """Initializes a new object and sends it back using a create script. Returns None if no create script exists"""
             if not 'create' in dir(initialComponent): raise Exception("Uhoh: Ran create__ on a non-object component.")
-            name, cls, kwargs = initialComponent.create(name)
-            return NewComponent.Object.initialize(name, NewComponent, addToList_=True, *args, **kwargs)
+            try:
+                name, cls, kwargs = initialComponent.create(name, *args, **kwargs)
+            except TypeError as te:
+                print("CreateError: Try removing extra arguments, or if its for the component you're building, adding them in.")
+            return NewComponent.Object.initialize(name, NewComponent, addToList_, *args, **kwargs)
 
 
         def rename_(self, newName:str) -> None:

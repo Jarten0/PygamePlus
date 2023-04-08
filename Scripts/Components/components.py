@@ -95,8 +95,10 @@ class Collider():
         self.collideList: list[tuple[object, list[bool]]] = []
 
     def update(self) -> None:
+        self.Objects = Object.getAll()
         for i in self.Objects:
-            checkList = self.check(i)
+            if 'Collider' not in dir(self.Objects[i]): continue
+            checkList = self.check(self.Objects[i])
             if checkList[0]:
                 self.collideList.append((self.Objects[i], checkList))
 
@@ -113,25 +115,25 @@ class Collider():
         #Top side
         if s.yPosition + (self.yLength / 2) < i.yPosition + (item.Collider.yLength / 2) \
         and s.xPosition > i.xPosition \
-        and s.xPosition + self.xLength < i.xPosition + i.Collider.xLength \
+        and s.xPosition + self.xLength < i.xPosition + item.Collider.xLength \
         and s.xVelocity > self.xLength and s.xVelocity < -self.xLength:
             lis[1] = True
         
         #Bottom side
         if s.yPosition + (self.yLength / 2) > i.yPosition + (item.Collider.yLength / 2) \
         and s.xPosition > i.xPosition \
-        and s.xPosition + self.xLength < i.xPosition + i.Collider.xLength \
+        and s.xPosition + self.xLength < i.xPosition + item.Collider.xLength \
         and s.xVelocity > self.xLength and s.xVelocity < -self.xLength:
             lis[2] = True
         
         #Left side
         if s.xPosition + (self.yLength / 2) < i.xPosition + (item.Collider.xLength / 2) \
-        and s.yPosition + self.yLength > item.yPosition:
+        and s.yPosition + self.yLength > i.yPosition:
             lis[3] = True
         
         #Right side
         if s.xPosition + (self.yLength / 2) > i.xPosition + (item.Collider.xLength / 2) \
-        and s.yPosition + self.yLength > item.yPosition:
+        and s.yPosition + self.yLength > i.yPosition:
             lis[4] = True
         
         return lis
@@ -235,6 +237,7 @@ class Renderer():
         "alpha       ": 0.0, 
         "surfaceRows ": 1, 
         "surfaceColumns": 1, 
+        "tier": 5,
         "autoCulling ": True
     }
     optionalArguments = {
@@ -262,14 +265,18 @@ class Renderer():
         }
  
     def init(self, Transform:Transform,
-        path: str|None = None, tier: int = 3, xOffset:float=0, yOffset:float=0, xLength:float=0, yLength:float=0, 
-        color:tuple[int]=colors["gray"], surface:pyg.Surface|None = None,  alpha: int = 0, 
+        path: str|None = None, xOffset:float=0, yOffset:float=0, xLength:float=0, yLength:float=0,
+        tier:int = 5, color:tuple[int]=colors["gray"], surface:pyg.Surface|None = None,  alpha: int = 0, 
         surfaceRows:int = 1, surfaceColumns:int = 1, autoCulling:bool = True, **kwargs) -> None:
         if path == None:    
             self.path = "\\Assets\\Images\\MissingImage.png"
             self.surface = pyg.image.load(getcwd()+self.path)
         elif isinstance(path, str):
-            self.surface = pyg.image.load(getcwd()+path)
+            try:
+                self.surface = pyg.image.load(getcwd()+path)
+            except FileNotFoundError as fnfe:
+                self.path = "\\Assets\\Images\\MissingImage.png"
+                self.surface = pyg.image.load(getcwd()+self.path)
         else:
             if surface == None:
                 exit("No available path or surface"+ str(path))
@@ -355,6 +362,12 @@ class Mouse():
         from main import Object, settings
         from Scripts import Camera
         self.Object, self._Settings, self.Camera = Object, settings, Camera
+        self.Transform:Any = Component.new('components\\Transform')
+        self.Collider = Component.new('components\\Collider',
+            Transform = self.Transform,    
+            xLength = 1,
+            yLength = 1,
+            )
         self.placestage = 0
         self.select = 1
         self.tempx = 0
@@ -372,4 +385,8 @@ class Mouse():
         self.pos = (self.pos[0] + cameraXOffset, self.pos[1] + cameraYOffset)
         self.posx = round((self.pos[0]/self._Settings['Screen']['grid']), 0)*self._Settings['Screen']['grid']
         self.posy = round((self.pos[1]/self._Settings['Screen']['grid']), 0)*self._Settings['Screen']['grid']
+        self.Transform.xPosition = self.posx
+        self.Transform.yPosition = self.posy
         self.list = pyg.mouse.get_pressed(num_buttons=5)
+        self.down =  self.list[0]
+        if self.list[0]: print("BONK.")

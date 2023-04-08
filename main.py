@@ -113,8 +113,21 @@ async def _loadStuff() -> None:
     global ReadyToGo
     try:
         _startPlatformingScene()
-    except: print("OhNo"); raise
+    except: print("OhNo: Start platforming scene broke."); raise
     ReadyToGo = True
+
+def updateObjectsInList(ObjList):    
+    for obj in ObjList.values():
+        if 'update' in dir(obj): obj.update()
+        for componentName in dir(obj):
+            objComponent = obj.__getattribute__(componentName)
+            if 'ID' not in dir(objComponent): continue
+            if isinstance(objComponent, type): continue
+            if 'update' in dir(objComponent): objComponent.update()
+            if 'render' in dir(objComponent): RenderQueue.add(objComponent)
+        if isinstance(obj, Component.get('components\\Renderer')):
+            RenderQueue.add(obj)
+    # print(RenderQueue)
 
 class Object:
     Objects:       dict[str|int, object] = {}
@@ -135,16 +148,20 @@ class Object:
         if name_ == None or name_ in cls.Objects: name_ = NextID(cls.Objects, 'New Object')
 
         if 'create' in dir(class_):
-            try: createdObject:object = class_.create__(name_, *args, **kwargs) #type: ignore
+            try: createdObject:object = class_.create__(name_, addToList_, *args, **kwargs) #type: ignore
             except: print("\n\n!!!!!!!!!!\n\n", class_.__name__, " create error: Something went wrong, go fix it.\n", sep=''); raise
             if not isinstance(createdObject, class_):
                 raise Exception(f"{class_.__name__}\n\n\nError?? {createdObject} had an issue. It should only return an object. Check to see if it is properly returning a value. ")
             addObject(createdObject, name_)
+
             return createdObject
 
         else:
-            return cls.initialize(name=name_, class_=class_, addToList_=addToList_,*args, **kwargs)
-    
+            obj = cls.initialize(name=name_, class_=class_, addToList_=addToList_,*args, **kwargs)
+            addObject(obj, name_)
+            return obj
+
+
     @classmethod
     def get(cls, name) -> object|None:
         """Finds an object via it's name\n
@@ -317,7 +334,7 @@ def _startPlatformingScene() -> str:
 
     # import componentDependencyFinder
 
-
+    Object.new("EncryptionManager", Component.get('encryptor\\EncryptionManager'))
     Character = Object.new(name_="Character", class_=Component.get('character\\Character'))
     Mouse = Object.new('Mouse', Component.get('components\\Mouse'))
     Font = pyg.font.Font('freesansbold.ttf', 32)
@@ -342,13 +359,6 @@ def _startPlatformingScene() -> str:
     #200 - 299 are names of the levels
         200: "Level 0",
     }
-
-
-    #Add all objects with update__ functions to main
-    for i in Object.Objects:
-        if 'update__' in dir(Object.Objects[i]):
-            Object.UpdateObjects[i] = Object.Objects[i]
-    
     return "Done"
 
 async def _platformingTick():
@@ -455,24 +465,7 @@ Extra Input From Player (For dev use) ==========================================
 
     Input.update()
 #Component Handler
-    for obj in Object.UpdateObjects.values():
-        obj.update__() # type: ignore
-
-
-    # print(Object.Objects.keys())
-    for obj in Object.Objects.values():
-        if 'update' in dir(obj): obj.update() # type: ignore
-        for componentName in dir(obj):
-            objComponent = obj.__getattribute__(componentName)
-            if 'ID' not in dir(objComponent): continue
-            if isinstance(objComponent, type): continue
-            # print(objComponent.NAME)
-            if 'update' in dir(objComponent):
-                # if objComponent.NAME == 'Character': continue
-                objComponent.update()
-    
-            if 'render' in dir(objComponent):
-                RenderQueue.add(objComponent)
+    updateObjectsInList(Object.Objects)
         
 
 
@@ -523,7 +516,8 @@ async def _main() -> _NoReturn|None:
         end = time.time()
         system('cls')
         print(f"tick took {end - start} seconds")
-        setattr(_main, 'delta', end - start)
+        print(str(Object.Objects))
+        # exit()        
 try:
     if __name__ == "__main__": asyncio.run(_main())
 except SystemExit:

@@ -1,6 +1,5 @@
 from Scripts import Input
 from typing import Any
-
 xPosition = 0
 yPosition = 0
 

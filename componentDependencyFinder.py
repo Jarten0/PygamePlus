@@ -32,6 +32,7 @@ def _generateDependencyList():
             else:
                 writeFile.write("Component.new("+component.removesuffix("(Wrapped)")+",\n")
             append = ''
+
             if len(componentClass.requiredDependencies) > 0:
                 for dependency in componentClass.requiredDependencies:
                     if 'optionalArguments' in dir(componentClass): 
