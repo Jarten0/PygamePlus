@@ -1,4 +1,4 @@
-from main import Object, Component
+from main import gameObject, Component
 
 from Scripts.Components.character import Character
 from Scripts.Components.components import Renderer
@@ -10,12 +10,12 @@ from Scripts.Components.components import RigidBody
 from Scripts.Components.components import Transform
 from Scripts.Components.platforms import Platform
 
-Object.new(name_='Character Object', class_=Character, addToList_=False,
+gameObject.new(nameInput='Character Object', prefabInput=Character, addToList_=False,
 	#No Dependencies
 	#No Arguments
 
 )
-Object.new(name_='Renderer Object', class_=Renderer, addToList_=False,
+gameObject.new(nameInput='Renderer Object', prefabInput=Renderer, addToList_=False,
 	#Dependencies
     Transform    = Transform(),
 	#Arguments
@@ -72,7 +72,7 @@ Component.new(Transform,
     rotation = 0.0,        #<class 'float'>, #Optional
 
 )
-Object.new(name_='Platform Object', class_=Platform, addToList_=False,
+gameObject.new(nameInput='Platform Object', prefabInput=Platform, addToList_=False,
 	#Dependencies
     Transform    = Transform(),
     Collider    = Collider(Transform = Transform()),

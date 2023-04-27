@@ -1,3 +1,5 @@
+import Scripts.Components.Collider
+import Scripts.Components.Renderer
 import Scripts.Components.components as MainComponent
 from Scripts.componentManager import *
 Main = __import__("__main__")
@@ -8,7 +10,7 @@ Main = __import__("__main__")
 class Platform():
     requiredDependencies={
         "Transform" : MainComponent.Transform ,
-        "Collider"  : MainComponent.Collider ,
+        "Collider"  : Scripts.Components.Collider.Collider ,
     }
     
     
@@ -36,19 +38,8 @@ class Platform():
         "#object": True},
     }
 
-    @classmethod
-    def create(cls,
-        Transform:MainComponent.Transform=MainComponent.Transform,
-        Collider :MainComponent.Collider|None = None, # type: ignore
-        ) -> object:
-        
-        return "New Platform", cls, {
-            'Transform': Transform,
-            'Collider': Collider
-        }
-
-    def init(self, Transform:MainComponent.Transform, Collider:MainComponent.Collider, 
-    xLength:int=0, yLength:int=0, platformType:int=0, Renderer:MainComponent.Renderer|None = None, **kwargs) -> None: # type: ignore
+    def init(self, Transform:MainComponent.Transform, Collider:Scripts.Components.Collider.Collider, 
+    xLength:int=0, yLength:int=0, platformType:int=0, Renderer:Scripts.Components.Renderer.Renderer|None = None, **kwargs) -> None: # type: ignore
         self.Transform = Transform
         self.Collider = Collider
         self.Renderer = Renderer 

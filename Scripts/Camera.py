@@ -2,7 +2,7 @@ from Scripts import Input
 from typing import Any
 
 xPosition = 0
-yPosition = 0
+yPos = 0
 
 class _cam():
     _Settings: Any
@@ -15,14 +15,14 @@ class _cam():
     @classmethod
     def _init(cls) -> None:
         import main
-        from main import settings, Object#, level
+        from main import settings, gameObject, Component#, level
         from Scripts.Components.components import Transform
         _cam._Settings = settings
         _cam._xOffset = 0
         _cam._yOffset = 0
         # _cam._level = level
-        _cam._Transform = Object.new('Transform', Transform)
-        _cam._focusPointTransform = Object.new('Transform', Transform)
+        _cam._Transform = Component.new('components\\Transform', Transform)
+        _cam._focusPointTransform = Component.new('components\\Transform', Transform)
 
 def setFocusPoint(_obj:object|None = None, xPos:float=0, yPos:float=0):
     if isinstance(_obj, type(None)):
@@ -57,7 +57,7 @@ def update() -> None:
     # elif _xPosition > _cam._level.xLength - _cam._Settings['screen_width']:
     #     _xPosition = _cam._level.xLength - _cam._Settings['screen_width']
 
-def get() -> tuple[int|float, int|float]:
+def getObject() -> tuple[int|float, int|float]:
     return (_cam._Transform.xPosition, _cam._Transform.yPosition)
 
 def init() -> None:

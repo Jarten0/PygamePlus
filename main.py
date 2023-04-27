@@ -1,4 +1,5 @@
-if __name__ == "__main__": logInConsole = False; print("\n"*60)
+if __name__ == "__main__": logInConsole = True; print("\n"*60)
+else: logInConsole = False
 
 from os import system
 system('pip3 install pygame')
@@ -9,7 +10,7 @@ from copy import deepcopy
 from sys import exit
 from typing import NoReturn as _NoReturn, Any
 from Scripts import FileManager, Board, Camera, Input, Level, Timer, dev
-
+from Scripts.componentManager import newComponent, newPrefab
 programPath: str    = os.getcwd()
 FreezeFrames: int   = 0
 logInConsole: bool  = True
@@ -19,37 +20,6 @@ settings:      dict[str, Any]        = FileManager.load(programPath+"\\ConfigFil
 delta: float = 1.0
 RenderQueue:   set [object|dict]     = set({})
 
-def timeFunction(func):
-    def timerWrapper(*args2, **kwargs2) -> None:
-        print(f"Timing {func.__name__}...")
-        start = time.time()
-        func(*args2, **kwargs2)
-        end = time.time()
-        print(f"{func.__name__} took {end - start} seconds to run")
-    timerWrapper.__name__ = func.__name__
-    return timerWrapper
-
-def timeAsyncFunction(func):
-    async def timerWrapper(*args2, **kwargs2) -> None:
-        print(f"Timing {func.__name__}...")
-        start = time.time()
-        func(*args2, **kwargs2)
-        end = time.time()
-        print(f"{func.__name__} took {end - start} seconds to run")
-    timerWrapper.__name__ = func.__name__
-    return timerWrapper
-
-def logFunc(func):
-    def wrapper(*args, **kwargs):
-        print(f"""LOGFUNC: 
-funcName: {func.__name__}
-funcStr : {func.__str__()}
-funcArgs: {args, kwargs}
-""")
-        func(*args, **kwargs)
-
-    wrapper.__name__ = func.__name__
-    return wrapper
 
 def NextID(itemList:dict, name:str|int='') -> str:
     name = str(name)
@@ -58,40 +28,18 @@ def NextID(itemList:dict, name:str|int='') -> str:
         if not name + str(i) in keylist: return name+str(i)
     return name+str(len(itemList))    
 
-"""def returnGlobals(var='all'):
-    if var == 'all': return {
-        'obj':Object.Objects, 
-        'updobj':UpdateObject.Objects, 
-        'renque':RenderQueue, 
-        'com':Components, 
-        'comnam':ComponentNames, 
-        'rdytg':ReadyToGo}
-    else: 
-        if var in {
-        'obj':Object.Objects, 
-        'updobj':UpdateObject.Objects, 
-        'renque':RenderQueue, 
-        'com':Components, 
-        'comnam':ComponentNames, 
-        'rdytg':ReadyToGo}:
-            return {
-        'obj':Object.Objects, 
-        'updobj':UpdateObject.Objects, 
-        'renque':RenderQueue, 
-        'com':Components, 
-        'comnam':ComponentNames, 
-        'rdytg':ReadyToGo}[var]
-        else: return None"""
-
 def addComponent(component, name, id) -> None:
     """Adds a new component to the list. NOT TO BE USED BY USER, but by the component dependency wrapper."""
-    if not 'ID' in dir(component): exit("Do not use the add function")
+    if not 'componentID' in dir(component): exit("Do not use the add component function")
     Component.Components[id] = component
     Component.ComponentNames[name] = id
 
-def addObject(object, name):
-    Object.Objects[name] = object
-    print(f"Created {name} object:{object}!!")
+def addPrefab(prefab, name, id):
+    if not 'prefabID' in dir(prefab): exit("Do not use the add prefab function")
+    gameObject.Prefabs[id] = prefab
+    gameObject.PrefabNames[name] = id
+
+def addScene(): pass
 
 async def _loadingScreen(programPath) -> None:
     """Manually displays a loading screen to keep busy while the game starts up"""
@@ -112,83 +60,46 @@ async def _loadStuff() -> None:
     await asyncio.sleep(0.2)
     global ReadyToGo
     try:
-        _startPlatformingScene()
+        _startNewScene()
     except: print("OhNo"); raise
     ReadyToGo = True
 
-class Object:
-    Objects:       dict[str|int, object] = {}
-    UpdateObjects: dict[str|int, object] = {}
-    @classmethod
-    def new(cls,
-    name_:str | int | None, 
-    class_:type|str, 
-    addToList_:bool = True,
-    *args, **kwargs) -> object:
-        """Takes in a name and optionally a class/component and returns an instance of it. \n
-        If the class/component has a create__() function it will automatically detect it and 
-        attempt to use it to create the object. Otherwise, it will rely on the class's initialize function. \n
-        You can also feed in args/keyword args that will go directly to the component's initializer"""
-
-        if isinstance(class_, str): class_ = Component.get(class_)
-
-        if name_ == None or name_ in cls.Objects: name_ = NextID(cls.Objects, 'New Object')
-
-        if 'create' in dir(class_):
-            try: createdObject:object = class_.create__(name_, *args, **kwargs) #type: ignore
-            except: print("\n\n!!!!!!!!!!\n\n", class_.__name__, " create error: Something went wrong, go fix it.\n", sep=''); raise
-            if not isinstance(createdObject, class_):
-                raise Exception(f"{class_.__name__}\n\n\nError?? {createdObject} had an issue. It should only return an object. Check to see if it is properly returning a value. ")
-            addObject(createdObject, name_)
-            return createdObject
-
-        else:
-            return cls.initialize(name=name_, class_=class_, addToList_=addToList_,*args, **kwargs)
+class gameObject:
+    Scenes:     dict[str,     type  ] = {}
+    Prefabs:    dict[int,     type  ] = {}
+    PrefabNames:dict[str,     int   ] = {}
     
     @classmethod
-    def get(cls, name) -> object|None:
-        """Finds an object via it's name\n
-        If no such object exists, returns None."""
-        if name in cls.Objects: return cls.Objects[name]
-        else: return None
+    def getPrefab(cls, prefabName: str) -> type:
+        """Finds a prefab via it's name\n
+        If no such prefab exists, returns None."""
+        try:
+            if isinstance(prefabName, int): _ID = prefabName
+            elif isinstance(prefabName, str): _ID = cls.PrefabNames[prefabName]
+            else: exit("Prefab name is invalid type")
+            return cls.Prefabs[_ID]
+        except KeyError as ke:
+            if isinstance(prefabName, int): raise KeyError(f"Prefab Key error: {prefabName} is not a valid ID.")
+            print("List of all prefabs: ", cls.PrefabNames.keys())
+            append = ""
+            for i in cls.PrefabNames:
+                if i.split(sep="\\")[-1].lower() == prefabName.lower():
+                    if append: append += " Or maybe "
+                    append += f"Did you mean: {i}?"
+            
+            raise KeyError(f"{prefabName} is not a valid name. {append}" )
+
+    @classmethod    
+    def getAllPrefabs(cls) -> tuple[dict[int, type], dict[str, int]]:
+        return cls.Prefabs, cls.PrefabNames
     
     @classmethod
-    def getAll(cls) -> dict[str | int, object]:
-        return cls.Objects
+    def newScene(cls, sceneName:str):
+        from Scripts.Components.components import Scene as sc
+        Scene = sc(sceneName, None, None)
+        gameObject.Scenes[sceneName] = Scene
+        return Scene
     
-    @classmethod
-    def initialize(cls, name:str|int, 
-            class_:type, addToList_:bool=True,
-            *args, **kwargs) -> object:
-        if name == "" or name in cls.Objects:
-            if name == "":
-                NextID(cls.Objects, 'New Object') 
-            else:
-                NextID(cls.Objects, name=name)
-
-        object_:object = class_(*args, **kwargs)
-        if not addToList_: return object_        
-
-        return object_
-
-    @classmethod
-    def _unused_createSpecialObj(cls,
-        name:str, 
-        class_:type, 
-        *args, **kwargs) -> object:
-        """ Used by components and 
-        Takes in a name and a class and returns an instance of that object
-        while also adding it to the Objects dictionary. You can also input arguments and
-        keyword arguments if the object's initialize function uses them. 
-        If the init function returns something other than the instance it will raise a default 
-        Exception in order to prevent wrong types from leaking. """
-        print("Creating Complex Object: ", class_)
-        object_:object = class_(*args, **kwargs)
-        if not isinstance(object, class_):
-            raise Exception("He")
-        cls.Objects[name] = object_
-        return object_
-
 class Component:
     Components:    dict[int,     type  ] = {}
     ComponentNames:dict[str,     int   ] = {}
@@ -293,61 +204,52 @@ class Render():
 
     @classmethod
     def _drawRect(cls, color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
-        pyg.draw.rect(Screen, color, (int(x) - int(Camera.xPosition), int(y) - int(Camera.yPosition), int(xl), int(yl)))
+        pyg.draw.rect(Screen, color, (int(x) - int(Camera.xPosition), int(y) - int(Camera.yPos), int(xl), int(yl)))
 
-def _startPlatformingScene() -> str:
-    global level, devMode, sky, \
+def _startNewScene() -> str:
+    global Scene, devMode, sky, \
     Character, missingImage, Mouse, Font, \
     MainComponent, CharacterComponent, PlatformComponent
 
-    devMode = False
-        
+    devMode = False    
+
+    Scene = gameObject.newScene("MainScene")
+  
+
     from Scripts import componentManager as ComponentManager, cutsceneManager as CutsceneManager
 
     import Scripts.Components.character as CharacterComponent
     import Scripts.Components.components as MainComponent
     import Scripts.Components.platforms as PlatformComponent
     
-    Component.Components, Component.ComponentNames = ComponentManager.init()
+
+    Component.Components, Component.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames \
+        = ComponentManager.init()
     Input.init()
     Camera.init()
     # CutsceneManager.init()
+
+
     missingImage = pyg.image.load(programPath+"\\Assets\\Images\\MissingImage.png").convert()
 
 
     # import componentDependencyFinder
 
 
-    Character = Object.new(name_="Character", class_=Component.get('character\\Character'))
-    Mouse = Object.new('Mouse', Component.get('components\\Mouse'))
+    Character = Scene.newObject(nameInput="Character", prefabInput='characterPrefab\\Character', )
+    Mouse = Component.new(Component.get('components\\Mouse'))
     Font = pyg.font.Font('freesansbold.ttf', 32)
-    sky = Object.new(
-        'sky', class_ = Component.get('components\\Renderer'), 
-        tier=99,
-        path = "Assets\\Images\\SkyBox.png",
+    # sky = Component.new(
+    #     'sky', prefabInput = Component.get('components\\Renderer'), 
+    #     tier=99,
+    #     path = "Assets\\Images\\SkyBox.png",
 
-        Transform=Component.new(
-            Component.get('components\\Transform'),
-            xPosition= -500,
-            zPosition=99,
-        )
-    )   
-
-    print(Object.Objects)
-
-    platData = {
-        0: None,
-    #100 - 199 are levels in the game
-        100: {},
-    #200 - 299 are names of the levels
-        200: "Level 0",
-    }
-
-
-    #Add all objects with update__ functions to main
-    for i in Object.Objects:
-        if 'update__' in dir(Object.Objects[i]):
-            Object.UpdateObjects[i] = Object.Objects[i]
+    #     Transform=Component.new(
+    #         Component.get('components\\Transform'),
+    #         xPosition= -500,
+    #         zPosition=99,
+    #     )
+    # )   
     
     return "Done"
 
@@ -454,33 +356,7 @@ Extra Input From Player (For dev use) ==========================================
         Mouse.down = False"""
 
     Input.update()
-#Component Handler
-    for obj in Object.UpdateObjects.values():
-        obj.update__() # type: ignore
-
-
-    # print(Object.Objects.keys())
-    for obj in Object.Objects.values():
-        if 'update' in dir(obj): obj.update() # type: ignore
-        for componentName in dir(obj):
-            objComponent = obj.__getattribute__(componentName)
-            if 'ID' not in dir(objComponent): continue
-            if isinstance(objComponent, type): continue
-            # print(objComponent.NAME)
-            if 'update' in dir(objComponent):
-                # if objComponent.NAME == 'Character': continue
-                objComponent.update()
-    
-            if 'render' in dir(objComponent):
-                RenderQueue.add(objComponent)
-        
-
-
-
-    
-    
-    # settings['gameTimer' ] += 1 / 60 # type: ignore
-    # settings['totalTicks'] += 1  # type: ignore
+    Scene.updateObjects()
 
     return 'complete'
 

@@ -1,5 +1,7 @@
 import pygame as pyg
 from Scripts import Input
+import Scripts.Components.Collider
+import Scripts.Components.Renderer
 from Scripts.componentManager import newComponent
 from main import *
 from typing import Type
@@ -11,9 +13,9 @@ class Character():
     requiredDependencies = {
         'ConfigData': cmp.ConfigData,    
         'Transform' : cmp.Transform,      
-        'Renderer'  : cmp.Renderer,      
-        'Collider'  : cmp.Collider,      
-        'RigidBody' : cmp.RigidBody,
+        'Renderer'  : Scripts.Components.Renderer.Renderer,      
+        'Collider'  : Scripts.Components.Collider.Collider,      
+        'RigidBody' : Scripts.Components.Collider.RigidBody,
     }
     optionalArguments = {
         'ConfigData',    
@@ -22,42 +24,6 @@ class Character():
         'Collider',      
         'RigidBody',
     }
-    @classmethod
-    def create(cls, name:str="Character") -> object:
-        ConfigData = Component.new('components\\ConfigData',
-            dirFileName = 'CharacterProperties',
-            fileType = "toml"
-            )
-        Transform = Component.new('components\\Transform',
-            xPosition=ConfigData.configFile["body"]["xpos"],     # type: ignore
-            yPosition=ConfigData.configFile["body"]["ypos"],     # type: ignore
-            zPosition=ConfigData.configFile["body"]["zpos"],     # type: ignore
-            )
-        Renderer = Component.new('components\\Renderer',
-            Transform = Transform,  
-            xOffset=0,
-            yOffset=0,
-            xLength=20,
-            yLength=20,
-            path="\\Assets\\Images\\hehe.png",
-            tier=5,
-            )
-        Collider = Component.new('components\\Collider',
-            Transform = Transform,    
-            xLength = 20,
-            yLength = 20,
-            )
-        RigidBody = Component.new('components\\RigidBody',
-            Transform = Transform,    
-            Collider = Collider,    
-            mass = 5,
-            )
-        return name, cls, \
-           {'ConfigData': ConfigData,
-            'Transform': Transform,
-            'Renderer': Renderer,
-            'Collider': Collider,
-            'RigidBody': RigidBody}
             
     def init(self, 
             ConfigData,    
