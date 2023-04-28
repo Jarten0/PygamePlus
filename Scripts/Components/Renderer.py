@@ -83,6 +83,7 @@ class Renderer():
                 exit("No available path or surface"+ str(path))
             self.surface = surface
 
+        self.mode = 'rect'
         self.area    = ()
         self.Transform = Transform
         self.tier    = tier
@@ -102,6 +103,8 @@ class Renderer():
         }
 
     def render(self, Screen: pyg.Surface, Camera, **kwargs):
+        if self.mode == 'rect':
+            return
         Screen.blit(
             source = self.surface,
             dest = (int(self.Transform.xPos) - int(self.xOffset) - Camera.xPos,  # type: ignore

@@ -58,39 +58,39 @@ class Transform():
     
     class Vector:
         def __init__(self, x, y) -> None:
-            self.xPos = self.xPos = self.x = x
-            self.yPos = self.yPos = self.y = y
+            self.x = x
+            self.y = y
 
         def __add__(self, other):
             if isinstance(other, type(self)):
-                return Vector(self.xPos + other.xPos, self.yPos + other.yPos) #type: ignore 
+                return Vector(self.x + other.x, self.y + other.y) #type: ignore 
             elif isinstance(other, float):
-                return Vector(self.xPos + other, self.yPos + other) #type: ignore 
+                return Vector(self.x + other, self.y + other) #type: ignore 
             raise TypeError(f"Unsupported operation between 'Vector' and '{type(other)}'")
     
         def __iadd__(self, other):
             if isinstance(other, type(self)):
-                self.xPos += other.xPos 
-                self.yPos += other.yPos 
+                self.x += other.x 
+                self.y += other.y 
             elif isinstance(other, float):
-                self.xPos += other 
-                self.yPos += other 
+                self.x += other 
+                self.y += other 
             raise TypeError(f"Unsupported operation between 'Vector' and '{type(other)}'")
 
         def __mul__(self, other):
             if isinstance(other, type(self)):
-                return Vector(self.xPos * other.xPos, self.yPos * other.yPos) #type: ignore 
+                return Vector(self.x * other.x, self.y * other.y) #type: ignore 
             elif isinstance(other, float):
-                return Vector(self.xPos * other, self.yPos * other) #type: ignore 
+                return Vector(self.x * other, self.y * other) #type: ignore 
             raise TypeError(f"Unsupported operation between 'Vector' and '{type(other)}'")
 
         def __imul__(self, other):
             if isinstance(other, type(self)):
-                self.xPos *= other.xPos 
-                self.yPos *= other.yPos 
+                self.x *= other.x 
+                self.y *= other.y 
             elif isinstance(other, float):
-                self.xPos *= other 
-                self.yPos *= other 
+                self.x *= other 
+                self.y *= other 
             raise TypeError(f"Unsupported operation between 'Vector' and '{type(other)}'")
                     
 
@@ -103,21 +103,20 @@ class Transform():
         self.zPos = zPosition
         self.xVel = xVel
         self.yVel = yVel
-        self.Rotation  = self.r = rotation
+        self.Rotation = rotation
     
     def update(self) -> None:
         self.xPos += self.xVel
         self.yPos += self.yVel
 
     def set(self, vector:Vector):
-        self.xPos
+        self.xPos = vector.x
+        self.yPos = vector.y
 
 @newComponent
 class DependenciesTemplate():
-    requiredDependencies={}
- 
-    def init(self, *args, **kwargs) -> None: 
-        pass
+    requiredDependencies={} 
+    def init(self, *args, **kwargs) -> None: pass
 
 @newComponent
 class ConfigData():
@@ -165,14 +164,14 @@ class Mouse():
         self.down = False
         self.pos = pyg.mouse.get_pos()
         self.pos = (self.pos[0], self.pos[1])
-        self.posx = round((self.pos[0]), 0)
-        self.posy = round((self.pos[1]), 0)
+        self.xPos = round((self.pos[0]), 0)
+        self.yPos = round((self.pos[1]), 0)
         self.list = pyg.mouse.get_pressed(num_buttons=5)
 
     def update(self):
         self.pos =  pyg.mouse.get_pos()
         cameraXOffset, cameraYOffset = self.Camera.getObject()
         self.pos = (self.pos[0] + cameraXOffset, self.pos[1] + cameraYOffset)
-        self.posx = round((self.pos[0]/self._Settings['Screen']['grid']), 0)*self._Settings['Screen']['grid']
-        self.posy = round((self.pos[1]/self._Settings['Screen']['grid']), 0)*self._Settings['Screen']['grid']
-        self.list = pyg.mouse.get_pressed(num_buttons=5)
+        self.xPos = round((self.pos[0]/self._Settings['Screen']['grid']), 0)*self._Settings['Screen']['grid']
+        self.yPos = round((self.pos[1]/self._Settings['Screen']['grid']), 0)*self._Settings['Screen']['grid']
+        self.list = pyg.mouse.get_pressed(num_buttons = 5)

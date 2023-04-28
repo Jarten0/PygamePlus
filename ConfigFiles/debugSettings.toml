@@ -1,13 +1,13 @@
-SceneType = "main"
-LogInConsole = false
-devMode = False
+SceneType = "Debug"
+LogInConsole = True
+devMode = True
 
 [Camera]
 speed = 10
 acc = 3
 
 [Screen]
-screen_width = 1000
+screen_width = 1600
 screen_height = 1000
 grid = 10
 

@@ -16,7 +16,7 @@ FreezeFrames: int   = 0
 logInConsole: bool  = True
 ReadyToGo: bool     = False
 level: Any          = Level.new("Level uno", 2000, 2000)
-settings:      dict[str, Any]        = FileManager.load(programPath+"\\ConfigFiles\\settings.toml", 'toml', _returnType=dict)
+settings: dict[str, Any] = FileManager.load(programPath+"\\ConfigFiles\\debugSettings.toml", 'toml', _returnType=dict)
 delta: float = 1.0
 RenderQueue:   set [object|dict]     = set({})
 
@@ -38,8 +38,6 @@ def addPrefab(prefab, name, id):
     if not 'prefabID' in dir(prefab): exit("Do not use the add prefab function")
     gameObject.Prefabs[id] = prefab
     gameObject.PrefabNames[name] = id
-
-def addScene(): pass
 
 async def _loadingScreen(programPath) -> None:
     """Manually displays a loading screen to keep busy while the game starts up"""
@@ -178,7 +176,13 @@ class Render():
                 print(f"RenderQueue: {readyRenderQueue[i].__name__} does not have a function for rendering and thus failed to render.")
         if len(asyncioRenderTasks) > 0:
             await asyncio.wait(asyncioRenderTasks)
+        if settings['devMode']:
+            cls._renderDev()
         pyg.display.flip()
+
+    @classmethod
+    def _renderDev(cls):
+        cls._drawRect((0,0,0), 1000, 0, 600, 1000)
 
     @classmethod
     def _sortRenderQueue(cls, renderQueue) -> dict:
@@ -188,7 +192,6 @@ class Render():
         returnedRenderQueue = {}
 
         for i in renderQueue:
-            
             tempRenderQueue.append((i.tier, i.Transform.zPosition, i))
         tempRenderQueue.sort()
         
@@ -253,153 +256,46 @@ def _startNewScene() -> str:
     
     return "Done"
 
-async def _platformingTick():
+async def _platformingTick(delta):
     if Input.getDown('jump'):
         exit(system('cls'))
 
-    if dev.devpause:
-        textRect = Font.get_rect() # type: ignore
-        inputFromKeyboard = ''
-        letter = [
-            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", 
-            "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", 
-            "BACKSPACE", "TAB"]    
-        text = Font.render(inputFromKeyboard, True, (255,255,255))
-        Screen.blit(text, textRect)
-        pyg.display.flip()
-        Clock.tick(60)
-        return "devpause"
-
-    """if FreezeFrames > 0:
-        FreezeFrames -= 1
-        return "freezeFrame"
-
-    
-
-
-Extra Input From Player (For dev use) =========================================================================================================
-
-    if devMode == True:
-        if InputManager.k("z", eventsGet):
-            platData[100] = level.plat
-            FileManager.save(platData, platformfilename)
-            print("Saved Platform Data")
-        if InputManager.k("x", eventsGet):
-            data = FileManager.load(platformfilename)
-            level = Level(data[100], data[100])
-        if InputManager.k("c", eventsGet):
-            level.plat = {}
-        if InputManager.k("q", eventsGet):
-            pyg.quit()
-            exit()
-        if InputManager.k("r", eventsGet):
-            settings= defaultProperties(defaultProperties.lis)
-            FileManager.save(p, properetiesFileName)
-            print("Saved Propereties")        
-        if InputManager.k("`", eventsGet):
-            FileManager.save(p, "prop.dat")
-            print("Saved Propereites")
-
-    for i in range(10):
-        if InputManager.keyDownHeld(str(i), eventsGetHeld):
-            select = i
-            print(i)
-        
-    if InputManager.k("TAB", eventsGet):
-        devMode = True
-        # settings= dev.cmd()
-    
-    if Mouse.list[0]:
-        if not Mouse.down:
-            print("Click!")
-            if select == 0:
-                for platformThing in level.plat:
-                    platformToBeDeleted = level.plat[platformThing]
-                    if platform.collision.check(Mouse.posx, Mouse.posy, 1, 1, platformToBeDeleted.x, platformToBeDeleted.y, platformToBeDeleted.xl, platformToBeDeleted.yl)[0]:
-                        del level.plat[platformThing]
-                        break
-            
-            elif placestage == 0:
-                placestage = 1
-                Mouse.tempx = Mouse.posx
-                Mouse.tempy = Mouse.posy
-                print(f"({Mouse.tempx}, {Mouse.tempy})")
-                
-            
-            elif placestage == 1:
-                Mouse.tempx2 = Mouse.posx
-                Mouse.tempy2 = Mouse.posy
-                if Mouse.tempx > Mouse.tempx2:
-                    Mouse.xstate = Mouse.tempx2
-                else:
-                    Mouse.xstate = Mouse.tempx
-                if Mouse.tempy > Mouse.tempy2:
-                    Mouse.ystate = Mouse.tempy2
-                else:
-                    Mouse.ystate = Mouse.tempy
-                
-                if platform.placeprop[select]["#HasPlaceReq"]:
-                    if not platform.placeprop[select]["xl"] == False:
-                        Mouse.tempx2 = platform.placeprop[select]["xl"]
-                        Mouse.tempx = 0
-                    if not platform.placeprop[select]["yl"] == False:
-                        Mouse.tempy2 = platform.placeprop[select]["yl"]
-                        Mouse.tempy = 0
-                if platform.placeprop[select]["#object"]:
-                    level.plat[platform.NextID(level.plat)] = platform.create(Mouse.posx, Mouse.posy, Mouse.tempx2, Mouse.tempy2, select)
-                elif not abs(Mouse.tempx2 - Mouse.tempx) == 0 and not abs(Mouse.tempy2 - Mouse.tempy) == 0:
-                    level.plat[platform.NextID(level.plat)] = platform.create(Mouse.xstate, Mouse.ystate, abs(Mouse.tempx2 - Mouse.tempx), abs(Mouse.tempy2 - Mouse.tempy), select)  
-                placestage = 0
-            Mouse.down = True
-    
-    else:
-        Mouse.down = False"""
-
     Input.update()
-    Scene.updateObjects()
+    Timer.tick()
+    Scene.updateObjects(delta)
 
     return 'complete'
 
 async def _main() -> _NoReturn|None:
     global logInConsole, Screen, Clock, ReadyToGo
-    global delta
-    print(delta)
-    delta = 0
-    print(delta)
     if not isinstance(settings, dict): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
     logInConsole = settings['LogInConsole']
     
     pyg.init()
 
     Screen = pyg.display.set_mode((settings["Screen"]["screen_width"], settings["Screen"]["screen_height"]))
+
     pyg.display.set_icon(pyg.image.load(programPath+"\\Assets\\Images\\hehe.png").convert())
     pyg.display.set_caption('Platformer')
 
     Clock = pyg.time.Clock()
     
-    #Activate Loading screen
-    
     await asyncio.gather(_loadingScreen(programPath), _loadStuff())
 
-
-    #Run physics 60 times per second
     while True:        
         start = time.time()
 
         done = await asyncio.gather(
-            _platformingTick(), 
-            Render._drawCurrentFrame(RenderQueue),
-            # asyncio.sleep(1)
-        )
+            _platformingTick(delta), 
+            Render._drawCurrentFrame(RenderQueue))
             
-        Timer.tick()
         try: raise
         except RuntimeError as re: pass
 
         end = time.time()
+        delta = end - start
         system('cls')
         print(f"tick took {end - start} seconds")
-        setattr(_main, 'delta', end - start)
 try:
     if __name__ == "__main__": asyncio.run(_main())
 except SystemExit:
