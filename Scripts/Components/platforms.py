@@ -12,7 +12,6 @@ class Platform:
     class InteractFunc:
         def __init__(self, func):
             self = func
-            Platform.interactionFunctions[func.__name__] = func
 
     @InteractFunc
     def hehe(self, object):

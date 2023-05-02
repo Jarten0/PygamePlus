@@ -31,7 +31,7 @@ def _generateDependencyList():
             if 'create' in dir(componentClass):
                 writeFile.write("Scene.new(name_='"+component.removesuffix("(Wrapped)")+" Object', class_="+component.removesuffix("(Wrapped)")+", addToList_=False,\n")
             else:
-                writeFile.write("Component.new("+component.removesuffix("(Wrapped)")+",\n")
+                writeFile.write("Object.newComponent("+component.removesuffix("(Wrapped)")+",\n")
             append = ''
             if len(componentClass.requiredDependencies) > 0:
                 for dependency in componentClass.requiredDependencies:

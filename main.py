@@ -5,7 +5,7 @@ from os import system
 system('pip3 install pygame')
 system('cls')
 
-import os, time, asyncio, pygame as pyg
+import os, time, asyncio, pygame as pyg #type: ignore
 from copy import deepcopy
 from sys import exit
 from typing import NoReturn as _NoReturn, Any
@@ -63,6 +63,7 @@ async def _loadStuff() -> None:
 
 class gameObject:
     Scenes:     dict[str,     type  ] = {}
+    currentScene                      = None
     Prefabs:    dict[int,     type  ] = {}
     PrefabNames:dict[str,     int   ] = {}
     
@@ -96,49 +97,21 @@ class gameObject:
         if sceneName in gameObject.Scenes: sceneName = NextID(gameObject.Scenes, sceneName)
         Scene = sc(sceneName, None, None)
         gameObject.Scenes[sceneName] = Scene
+        gameObject.currentScene = Scene
         return Scene
     
 class Component:
     Components:    dict[int,     type  ] = {}
     ComponentNames:dict[str,     int   ] = {}
+    Scene = None
 
     @classmethod
     def new(cls, class_:type|str, *args, **kwargs) -> object:
-        """Creates a component instance using its built in initializer
-
-    \n  Input the components class from its module by using Component.get statments
-    and feed it into the _class argument
-
-    \n  The component it returns will NOT be stored elsewhere, so make sure you assign it to a variable
-    or use it right away
-
-    \n  You can also leave _class blank to get a new simple Transform component.
-    \n  If the component has any dependencies, make sure you feed them
-    in as keyword arguments. 
-
-    \n  Example use case:
-
-    \n  from main import *       #imports the Component interface
-    \n<...component initiation...>
-    \ndef create__()
-    \n  transformComponent= Component.new()         #empty parenthesis creates a transform component by default
-    \n  colliderComponent = Component.new(Component.get('Collider'), xLength)      #you can either use Component.get('componentName') or
-    simply type in the string. Any keywords will also go directly to the object's initializer
-
-    \n  rigidBodyComponent = Component.new(Component.get('RigidBody'),
-    \n\t  Transform= transformComponent,
-    \n\t  Collider = colliderComponent, 
-        \t)
-    \n)
-
-    \n  SquareObject = Object.new() 
-    """
         if isinstance(class_, str):
             try:
                 class_ = cls.get(class_)
-            except KeyError:
-                raise
-        return class_(*args, **kwargs)
+            except KeyError: raise
+        return class_(cls.Scene, *args, **kwargs)
 
     @classmethod
     def get(cls, _name:int|str) -> type:
@@ -253,6 +226,7 @@ def _sceneStart() -> str:
     import Scripts.Components.platforms as PlatformComponent
     
     Scene = gameObject.newScene("MainScene")
+    Component.Scene = Scene
 
     Component.Components, Component.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames = ComponentManager.init()
     Input.init()
@@ -267,19 +241,9 @@ def _sceneStart() -> str:
 
 
     Character = Scene.newObject(nameInput="Character", prefabInput='characterPrefab\\Character', )
-    Mouse = Component.new('components\\Mouse')
+    Mouse = Scene.newObject('components\\Mouse')
     Font = pyg.font.Font('freesansbold.ttf', 32)
-    # sky = Component.new(
-    #     'sky', prefabInput = Component.get('components\\Renderer'), 
-    #     tier=99,
-    #     path = "Assets\\Images\\SkyBox.png",
 
-    #     Transform=Component.new(
-    #         Component.get('components\\Transform'),
-    #         xPosition= -500,
-    #         zPosition=99,
-    #     )
-    # )   
     
     return "Done"
 

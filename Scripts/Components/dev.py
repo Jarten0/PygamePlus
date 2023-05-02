@@ -1,3 +1,5 @@
+# pyright: reportGeneralTypeIssues=false
+
 from main import Component, newPrefab, newComponent
 from random import randint as r
 @newPrefab
@@ -8,13 +10,13 @@ class ButtonObj: # type: ignore
         color = (r(0, 255), r(0, 255), r(0, 255)),
 
         ):
-        Transform = Component.new("components\\Renderer",
+        Transform = self.newComponent("components\\Renderer",
             x, y)
-        Renderer = Component.new("Renderer\\Renderer",
+        Renderer = self.newComponent("Renderer\\Renderer",
             Transform,
             xl,yl,
             )
-        Collider = Component.new("Collider\\Collider",
+        Collider = self.newComponent("Collider\\Collider",
             Transform,
             50, 50                         
         )

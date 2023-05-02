@@ -1,5 +1,5 @@
 import os, importlib.util
-from typing import Any, Callable
+from typing import Any
 import random
 
 def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
@@ -40,7 +40,7 @@ def init():
 
     componentDirectories = {
         "\\Scripts\\Components",
-        "\\Assets\\Components"
+        # "\\Assets\\Components"
     }
     prefabDirectories = {
         "\\Assets\\Prefabs",
@@ -122,6 +122,8 @@ def newPrefab(initialPrefab) -> Any:
         def __init__(self, name, parent, Scene, *args, **kwargs) -> None:
             self.enclosedObjects = {}
             self.NAME = name
+            if 'delta' in dir(Scene): self.delta = Scene.delta
+            else: self.delta = None
             self.parent = parent
             if not isinstance(Scene, type(self)): 
                 Scene = self
@@ -146,7 +148,7 @@ def newPrefab(initialPrefab) -> Any:
             The prefab will be in charge of initializing all of the components, so if it needs any arguments
             be sure to feed them in."""
 
-            if isinstance(prefabInput, type(None)): prefab = self.gameObject.getPrefab("componenets\\BasicObject")
+            if isinstance(prefabInput, type(None)): prefab = self.gameObject.getPrefab("components\\BasicObject")
             elif isinstance(prefabInput, str): prefab = self.gameObject.getPrefab(prefabInput)
             elif isinstance(prefabInput, type): prefab = prefabInput
             else: exit("Invalid prefab input type! Must be either a string, the prefab class, or None for a basic object") 
@@ -168,6 +170,7 @@ def newPrefab(initialPrefab) -> Any:
             self.Tags = tagsInput
             
             createdObject.Scene = self.Scene
+            Scene = self.Scene
 
             for tag in tagsInput:
                 if tag not in Scene.SceneTags: Scene.SceneTags[tag] = {}
@@ -175,8 +178,6 @@ def newPrefab(initialPrefab) -> Any:
             print(f"Created {name} object:{createdObject} in {self.NAME}!!")
             
             return createdObject
-
-
 
         def addTag(self, tag):
             if self is NewPrefab.Scene:
@@ -188,8 +189,6 @@ def newPrefab(initialPrefab) -> Any:
         def removeTag(self, tag):
             if tag in self.Tags:
                 self.Tags.remove(tag)
-
-
 
         def getObject(self, objName:str) -> object|None:
             """Finds an object via it's name\n
@@ -224,6 +223,47 @@ def newPrefab(initialPrefab) -> Any:
                         NewPrefab.RenderQueue.add(objComponent)
                     
                 if 'updateObjects' in dir(obj): obj.updateObjects()
+
+        def newComponent(self, class_:type|str, *args, **kwargs) -> object:
+            """Creates a component instance using its built in initializer
+
+        \n  Input the components class from its module by using Component.get statments
+        and feed it into the _class argument
+
+        \n  The component it returns will NOT be stored elsewhere, so make sure you assign it to a variable
+        or use it right away
+
+        \n  You can also leave _class blank to get a new simple Transform component.
+        \n  If the component has any dependencies, make sure you feed them
+        in as keyword arguments. 
+        """
+            if isinstance(class_, str):
+                try:
+                    class_ = self.getComponent(class_)
+                except KeyError: raise
+            return class_(self.Scene, *args, **kwargs)
+        
+        @classmethod
+        def getComponent(cls, _name:int|str) -> type:
+            """Fetches a class using a name or the component's ID.
+            Returns the class so you can initialize it or set attributes
+            Example"""
+            from main import Component
+            try:
+                if isinstance(_name, int): _ID = _name
+                elif isinstance(_name, str): _ID = Component.ComponentNames[_name]
+                else: exit() 
+                return Component.Components[_ID]
+            except KeyError as ke:
+                if isinstance(_name, int): raise KeyError(f"Key error: {_name} is not a valid ID.")
+                print(Component.ComponentNames.keys())
+                append = ""
+                for i in Component.ComponentNames:
+                    if i.split(sep="\\")[-1].lower() == _name.lower():
+                        if append: append += " Or maybe "
+                        append += f"Did you mean: {i}?"
+                    
+                raise KeyError(f"{_name} is not a valid name. {append}" )
 
 
 
@@ -268,7 +308,8 @@ def newComponent(initialComponent) -> Any:
 
             return super(NewComponent, cls).__new__(cls)
         
-        def __init__(self, *args, **kwargs) -> None:
+        def __init__(self, Scene, *args, **kwargs) -> None:
+            self.Scene = Scene
             for missedComponent in NewComponent.missLog_:
                 try:
                     kwargs[f"{missedComponent.NAME}"] = NewComponent.Component.new(missedComponent)

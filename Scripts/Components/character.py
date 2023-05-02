@@ -1,5 +1,4 @@
 # pyright: reportGeneralTypeIssues=false
-import pygame as pyg
 from Scripts import Input
 import Scripts.Components.Collider
 import Scripts.Components.Renderer
@@ -71,13 +70,13 @@ class Character():
     def update(self) -> None:
         print(Input.getHeld('left'))
         if Input.getHeld('left'):
-            self.Transform.xPos -= self.speed * self.Scene.delta
+            self.Transform.xVel -= self.speed * self.Scene.delta
         if Input.getHeld('right'):
-            self.Transform.xPos += self.speed * self.Scene.delta
+            self.Transform.xVel += self.speed * self.Scene.delta
         if Input.getHeld('up'):
-            self.Transform.yPos -= self.speed * self.Scene.delta
+            self.Transform.yVel -= self.speed * self.Scene.delta
         if Input.getHeld('down'):
-            self.Transform.yPos += self.speed * self.Scene.delta
+            self.Transform.yVel += self.speed * self.Scene.delta
         return
         #Makes checks to see if the character is able to reset the dash
         if Timer.getValue('dashcool', inc=False) \

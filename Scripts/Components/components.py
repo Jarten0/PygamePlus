@@ -3,7 +3,7 @@
 from sys import exit
 
 if __name__ == "__main__": print(r"Cannot run components script as main :/"); exit()
-import pygame         as pyg
+import pygame         as pyg #type: ignore
 from Scripts.componentManager import newComponent, newPrefab
 from Scripts import Board
 
@@ -124,10 +124,6 @@ class ConfigData():
     """     Grabs data from a toml or other type config file. It checks for files located in the ConfigFiles directory,
 so input dirFileName as the name with a backslash before it. If it is located in a folder, input the path from
     \\ConfigFiles to locate the file you wish to load. Also, omit the .toml from the file name.
-    \nExample: 
-
-    ConfigFile = Component.new(Component.get('ConfigData')(dirFileName = '\\settings'))
-    
     dirFileName: str, the name of the config file you wish to pull from.
     fileType; str = "toml", the file extension of the file you wish to pull from,
     """
