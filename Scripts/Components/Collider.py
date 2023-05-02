@@ -1,4 +1,3 @@
-from Scripts.Components.components import Transform
 from Scripts.componentManager import newComponent
 
 
@@ -8,6 +7,7 @@ class Collider():
     This will NOT handle physics, incase it should be used as a collisionless trigger that has an
     activation area. If you want to add physical collisions, use this in tangent with RigidBody
     It works by having a tag or set of tags in which it can collide with"""
+    from Scripts.Components.components import Transform
     requiredDependencies={ "Transform": Transform }
 
     class Hitbox():
@@ -100,6 +100,7 @@ class RigidBody():
     mass = weight of object
     grounded = is touching ground and is unaffected by gravity until leaving ground again. 
     """
+    from Scripts.Components.components import Transform
     requiredDependencies={
     "Transform": Transform, "Collider": Collider
     }

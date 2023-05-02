@@ -20,6 +20,7 @@ class BasicObject:
 class Scene:
     def init(self, *args, **kwargs):
         self.SceneTags:dict[str, dict[str, object]] = {}
+        self.delta = 0
 
 @newPrefab
 class Tag:

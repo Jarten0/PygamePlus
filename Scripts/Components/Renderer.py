@@ -1,3 +1,5 @@
+# pyright: reportGeneralTypeIssues=false
+
 from Scripts.Components.components import Transform
 from Scripts.componentManager import newComponent
 
@@ -60,19 +62,20 @@ class Renderer():
     "blue":  (0,   0,   255),
     "gray":  (30,  30,  30 ),
     }
-
+    
     def init(self,
-        Transform:Transform,
+        Transform,
         path: str|None = None,
         tier: int = 3,
         xOffset:float=0, yOffset:float=0,
         xLength:float=0, yLength:float=0,
-        color:tuple[int]=colors["gray"],
+        color:tuple[int, int, int]=colors["gray"],
         surface:pyg.Surface|None = None,
         alpha: int = 0,
         surfaceRows:int = 1, surfaceColumns:int = 1,
         autoCulling:bool = True,
         **kwargs) -> None:
+
         if path == None:
             self.path = "\\Assets\\Images\\MissingImage.png"
             self.surface = pyg.image.load(getcwd()+self.path)
@@ -102,13 +105,23 @@ class Renderer():
         "flipVertical"  : False,
         }
 
+    def update(self):
+        print("Am updating")
+
     def render(self, Screen: pyg.Surface, Camera, **kwargs):
-        if self.mode == 'rect':
+        if self.mode == 'rect':            
+            pyg.draw.rect(Screen, self.color, 
+               (int(self.Transform.xPos + self.xOffset,) - int(Camera.xPosition), int(self.Transform.yPos + self.yOffset,) - 
+                int(Camera.yPos), int(self.xLength), int(self.yLength))
+            )
+
+
             return
+        
         Screen.blit(
             source = self.surface,
-            dest = (int(self.Transform.xPos) - int(self.xOffset) - Camera.xPos,  # type: ignore
-                int(self.Transform.yPos) - int(self.yOffset) - Camera.yPos)) # type: ignore
+            dest = (int(self.Transform.xPos) - int(self.xOffset) - Camera.xPos,
+                    int(self.Transform.yPos) - int(self.yOffset) - Camera.yPos))
 
     def flip(self, flipVertically: bool = False, value: str | bool = "invert"):
         try:
@@ -118,5 +131,4 @@ class Renderer():
             if value == 'invert': value = not self.flags[direction]
             self.flags[direction] = value
 
-        except KeyError as ke:
-            return ke
+        except KeyError as ke: return ke

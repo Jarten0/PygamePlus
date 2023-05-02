@@ -17,7 +17,6 @@ logInConsole: bool  = True
 ReadyToGo: bool     = False
 level: Any          = Level.new("Level uno", 2000, 2000)
 settings: dict[str, Any] = FileManager.load(programPath+"\\ConfigFiles\\debugSettings.toml", 'toml', _returnType=dict)
-delta: float = 1.0
 RenderQueue:   set [object|dict]     = set({})
 
 
@@ -46,8 +45,8 @@ async def _loadingScreen(programPath) -> None:
     i = 0
     while ReadyToGo == False and i < 99:
         i += 1
-        Screen.fill((0,0,0))
-        Screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
+        Render.Screen.fill((0,0,0))
+        Render.Screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
         pyg.display.flip()
         await asyncio.sleep(0.05)
         state += 1
@@ -58,7 +57,7 @@ async def _loadStuff() -> None:
     await asyncio.sleep(0.2)
     global ReadyToGo
     try:
-        _startNewScene()
+        _sceneStart()
     except: print("OhNo"); raise
     ReadyToGo = True
 
@@ -92,8 +91,9 @@ class gameObject:
         return cls.Prefabs, cls.PrefabNames
     
     @classmethod
-    def newScene(cls, sceneName:str):
+    def newScene(cls, sceneName:str="New Scene"):
         from Scripts.Components.components import Scene as sc
+        if sceneName in gameObject.Scenes: sceneName = NextID(gameObject.Scenes, sceneName)
         Scene = sc(sceneName, None, None)
         gameObject.Scenes[sceneName] = Scene
         return Scene
@@ -101,6 +101,7 @@ class gameObject:
 class Component:
     Components:    dict[int,     type  ] = {}
     ComponentNames:dict[str,     int   ] = {}
+
     @classmethod
     def new(cls, class_:type|str, *args, **kwargs) -> object:
         """Creates a component instance using its built in initializer
@@ -133,7 +134,10 @@ class Component:
     \n  SquareObject = Object.new() 
     """
         if isinstance(class_, str):
-            class_ = cls.get(class_)
+            try:
+                class_ = cls.get(class_)
+            except KeyError:
+                raise
         return class_(*args, **kwargs)
 
     @classmethod
@@ -162,13 +166,17 @@ class Component:
         return cls.Components, cls.ComponentNames
 
 class Render():
+    Screen: pyg.Surface
+
     @classmethod
     async def _drawCurrentFrame(cls, renderQueue:set) -> None:
         
+        renderQueue = Scene.RenderQueue
+
         readyRenderQueue = cls._sortRenderQueue(renderQueue)
         
         asyncioRenderTasks = []
-        Screen.fill((50, 50, 50))
+        cls.Screen.fill((50, 50, 50))
         for i in reversed(readyRenderQueue):
             if 'render' in dir(readyRenderQueue[i]):
                 asyncioRenderTasks.append( asyncio.create_task( cls._renderWithObj(readyRenderQueue[i]) )) 
@@ -182,7 +190,25 @@ class Render():
 
     @classmethod
     def _renderDev(cls):
+        cls.font = pyg.font.Font('freesansbold.ttf', 20)
         cls._drawRect((0,0,0), 1000, 0, 600, 1000)
+        ids, prefabs = gameObject.getAllPrefabs()
+        cids, components = Component.getAll()
+        i = 0
+        cls._drawText("Prefabs: ", y=i)
+        for prefab in prefabs:
+            i += 20
+            cls._drawText(prefab, y=i)
+
+        i += 32
+        cls._drawText("Components: ", y=i)
+
+        for component in components:
+            i += 20
+            cls._drawText(component, y=i)
+            
+
+
 
     @classmethod
     def _sortRenderQueue(cls, renderQueue) -> dict:
@@ -192,7 +218,7 @@ class Render():
         returnedRenderQueue = {}
 
         for i in renderQueue:
-            tempRenderQueue.append((i.tier, i.Transform.zPosition, i))
+            tempRenderQueue.append((i.tier, i.Transform.zPos, i))
         tempRenderQueue.sort()
         
         for i in tempRenderQueue:
@@ -203,21 +229,22 @@ class Render():
 
     @classmethod     
     async def _renderWithObj(cls, rendererObj) -> None:
-        rendererObj.render(Screen=Screen, Camera=Camera) # type: ignore
+        rendererObj.render(Screen=cls.Screen, Camera=Camera) # type: ignore
 
     @classmethod
     def _drawRect(cls, color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
-        pyg.draw.rect(Screen, color, (int(x) - int(Camera.xPosition), int(y) - int(Camera.yPos), int(xl), int(yl)))
+        pyg.draw.rect(cls.Screen, color, (int(x) - int(Camera.xPosition), int(y) - int(Camera.yPos), int(xl), int(yl)))
 
-def _startNewScene() -> str:
+    @classmethod
+    def _drawText(cls, string, x=1000, y=0, xl=600, yl=1000):
+        cls.Screen.blit(cls.font.render(string, True, (255,255,255)), pyg.Rect(x, y, xl, yl))
+
+def _sceneStart() -> str:
     global Scene, devMode, sky, \
     Character, missingImage, Mouse, Font, \
     MainComponent, CharacterComponent, PlatformComponent
 
     devMode = False    
-
-    Scene = gameObject.newScene("MainScene")
-  
 
     from Scripts import componentManager as ComponentManager, cutsceneManager as CutsceneManager
 
@@ -225,9 +252,9 @@ def _startNewScene() -> str:
     import Scripts.Components.components as MainComponent
     import Scripts.Components.platforms as PlatformComponent
     
+    Scene = gameObject.newScene("MainScene")
 
-    Component.Components, Component.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames \
-        = ComponentManager.init()
+    Component.Components, Component.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames = ComponentManager.init()
     Input.init()
     Camera.init()
     # CutsceneManager.init()
@@ -240,7 +267,7 @@ def _startNewScene() -> str:
 
 
     Character = Scene.newObject(nameInput="Character", prefabInput='characterPrefab\\Character', )
-    Mouse = Component.new(Component.get('components\\Mouse'))
+    Mouse = Component.new('components\\Mouse')
     Font = pyg.font.Font('freesansbold.ttf', 32)
     # sky = Component.new(
     #     'sky', prefabInput = Component.get('components\\Renderer'), 
@@ -256,24 +283,25 @@ def _startNewScene() -> str:
     
     return "Done"
 
-async def _platformingTick(delta):
+async def _sceneTick(delta):
     if Input.getDown('jump'):
         exit(system('cls'))
 
     Input.update()
     Timer.tick()
-    Scene.updateObjects(delta)
+    Scene.delta = delta
+    Scene.updateObjects()
 
     return 'complete'
 
 async def _main() -> _NoReturn|None:
-    global logInConsole, Screen, Clock, ReadyToGo
+    global logInConsole, Clock, ReadyToGo
     if not isinstance(settings, dict): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
     logInConsole = settings['LogInConsole']
-    
+    delta = 1
     pyg.init()
 
-    Screen = pyg.display.set_mode((settings["Screen"]["screen_width"], settings["Screen"]["screen_height"]))
+    Render.Screen = pyg.display.set_mode((settings["Screen"]["screen_width"], settings["Screen"]["screen_height"]))
 
     pyg.display.set_icon(pyg.image.load(programPath+"\\Assets\\Images\\hehe.png").convert())
     pyg.display.set_caption('Platformer')
@@ -286,7 +314,7 @@ async def _main() -> _NoReturn|None:
         start = time.time()
 
         done = await asyncio.gather(
-            _platformingTick(delta), 
+            _sceneTick(delta), 
             Render._drawCurrentFrame(RenderQueue))
             
         try: raise
@@ -296,6 +324,7 @@ async def _main() -> _NoReturn|None:
         delta = end - start
         system('cls')
         print(f"tick took {end - start} seconds")
+
 try:
     if __name__ == "__main__": asyncio.run(_main())
 except SystemExit:

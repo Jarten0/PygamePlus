@@ -12,26 +12,35 @@ class Character():
             yPos=ConfigData.configFile["body"]["ypos"],     # type: ignore
             zPos=ConfigData.configFile["body"]["zpos"],     # type: ignore
             )
-        Renderer = Component.new('components\\Renderer',
+        Renderer = Component.new('Renderer\\Renderer',
             Transform = Transform,  
+            color = (255, 0,0),
             xOffset=0,
             yOffset=0,
-            xLength=20,
+            xLength=50,
             yLength=20,
             path="\\Assets\\Images\\hehe.png",
             tier=5,
             )
-        Collider = Component.new('components\\Collider',
-            Transform = Transform,    
-            xLength = 20,
+        Collider = Component.new('Collider\\Collider',
+            Transform = Transform,
+            xLength = 0,
             yLength = 20,
             )
-        RigidBody = Component.new('components\\RigidBody',
+        RigidBody = Component.new('Collider\\RigidBody',
             Transform = Transform,    
             Collider = Collider,    
             mass = 5,
             )
+        Character = Component.new('character\\Character',
+            ConfigData = ConfigData,    
+            Transform = Transform,      
+            Renderer  = Renderer,      
+            Collider  = Collider,      
+            RigidBody = RigidBody,
+        )
         return {
+            'Character': Character,
             'ConfigData': ConfigData,
             'Transform': Transform,
             'Renderer': Renderer,

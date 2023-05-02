@@ -1,3 +1,4 @@
+# pyright: reportGeneralTypeIssues=false
 import pygame as pyg
 from Scripts import Input
 import Scripts.Components.Collider
@@ -32,7 +33,7 @@ class Character():
             Collider  ,      
             RigidBody , 
             *args, **kwargs) -> None:
-        from main import settings, level, delta
+        from main import settings, level
         self.ConfigData = ConfigData    
         self.Transform = Transform      
         self.Renderer = Renderer      
@@ -66,19 +67,17 @@ class Character():
         self.color = self.Renderer.colors["red"] # type: ignore
         self.DCsuper = 0
         self.DChyper = 0
-        self.delta = delta
 
     def update(self) -> None:
-        from main import delta
-        print(delta, "Hehe")
+        print(Input.getHeld('left'))
         if Input.getHeld('left'):
-            self.Transform.xPosition -= self.speed * delta
+            self.Transform.xPos -= self.speed * self.Scene.delta
         if Input.getHeld('right'):
-            self.Transform.xPosition += self.speed * delta
+            self.Transform.xPos += self.speed * self.Scene.delta
         if Input.getHeld('up'):
-            self.Transform.yPosition -= self.speed * delta
+            self.Transform.yPos -= self.speed * self.Scene.delta
         if Input.getHeld('down'):
-            self.Transform.yPosition += self.speed * delta
+            self.Transform.yPos += self.speed * self.Scene.delta
         return
         #Makes checks to see if the character is able to reset the dash
         if Timer.getValue('dashcool', inc=False) \
@@ -94,31 +93,31 @@ class Character():
             and not Input.getHeld('right'):
             self.direction = 'left'
             
-            if  self.Transform .xVelocity >- self.speed:
-                self.Transform .xVelocity -= self.acc
+            if  self.Transform .xVel >- self.speed:
+                self.Transform .xVel -= self.acc
         
             else:
-                self.Transform .xVelocity += self.decel
+                self.Transform .xVel += self.decel
 
         elif    Input.getHeld('right') \
             and not Input.getHeld('left' ) :
             self.direction = 'right'
 
-            if  self.Transform .xVelocity <  self.speed:
-                self.Transform .xVelocity += self.acc
+            if  self.Transform .xVel <  self.speed:
+                self.Transform .xVel += self.acc
         
             else:
-                self.Transform .xVelocity -= self.decel
+                self.Transform .xVel -= self.decel
         
         else:
-            if  self.Transform.xVelocity <=-self.decel:
-                self.Transform.xVelocity += self.decel * self.dashSlow
+            if  self.Transform.xVel <=-self.decel:
+                self.Transform.xVel += self.decel * self.dashSlow
             
-            elif self.Transform.xVelocity >= self.decel:
-                self.Transform.xVelocity -= self.decel * self.dashSlow
+            elif self.Transform.xVel >= self.decel:
+                self.Transform.xVel -= self.decel * self.dashSlow
             
             else:
-                self.Transform.xVelocity = 0
+                self.Transform.xVel = 0
 
         
 
@@ -153,55 +152,55 @@ class Character():
         self.canWalljump = False
         
         #Death from void        
-        if self.Transform.yPosition > self.level.height: # type: ignore
+        if self.Transform.yPos > self.level.height: # type: ignore
             self.die()
 
         #Wrap the character around if they reach the end, but only one way
-        if self.Transform.xPosition < 0:
-            self.Transform.xPosition = 0
-        elif self.Transform.xPosition > settings.screen_width + level.length: # type: ignore
-            self.Transform.xPosition = 0
+        if self.Transform.xPos < 0:
+            self.Transform.xPos = 0
+        elif self.Transform.xPos > settings.screen_width + level.length: # type: ignore
+            self.Transform.xPos = 0
 """
     def die(self):
-        self.Transform.xPosition = 500        
-        self.Transform.yPosition = 0
-        self.Transform.xVelocity = 0
-        self.Transform.yVelocity = 1
+        self.Transform.xPos = 500        
+        self.Transform.yPos = 0
+        self.Transform.xVel = 0
+        self.Transform.yVel = 1
         self.dead = True
 
     def jump(self):
         print("Jump!")
         Timer.setDec("CoyoteTime", 0)
 
-        self.Transform.yVelocity = self.jumppower
+        self.Transform.yVel = self.jumppower
         self.RigidBody.grounded = False
         self.dashSlow = 1
-        self.Transform.xVelocity *= 2
+        self.Transform.xVel *= 2
         print("Jump!")
         if self.dashLeave or self.dashState:
             print("Dash Cancel!")
-            if not self.Transform.xVelocity == 0:
-                self.Transform.xVelocity = abs(self.Transform.xVelocity)/ self.Transform.xVelocity * 24
+            if not self.Transform.xVel == 0:
+                self.Transform.xVel = abs(self.Transform.xVel)/ self.Transform.xVel * 24
                 if self.dashList[3] == True:
                     print("Hyper!")
-                    self.Transform.yVelocity  = -13
-                    self.Transform.xVelocity *=  3
+                    self.Transform.yVel  = -13
+                    self.Transform.xVel *=  3
 
     def walljump(self, wallCollisions):
         if wallCollisions[0] and wallCollisions[1]:
-            self.Transform.yVelocity = self.jumppower
+            self.Transform.yVel = self.jumppower
         elif wallCollisions[0]:
-            self.Transform.xVelocity = -7
-            self.Transform.yVelocity = self.jumppower
+            self.Transform.xVel = -7
+            self.Transform.yVel = self.jumppower
         elif wallCollisions[1]:
-            self.Transform.xVelocity = 7
-            self.Transform.yVelocity = self.jumppower
+            self.Transform.xVel = 7
+            self.Transform.yVel = self.jumppower
 
         if self.dashLeave or self.dashState:
             if self.dashList[0]:
                 print("Dash Cancel")
-                self.Transform.yVelocity *= 1.2
-                self.Transform.xVelocity *= 1.5
+                self.Transform.yVel *= 1.2
+                self.Transform.xVel *= 1.5
                 
     def dash(self):
         input = ["up", "left", "right", "down", "jump", "dash"]
@@ -217,21 +216,21 @@ class Character():
         if not Timer.get("dash") and self.dashState:
             self.color = self.Renderer.colors["green"]
             if self.dashList[0]:
-                if self.Transform.yVelocity > -self.dashSpeed:
-                    self.Transform.yVelocity = -self.dashSpeed
+                if self.Transform.yVel > -self.dashSpeed:
+                    self.Transform.yVel = -self.dashSpeed
             if self.dashList[1]:
-                if self.Transform.xVelocity > -self.dashSpeed:
-                    self.Transform.xVelocity = -self.dashSpeed
+                if self.Transform.xVel > -self.dashSpeed:
+                    self.Transform.xVel = -self.dashSpeed
             if self.dashList[2]:
-                if self.Transform.xVelocity < self.dashSpeed:
-                    self.Transform.xVelocity = self.dashSpeed
+                if self.Transform.xVel < self.dashSpeed:
+                    self.Transform.xVel = self.dashSpeed
             if self.dashList[3]:
-                if self.Transform.yVelocity < self.dashSpeed:
-                    self.Transform.yVelocity = self.dashSpeed
+                if self.Transform.yVel < self.dashSpeed:
+                    self.Transform.yVel = self.dashSpeed
             if self.dashList[3]:
                 if self.dashList[0]:
-                    self.Transform.yVelocity = 0
-#                    self.Transform.xVelocity *= 1.2
+                    self.Transform.yVel = 0
+#                    self.Transform.xVel *= 1.2
         elif self.dashState:
             self.dashState = False
             self.dashLeave = True

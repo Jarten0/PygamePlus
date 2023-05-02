@@ -113,7 +113,7 @@ def _getPrefabsFromFile(directory, file, blacklist, Components, ComponentNames, 
 def newPrefab(initialPrefab) -> Any:
     name = initialPrefab.__name__
     class NewPrefab(initialPrefab):
-        from main import gameObject, RenderQueue, NextID
+        from main import gameObject, RenderQueue, NextID, Render
         _Prefabs, _PrefabNames = gameObject.getAllPrefabs()
         prefabID = _findNextAvailableID(_Prefabs, randomize=True)
         NAME = initialPrefab.__name__
@@ -132,6 +132,7 @@ def newPrefab(initialPrefab) -> Any:
                 components = {}
             for componentName in components:
                 setattr(self, componentName, components[componentName])
+            self.components = components
             
 
         def newObject(self,
@@ -211,18 +212,19 @@ def newPrefab(initialPrefab) -> Any:
 
         def updateObjects(self):
             for obj in self.enclosedObjects.values():
-                if 'earlyUpdate' in dir(obj): obj.earlyUpdate()
-                for componentName in dir(obj):
+                for componentName in obj.components:
                     objComponent = obj.__getattribute__(componentName)
-                    if 'ID' not in dir(objComponent): continue
+                    if 'componentID' not in dir(objComponent): continue
                     if isinstance(objComponent, type): continue
+                    
                     if 'update' in dir(objComponent):
                         objComponent.update()
             
                     if 'render' in dir(objComponent):
                         NewPrefab.RenderQueue.add(objComponent)
-                if 'updateObjects' in dir(obj): obj.updateObjects()                
-                if 'update' in dir(obj): obj.update()
+                    
+                if 'updateObjects' in dir(obj): obj.updateObjects()
+                
 
 
 
@@ -279,9 +281,7 @@ def newComponent(initialComponent) -> Any:
                     print("Are all present inside of:", name)
                     raise
         
-            try:
-                initialComponent.init(self, *args, **kwargs)
-
+            try: initialComponent.init(self, *args, **kwargs)
             except AttributeError as ae:
                 error = f"InitializationFunctionMissing: No initialize function in {name}! Add missing function using template (run script as main for template)"
                 print(error)
@@ -290,32 +290,6 @@ def newComponent(initialComponent) -> Any:
                 error = f"InitializationWrapperMissing: No init decorater in {name}! Add missing @decorater using template (run script as main for template)"
                 print(error)
                 raise te
-            
-        def rename_(self, newName:str) -> None:
-            """Takes in a name to set the object as and tries to set the object's name as it.
-            \nIf it is already taken, it will try appending parenthesis with 
-            a number to try to find an available key. It will return the new name
-            \nExample: \n
-            object.rename_() """
-            pass
 
     NewComponent.__name__ = name+"(Component)"
     return NewComponent
-
-def _main() -> None:
-    print("""
-    DEFAULT TEMPLATE:
-from componentDependencyDecorators import *
-@__dependencyWrapper(requiredDependencies= {
-    "<required dependency name>": True,
-    "<optional dependency name>": False, 
-    } )
-class <componentName>:            
-    @__initializationWrapper
-    def _initialize(self, dependencies):
-        <add below for each dependency>
-        self.<dependencyName> = dependencies["<dependencyName>"]  """)
-
-
-if __name__ == '__main__':
-    _main()

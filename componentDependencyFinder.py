@@ -16,10 +16,11 @@ def _generateDependencyList():
     ifOptionalInArg = lambda com, i : ", #Optional" * int((i in com.optionalArguments))
     ifNoStr = lambda obj: (int('<' in obj) * ("'" + obj.removeprefix('<').removesuffix('>') + "'")) + (int(not '<' in obj) * obj)
     with open(os.getcwd()+"\\componentDependencies.py", "w") as writeFile:
-        writeFile.write("from main import Object, Component\n\n")
+        writeFile.write("from main import gameObject, Component\n")
+        writeFile.write("Scene = gameObject.newScene('TemplateScene')\n\n")
+
+
         importStatment = ""
-        
-        
         for name in ComponentNames: importStatment += "from Scripts.Components."+name.removeprefix("\\").partition("\\")[0]+" import "+name.removeprefix("\\").partition("\\")[2]+"\n"
         writeFile.write(importStatment.removesuffix(", \\")+"\n")
         
@@ -28,7 +29,7 @@ def _generateDependencyList():
             component = componentClass.__name__
             
             if 'create' in dir(componentClass):
-                writeFile.write("Object.new(name_='"+component.removesuffix("(Wrapped)")+" Object', class_="+component.removesuffix("(Wrapped)")+", addToList_=False,\n")
+                writeFile.write("Scene.new(name_='"+component.removesuffix("(Wrapped)")+" Object', class_="+component.removesuffix("(Wrapped)")+", addToList_=False,\n")
             else:
                 writeFile.write("Component.new("+component.removesuffix("(Wrapped)")+",\n")
             append = ''

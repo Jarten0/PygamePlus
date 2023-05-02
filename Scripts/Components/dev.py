@@ -1,7 +1,7 @@
 from main import Component, newPrefab, newComponent
 
 @newPrefab
-class Button:
+class ButtonObj: # type: ignore
     def init(self):
         Transform = Component.new("components\\Renderer")
         Renderer = Component.new("Renderer\\Renderer")
@@ -19,4 +19,4 @@ class Button:
         self.Renderer = components['Renderer']
 
 @newPrefab
-class devInterface():
+class devInterface(): pass
