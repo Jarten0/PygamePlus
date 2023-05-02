@@ -39,6 +39,11 @@ class Collider():
         **kwargs) -> None:
 
         BoxCollider = {
+        Collider.Hitbox( #overall
+            Transform,
+            Transform.Vector(0, 0),
+            xLength, yLength
+            ),
         Collider.Hitbox( #top
             Transform,
             Transform.Vector(0, 0),
@@ -46,7 +51,7 @@ class Collider():
             ),
         Collider.Hitbox( #bottom
             Transform,
-            Transform.Vector(0, 25),
+            Transform.Vector(0, yLength/2),
             xLength, yLength/2
             ),
         Collider.Hitbox( #left
@@ -56,7 +61,7 @@ class Collider():
             ),
         Collider.Hitbox( #right
             Transform,
-            Transform.Vector(25, 0),
+            Transform.Vector(xLength/2, 0),
             xLength/2, yLength
             ),
         }

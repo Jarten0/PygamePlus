@@ -7,35 +7,25 @@ Main = __import__("__main__")
 
 
 @newComponent
-class Platform():
+class Platform:
+
+    class InteractFunc:
+        def __init__(self, func):
+            self = func
+            Platform.interactionFunctions[func.__name__] = func
+
+    @InteractFunc
+    def hehe(self, object):
+        print("Bepis")
+
+
+    InteractFunc(hehe)
+
+    interactionFunctions = {}
+
     requiredDependencies={
         "Transform" : MainComponent.Transform ,
         "Collider"  : Scripts.Components.Collider.Collider ,
-    }
-    
-    
-    placeprop = {
-    0: {
-        "#HasPlaceReq": False,
-        "#object": False,},
-    1: {
-        "#HasPlaceReq": False,
-        "#object": False,},
-    2: {
-        "#HasPlaceReq": True,
-        "xl": False,
-        "yl": 7,
-        "#object": False,},
-    3: {
-        "#HasPlaceReq": True,
-        "xl": False,
-        "yl": False,
-        "#object": False,},
-    4: {
-        "#HasPlaceReq": True,
-        "xl": 30,
-        "yl": 10,
-        "#object": True},
     }
 
     def init(self, Transform:MainComponent.Transform, Collider:Scripts.Components.Collider.Collider, 

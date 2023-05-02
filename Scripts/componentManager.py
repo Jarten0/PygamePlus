@@ -125,7 +125,7 @@ def newPrefab(initialPrefab) -> Any:
             self.parent = parent
             if not isinstance(Scene, type(self)): 
                 Scene = self
-            self.scene = Scene
+            self.Scene = Scene
             components = self.init(*args, **kwargs)
             
             if components == None: 
@@ -158,7 +158,7 @@ def newPrefab(initialPrefab) -> Any:
             if not 'prefabID' in dir(prefab): exit(name+f" initialization did not get a prefab, instead got {prefab} which is not a prefab class; make sure your input is either a prefab class or leads to a prefab and not a component")
             if not 'init' in dir(prefab): exit(name+"("+prefab.__name__+")"+": Invalid prefab initialization; prefab is missing init function")
 
-            try: createdObject = prefab(name, parent=self, Scene=self.scene, *args, **kwargs)
+            try: createdObject = prefab(name, parent=self, Scene=self.Scene, *args, **kwargs)
             
             except: print("\n\n!!!!!!!!!!\n\n", prefab.__name__, " create error: Something went wrong, go fix it.\n", sep=''); raise
             if not isinstance(createdObject, prefab): print(createdObject.NAME, prefab.__name__); raise Exception(f"{prefab.__name__}\n\n\n{nameInput}:{prefabInput} create error; It should return an object. Check to see if it is properly returning a value. ") # type: ignore
@@ -167,7 +167,7 @@ def newPrefab(initialPrefab) -> Any:
             
             self.Tags = tagsInput
             
-            Scene = self.scene
+            createdObject.Scene = self.Scene
 
             for tag in tagsInput:
                 if tag not in Scene.SceneTags: Scene.SceneTags[tag] = {}
@@ -224,8 +224,6 @@ def newPrefab(initialPrefab) -> Any:
                         NewPrefab.RenderQueue.add(objComponent)
                     
                 if 'updateObjects' in dir(obj): obj.updateObjects()
-                
-
 
 
 
