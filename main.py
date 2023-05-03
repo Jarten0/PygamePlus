@@ -15,6 +15,7 @@ programPath: str    = os.getcwd()
 FreezeFrames: int   = 0
 logInConsole: bool  = True
 ReadyToGo: bool     = False
+selectedObject      = False
 level: Any          = Level.new("Level uno", 2000, 2000)
 settings: dict[str, Any] = FileManager.load(programPath+"\\ConfigFiles\\debugSettings.toml", 'toml', _returnType=dict)
 RenderQueue:   set [object|dict]     = set({})
@@ -161,16 +162,22 @@ class Render():
             cls._renderDev()
         pyg.display.flip()
 
+
+    scroll = 0
     @classmethod
     def _renderDev(cls):
         cls.font = pyg.font.Font('freesansbold.ttf', 20)
         cls._drawRect((0,0,0), 1000, 0, 600, 1000)
         ids, prefabs = gameObject.getAllPrefabs()
         cids, components = Component.getAll()
-        i = 0
+        if Input.getDown()
+        i = cls.scroll
         cls._drawText("Prefabs: ", y=i)
         for prefab in prefabs:
             i += 20
+            cls.Screen.blit(
+            source = pyg.image.load(os.getcwd() + "Assets\\Images\\emptyCheckbox.png"),
+            dest = (1000 , i))
             cls._drawText(prefab, y=i)
 
         i += 32
@@ -179,7 +186,24 @@ class Render():
         for component in components:
             i += 20
             cls._drawText(component, y=i)
-            
+
+        i += 32
+        cls._drawRect((255,255,255), 1000, i, 600, 32)
+        i += 32
+
+
+        if selectedObject == False: return
+        cls._dreawText("Inspecting", selectedObject.name)
+        i += 32
+
+        for component in selectedObject.components:
+            cls._drawText(component.NAME, ":", y=i)
+            i += 20
+            for attr in dir(component):
+                if attr in {'NAME'}: continue
+                cls._drawText("  ", attr, ":", getattr(component, attr))
+                i += 20
+            i += 12                
 
 
 
@@ -209,7 +233,8 @@ class Render():
         pyg.draw.rect(cls.Screen, color, (int(x) - int(Camera.xPosition), int(y) - int(Camera.yPos), int(xl), int(yl)))
 
     @classmethod
-    def _drawText(cls, string, x=1000, y=0, xl=600, yl=1000):
+    def _drawText(cls, string, *args, sep=" ", x=1020, y=0, xl=600, yl=1000):
+        for i in args: string += sep+str(i)
         cls.Screen.blit(cls.font.render(string, True, (255,255,255)), pyg.Rect(x, y, xl, yl))
 
 def _sceneStart() -> str:
@@ -241,6 +266,7 @@ def _sceneStart() -> str:
 
 
     Character = Scene.newObject(nameInput="Character", prefabInput='characterPrefab\\Character', )
+    selectedObject = Character 
     Mouse = Scene.newObject('components\\Mouse')
     Font = pyg.font.Font('freesansbold.ttf', 32)
 
