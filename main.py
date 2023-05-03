@@ -1,3 +1,5 @@
+# pyright: reportGeneralTypeIssues=false
+
 if __name__ == "__main__": logInConsole = True; print("\n"*60)
 else: logInConsole = False
 
@@ -170,13 +172,16 @@ class Render():
         cls._drawRect((0,0,0), 1000, 0, 600, 1000)
         ids, prefabs = gameObject.getAllPrefabs()
         cids, components = Component.getAll()
-        if Input.getDown()
+        if Input.getHeld("DOWN"): cls.scroll -= 3
+        if Input.getHeld("UP"): cls.scroll += 3
+        print(Input.getHeld("UP"), Input.getHeld("DOWN"))
+        
         i = cls.scroll
         cls._drawText("Prefabs: ", y=i)
         for prefab in prefabs:
             i += 20
             cls.Screen.blit(
-            source = pyg.image.load(os.getcwd() + "Assets\\Images\\emptyCheckbox.png"),
+            source = pyg.image.load(os.getcwd() + "\\Assets\\Images\\emptyCheckbox.png"),
             dest = (1000 , i))
             cls._drawText(prefab, y=i)
 
