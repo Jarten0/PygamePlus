@@ -1,6 +1,7 @@
 SceneType = "Debug"
 LogInConsole = true
 devMode = true
+active = true
 
 [Camera]
 speed = 10

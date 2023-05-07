@@ -36,6 +36,7 @@ class Collider():
         xLength:int=50, yLength:int=50,
         hitboxs:set|str='BoxCollider',
         collisionTags:set=set(),
+        active:bool = True
         **kwargs) -> None:
 
         BoxCollider = {
@@ -69,6 +70,7 @@ class Collider():
         defaultHitboxTypes = {
             'BoxCollider': BoxCollider
         }
+        self.active = active
 
         self.Transform = Transform
         self.xLength = xLength
@@ -84,12 +86,21 @@ class Collider():
         self.collisionTags=collisionTags
 
     def update(self) -> None:
+        self.collideList = []
+        if self.active == False: return
+        
+
         for tag in self.collisionTags:
             for object in self.scene.SceneTags[tag]: # type: ignore
                 if not 'Collider' in object.Components: continue
+                if object.Collider.active == False: continue
+                
                 Colliding = False
                 for checkingHitbox in self.hitboxs:
+                    if checkingHitbox.active == False: continue
                     for questioningHitbox in object.Collider.hitboxs:
+                        if questioningHitbox.active == False: continue
+
                         if checkingHitbox.check(questioningHitbox):
                             Colliding = True
                             checkingHitbox.collideList.append(questioningHitbox)

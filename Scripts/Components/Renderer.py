@@ -13,25 +13,25 @@ from sys import exit
 
 @newComponent
 class Renderer():
-    """Draws an image, sprite from spritesheet, or rectangle to the screen. Has quite a few arguments.
-    Required:
+    """#Draws an image, sprite from spritesheet, or rectangle to the screen. Has quite a few arguments. You can copy paste this description if you want\n
+    #Required:
     path: str # example = '\\Assets\\Images\\[image name], pull from root of framework, ie where main.py is located
-    tier: int # used for increased render ordering capabilities. Refer to the renderer tier txt
-    Optional:
+    tier: int # used for increased render ordering capabilities. Refer to the renderer tier txt\n
+    #Optional:
     xOffset:float=0 # Offsets are used for rendering offsetted from the Transform point 
-    yOffset:float=0
-    <These next ones are used for selecting what part of the image is going to be used.
+    yOffset:float=0\n
+    #<These next ones are used for selecting what part of the image is going to be used.
     Still functional with spritesheets, but you must keep these in mind>
     xStart :float=0 # Used to pick from where in an image the render point starts. Anything before that is cropped out
     yStart :float=0
     xLength:float=0 # Used to pick how much of an image is used. Anything outside of that is cropped out
     yLength:float=0
     surfaceRows: int = 1 # This is important if you want to use images from a spritesheet. This is how many horizontal sprites are in the image.
-    surfaceColumns: int = 1 # Same as rows, but vertically.
-    <the rest of these are a bit more advanced, change if you so wish>
-    surface: Pygame Surface, if you want to handle loading of images yourself
-    alpha = int, 0-100, if you want to change the opacity of the object 
-    autoCulling: bool=True, optimization that stops from rendering if the object is off screen
+    surfaceColumns: int = 1 # Same as rows, but vertically.\n
+    #<the rest of these are a bit more advanced, change if you so wish>\n
+    surface: Pygame Surface # if you want to handle loading of images yourself\n
+    alpha = int # 0-100, if you want to change the opacity of the object 
+    autoCulling: bool=True # optimization that stops from rendering if the object is off screen
     """
 
     requiredDependencies={

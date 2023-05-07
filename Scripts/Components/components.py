@@ -21,6 +21,7 @@ class Scene:
     def init(self, *args, **kwargs):
         self.SceneTags:dict[str, dict[str, object]] = {}
         self.delta = 0
+        self.settings = ConfigData.load(getcwd()+"\\ConfigFiles\\debugSettings.toml")
 
 @newPrefab
 class Tag:
@@ -147,13 +148,17 @@ so input dirFileName as the name with a backslash before it. If it is located in
             print("\n"*10, dirFileName, fileType, args, kwargs)
             raise
 
+@newPrefab
+class MousePrefab:
+    def init(self):
+        self.newComponent(Mouse)
+
 @newComponent
 class Mouse():
     requiredDependencies={}
     def init(self) -> None:
-        from main import gameObject, settings
         from Scripts import Camera
-        self.Object, self._Settings, self.Camera = gameObject, settings, Camera
+        self.Camera = Camera
         self.placestage = 0
         self.select = 1
         self.tempx = 0

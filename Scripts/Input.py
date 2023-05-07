@@ -21,7 +21,8 @@ _defaultInputMappings: dict[str, list[str]] = {
     "UP":    ["UP",    ], 
     "LEFT":  ["LEFT",  ], 
     "DOWN":  ["DOWN",  ],
-    "RIGHT": ["RIGHT", ], 
+    "RIGHT": ["RIGHT", ],
+    "EXIT":  ["`",     ], 
     }
 _defaultInputMapping_keys = _defaultInputMappings.keys()   
         
@@ -71,6 +72,7 @@ _pygameKeyToEvent: dict[str, int] = {
     "UP": pyg.K_UP,
     "DOWN": pyg.K_DOWN,
     "SHIFT": pyg.K_LSHIFT,
+    "RSHIFT": pyg.K_RSHIFT,
     "SPACE": pyg.K_SPACE,
     "TAB": pyg.K_TAB,
     "BACKSPACE": pyg.K_BACKSPACE,

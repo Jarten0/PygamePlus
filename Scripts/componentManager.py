@@ -122,6 +122,7 @@ def newPrefab(initialPrefab) -> Any:
         def __init__(self, name, parent, Scene, *args, **kwargs) -> None:
             self.enclosedObjects = {}
             self.NAME = name
+            self.active = True
             if 'delta' in dir(Scene): self.delta = Scene.delta
             else: self.delta = None
             self.parent = parent
@@ -191,14 +192,17 @@ def newPrefab(initialPrefab) -> Any:
                 self.Tags.remove(tag)
 
         def getObject(self, objName:str) -> object|None:
-            """Finds an object via it's name\n
-            If no such object exists, returns None."""
+            """Finds and returns an object via it's name\n
+            If no such object exists, returns None.
+            You can also use backslashes to go into an object's enclosed objects
+            Format for object name should be:
+            \\"""
             objName.removeprefix("\\")
             objectHeirList = []
             splitName = ''
             for char in list(objName):
                 if char == "\\":
-                    objectHeirList.append(splitName)
+                    objectHeirList.append(splitName) 
                     continue
                 splitName += char
             obj = self
@@ -206,23 +210,33 @@ def newPrefab(initialPrefab) -> Any:
             for name in objectHeirList:
                 if name not in obj.enclosedObjects: print(f"{name} is not inside of {obj.NAME}"); return None
                 obj = obj.enclosedObjects[name]
-                if not 'enclosedObjects' in dir(obj): print(f"{name} is not an object"); return None                
+                if not 'enclosedObjects' in dir(obj): print(f"{name} is not an object! This item should not be enclosed within an object"); return None                
             return obj
 
-        def updateObjects(self):
+        def updateObjects(self, flags: str = ''):
             for obj in self.enclosedObjects.values():
                 for componentName in obj.components:
                     objComponent = obj.__getattribute__(componentName)
                     if 'componentID' not in dir(objComponent): continue
                     if isinstance(objComponent, type): continue
-                    
+                    if flags == 'SetAllToActive': 
+                        objComponent.active = True
+                    elif flags == 'SetAllToInactive' or objComponent.active == False or obj.active == False:
+                        objComponent.active = False
+                        if 'inverseupdate' in dir(objComponent):
+                            
+                        if 'render' in dir(objComponent):
+                            NewPrefab.RenderQueue.add(objComponent)    
+                        continue
+
                     if 'update' in dir(objComponent):
                         objComponent.update()
             
                     if 'render' in dir(objComponent):
                         NewPrefab.RenderQueue.add(objComponent)
-                    
-                if 'updateObjects' in dir(obj): obj.updateObjects()
+
+                if 'updateObjects' in dir(obj): obj.updateObjects(flags)
+
 
         def newComponent(self, class_:type|str, *args, **kwargs) -> object:
             """Creates a component instance using its built in initializer

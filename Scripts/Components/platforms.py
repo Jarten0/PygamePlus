@@ -10,12 +10,13 @@ Main = __import__("__main__")
 class Platform:
 
     class InteractFunc:
+        self.f
         def __init__(self, func):
-            self = func
+            self.func = func
 
     @InteractFunc
     def hehe(self, object):
-        print("Bepis")
+        print("Hehe")
 
 
     InteractFunc(hehe)

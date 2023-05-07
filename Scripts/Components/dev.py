@@ -33,4 +33,11 @@ class Button:
         self.Renderer = components['Renderer']
 
 @newPrefab
-class devInterface(): pass
+class devInterface(): 
+    def init(self): 
+        devScript = self.newComponent()
+
+@newComponent
+class devScript:
+    def init(self): pass
+    def update(self): pass
