@@ -1,4 +1,5 @@
 from Scripts.componentManager import newComponent
+# pyright: reportGeneralTypeIssues=false
 
 
 @newComponent
@@ -7,8 +8,8 @@ class Collider():
     This will NOT handle physics, incase it should be used as a collisionless trigger that has an
     activation area. If you want to add physical collisions, use this in tangent with RigidBody
     It works by having a tag or set of tags in which it can collide with"""
-    from Scripts.Components.components import Transform
-    requiredDependencies={ "Transform": Transform }
+    from Scripts.Components.components import Transform as te
+    requiredDependencies={ "Transform": te }
 
     class Hitbox():
         def __init__(self,
@@ -32,37 +33,35 @@ class Collider():
             return False
 
     def init(self,
-        Transform,
         xLength:int=50, yLength:int=50,
         hitboxs:set|str='BoxCollider',
         collisionTags:set=set(),
-        active:bool = True
         **kwargs) -> None:
 
         BoxCollider = {
         Collider.Hitbox( #overall
-            Transform,
-            Transform.Vector(0, 0),
+            self.Transform,
+            self.Transform.Vector(0, 0),
             xLength, yLength
             ),
         Collider.Hitbox( #top
-            Transform,
-            Transform.Vector(0, 0),
+            self.Transform,
+            self.Transform.Vector(0, 0),
             xLength, yLength/2
             ),
         Collider.Hitbox( #bottom
-            Transform,
-            Transform.Vector(0, yLength/2),
+            self.Transform,
+            self.Transform.Vector(0, yLength/2),
             xLength, yLength/2
             ),
         Collider.Hitbox( #left
-            Transform,
-            Transform.Vector(0, 0),
+            self.Transform,
+            self.Transform.Vector(0, 0),
             xLength/2, yLength
             ),
         Collider.Hitbox( #right
-            Transform,
-            Transform.Vector(xLength/2, 0),
+            self.Transform,
+            self.Transform.Vector(xLength/2, 0),
             xLength/2, yLength
             ),
         }
@@ -70,9 +69,7 @@ class Collider():
         defaultHitboxTypes = {
             'BoxCollider': BoxCollider
         }
-        self.active = active
 
-        self.Transform = Transform
         self.xLength = xLength
         self.yLength = yLength
         if isinstance(hitboxs, str):
@@ -118,21 +115,16 @@ class RigidBody():
     """
     from Scripts.Components.components import Transform
     requiredDependencies={
-    "Transform": Transform, "Collider": Collider
+    "Transform": Transform, 
+    "Collider": Collider
     }
 
 
     def init(self,
-            Transform,
-            Collider,
             mass:int=0,
-
             **kwargs) -> None:
-        self.Transform = Transform
-        self.Collider = Collider
         self.mass = mass
-        self.grounded = True
-
+    
     def update(self) -> None:
         if not self.grounded:
             if self.Transform.yVel < self.mass:

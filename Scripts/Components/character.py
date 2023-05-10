@@ -25,23 +25,10 @@ class Character():
         'RigidBody',
     }
             
-    def init(self, 
-            ConfigData,    
-            Transform ,      
-            Renderer  ,      
-            Collider  ,      
-            RigidBody , 
-            *args, **kwargs) -> None:
-        from main import settings, level
-        self.ConfigData = ConfigData    
-        self.Transform = Transform      
-        self.Renderer = Renderer      
-        self.Collider = Collider     
-        # self.RigidBody = RigidBody   
-
+    def init(self, *args, **kwargs) -> None:
+        from main import settings
         configFile = self.ConfigData.configFile
         self.settings = settings
-        self.level = level
         
         self.allowControl = True
         self.st = False
@@ -68,7 +55,7 @@ class Character():
         self.DChyper = 0
 
     def update(self) -> None:
-        print(Input.getHeld('left'))
+        print(Input.getHeld('left'), "AM CHAR")
         if Input.getHeld('left'):
             self.Transform.xVel -= self.speed * self.Scene.delta
         if Input.getHeld('right'):

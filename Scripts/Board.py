@@ -9,6 +9,8 @@ _perm: dict[str|int, Any] = {
     "down": False,
     "dash": False,
     "dashcool": 0,
+    "EXIT": False,
+    "RESTART": False,
 }
 
 def _appendToTemp(value, key: str|None = None) -> str | int:

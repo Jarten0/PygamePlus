@@ -23,6 +23,7 @@ _defaultInputMappings: dict[str, list[str]] = {
     "DOWN":  ["DOWN",  ],
     "RIGHT": ["RIGHT", ],
     "EXIT":  ["`",     ], 
+    "RESTART": ["TAB", ],
     }
 _defaultInputMapping_keys = _defaultInputMappings.keys()   
         
@@ -76,7 +77,7 @@ _pygameKeyToEvent: dict[str, int] = {
     "SPACE": pyg.K_SPACE,
     "TAB": pyg.K_TAB,
     "BACKSPACE": pyg.K_BACKSPACE,
-    "`": pyg.K_RALT
+    "`": pyg.K_BACKQUOTE,
 }
 _pyg_KtE_keys = _pygameKeyToEvent.keys()
 #================================================================================================
@@ -94,6 +95,8 @@ _currentlyActiveActions = {
 "LEFT":  False,
 "DOWN":  False,
 "RIGHT": False,
+"EXIT":  False,
+"RESTART": False,
 }
 
 _inputMappings: dict[str, list[str]]

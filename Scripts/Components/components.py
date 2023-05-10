@@ -1,4 +1,6 @@
 """Contains a group of basic components for fundamental level design. Includes essential components like Transform and ConfigData, among a few other useful ones."""
+# pyright: reportGeneralTypeIssues=false
+
 
 from sys import exit
 
@@ -21,7 +23,7 @@ class Scene:
     def init(self, *args, **kwargs):
         self.SceneTags:dict[str, dict[str, object]] = {}
         self.delta = 0
-        self.settings = ConfigData.load(getcwd()+"\\ConfigFiles\\debugSettings.toml")
+        self.settings = ConfigData.loadFile(ConfigData, "\\debugSettings")
 
 @newPrefab
 class Tag:
@@ -40,7 +42,6 @@ class Transform():
     Rotation: 0 - 360, clockwise
     """
     
-    requiredDependencies={}
     arguments = {
         "xPos":0.0, 
         "yPos":0.0, 
@@ -117,20 +118,18 @@ class Transform():
 
 @newComponent
 class DependenciesTemplate():
-    requiredDependencies={} 
     def init(self, *args, **kwargs) -> None: pass
 
 @newComponent
 class ConfigData():
     """     Grabs data from a toml or other type config file. It checks for files located in the ConfigFiles directory,
-so input dirFileName as the name with a backslash before it. If it is located in a folder, input the path from
+    so input dirFileName as the name with a backslash before it. If it is located in a folder, input the path from
     \\ConfigFiles to locate the file you wish to load. Also, omit the .toml from the file name.
     dirFileName: str, the name of the config file you wish to pull from.
     fileType; str = "toml", the file extension of the file you wish to pull from,
     """
     
     from tomllib    import load
- 
     def init(self, dirFileName: str = "settings", fileType: str = "toml", *args, **kwargs) -> None:
         try:
             if not list(dirFileName)[0] == "\\": dirFileName = "\\" + dirFileName
@@ -138,7 +137,8 @@ so input dirFileName as the name with a backslash before it. If it is located in
             self.fileType = fileType
             if self.fileType == "toml":
                 with open(getcwd()+"\\ConfigFiles" + self.fileName + '.toml', "rb" ) as f:
-                    self.configFile = ConfigData.load(f) # type: ignore
+                    self.configFile = ConfigData.load(f)
+            return self.configFile
 
         except FileNotFoundError as fnfe:
             print(f"{dirFileName}: Invalid Config File. Make sure that the file is located in '\\ConfigFiles' and is typed as the name without the file extension. \nExample: 'assetData.toml'")
@@ -148,6 +148,10 @@ so input dirFileName as the name with a backslash before it. If it is located in
             print("\n"*10, dirFileName, fileType, args, kwargs)
             raise
 
+    def loadFile(self, fileName) -> dict[str, Any]:
+        with open(getcwd()+"\\ConfigFiles" + fileName + '.toml', "rb") as f:
+            return self.load(f)
+
 @newPrefab
 class MousePrefab:
     def init(self):
@@ -155,7 +159,6 @@ class MousePrefab:
 
 @newComponent
 class Mouse():
-    requiredDependencies={}
     def init(self) -> None:
         from Scripts import Camera
         self.Camera = Camera

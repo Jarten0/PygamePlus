@@ -10,7 +10,6 @@ Main = __import__("__main__")
 class Platform:
 
     class InteractFunc:
-        self.f
         def __init__(self, func):
             self.func = func
 

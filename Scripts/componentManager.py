@@ -113,7 +113,7 @@ def _getPrefabsFromFile(directory, file, blacklist, Components, ComponentNames, 
 def newPrefab(initialPrefab) -> Any:
     name = initialPrefab.__name__
     class NewPrefab(initialPrefab):
-        from main import gameObject, RenderQueue, NextID, Render
+        from main import gameObject, RenderQueue, NextID, Render, Component
         _Prefabs, _PrefabNames = gameObject.getAllPrefabs()
         prefabID = _findNextAvailableID(_Prefabs, randomize=True)
         NAME = initialPrefab.__name__
@@ -121,21 +121,19 @@ def newPrefab(initialPrefab) -> Any:
 
         def __init__(self, name, parent, Scene, *args, **kwargs) -> None:
             self.enclosedObjects = {}
+            self.components = {}
             self.NAME = name
             self.active = True
+
             if 'delta' in dir(Scene): self.delta = Scene.delta
             else: self.delta = None
+
             self.parent = parent
-            if not isinstance(Scene, type(self)): 
-                Scene = self
+            if not isinstance(Scene, type(self)): Scene = self
             self.Scene = Scene
-            components = self.init(*args, **kwargs)
+
+            self.init(*args, **kwargs)
             
-            if components == None: 
-                components = {}
-            for componentName in components:
-                setattr(self, componentName, components[componentName])
-            self.components = components
             
 
         def newObject(self,
@@ -213,29 +211,40 @@ def newPrefab(initialPrefab) -> Any:
                 if not 'enclosedObjects' in dir(obj): print(f"{name} is not an object! This item should not be enclosed within an object"); return None                
             return obj
 
+
+
         def updateObjects(self, flags: str = ''):
             for obj in self.enclosedObjects.values():
-                for componentName in obj.components:
-                    objComponent = obj.__getattribute__(componentName)
+                for objComponent in obj.components:
                     if 'componentID' not in dir(objComponent): continue
                     if isinstance(objComponent, type): continue
                     if flags == 'SetAllToActive': 
                         objComponent.active = True
+
+
                     elif flags == 'SetAllToInactive' or objComponent.active == False or obj.active == False:
-                        objComponent.active = False
-                        if 'inverseupdate' in dir(objComponent):
-                            
-                        if 'render' in dir(objComponent):
-                            NewPrefab.RenderQueue.add(objComponent)    
+                        self.RunInactiveFuncsOn(objComponent)
                         continue
 
-                    if 'update' in dir(objComponent):
-                        objComponent.update()
-            
-                    if 'render' in dir(objComponent):
-                        NewPrefab.RenderQueue.add(objComponent)
+                    self.RunActiveFuncsOn(objComponent)
+
 
                 if 'updateObjects' in dir(obj): obj.updateObjects(flags)
+
+        def RunInactiveFuncsOn(self, objComponent):
+            objComponent.active = False
+            if 'inverseupdate' in dir(objComponent):
+                objComponent.inverseupdate()
+            if 'render' in dir(objComponent):
+                NewPrefab.RenderQueue.add(objComponent)    
+
+        def RunActiveFuncsOn(self, objComponent):
+            if 'update' in dir(objComponent):
+                objComponent.update()
+
+            if 'render' in dir(objComponent):
+                NewPrefab.RenderQueue.add(objComponent)
+
 
 
         def newComponent(self, class_:type|str, *args, **kwargs) -> object:
@@ -255,29 +264,36 @@ def newPrefab(initialPrefab) -> Any:
                 try:
                     class_ = self.getComponent(class_)
                 except KeyError: raise
-            return class_(self.Scene, *args, **kwargs)
-        
+
+            c = class_(self.Scene, self, *args, **kwargs)
+            self.components[c.NAME] = c
+            setattr(self, c.NAME, c)
+            return c
+
+
         @classmethod
-        def getComponent(cls, _name:int|str) -> type:
+        def getComponent(cls, name:int|str) -> type:
             """Fetches a class using a name or the component's ID.
             Returns the class so you can initialize it or set attributes
             Example"""
-            from main import Component
             try:
-                if isinstance(_name, int): _ID = _name
-                elif isinstance(_name, str): _ID = Component.ComponentNames[_name]
+                if isinstance(name, int): _ID = name
+                elif isinstance(name, str): _ID = cls.Component.ComponentNames[name]
                 else: exit() 
-                return Component.Components[_ID]
+                return cls.Component.Components[_ID]
+            
             except KeyError as ke:
-                if isinstance(_name, int): raise KeyError(f"Key error: {_name} is not a valid ID.")
-                print(Component.ComponentNames.keys())
-                append = ""
-                for i in Component.ComponentNames:
-                    if i.split(sep="\\")[-1].lower() == _name.lower():
-                        if append: append += " Or maybe "
-                        append += f"Did you mean: {i}?"
-                    
-                raise KeyError(f"{_name} is not a valid name. {append}" )
+                if isinstance(name, int): raise KeyError(f"Key error: {name} is not a valid ID.")                    
+                raise KeyError(f"{name} is not a valid name. {cls.append(name)}" )
+
+        @classmethod
+        def append(cls, name):
+            print(cls.Component.ComponentNames.keys())
+            append = ""
+            for i in cls.Component.ComponentNames:
+                if i.split(sep="\\")[-1].lower() == name.lower():
+                    if append: append += " Or maybe "
+                    append += f"Did you mean: {i}?"
 
 
 
@@ -307,26 +323,29 @@ def newComponent(initialComponent) -> Any:
         componentID = _findNextAvailableID(_Components, randomize=True)
         NAME = initialComponent.__name__
 
-        def __new__(cls, *args, **kwargs) -> Any: 
+        def __new__(cls, Scene, parentObj, *args, **kwargs) -> Any: 
             for reqDependency in cls.requiredDependencies.keys():              
-                if reqDependency in NewComponent.optionalArguments:
+                if reqDependency in cls.optionalArguments:
                     continue
                 
-                if reqDependency not in kwargs:
-                    NewComponent.missLog_.append(cls.requiredDependencies[reqDependency])
+                if reqDependency not in parentObj.components:
+                    cls.missLog_.append(cls.requiredDependencies[reqDependency])
                     continue
 
-                if not isinstance(kwargs[reqDependency], cls.requiredDependencies[reqDependency]):
-                    NewComponent.missLog_.append(cls.requiredDependencies[reqDependency])
+                if not isinstance(parentObj.components[reqDependency], cls.requiredDependencies[reqDependency]):
+                    cls.missLog_.append(cls.requiredDependencies[reqDependency])
+                    continue
                 continue
 
             return super(NewComponent, cls).__new__(cls)
         
-        def __init__(self, Scene, *args, **kwargs) -> None:
+        def __init__(self, Scene, parentObj, *args, **kwargs) -> None:
             self.Scene = Scene
+            self.parent = parentObj
+
             for missedComponent in NewComponent.missLog_:
                 try:
-                    kwargs[f"{missedComponent.NAME}"] = NewComponent.Component.new(missedComponent)
+                    self.parent.newComponent(missedComponent)
                 except:
                     print("Dependency Adder failed! Make sure that:")
                     for missedComponent in NewComponent.missLog_:
@@ -334,6 +353,7 @@ def newComponent(initialComponent) -> Any:
                     print("Are all present inside of:", name)
                     raise
         
+            
             try: initialComponent.init(self, *args, **kwargs)
             except AttributeError as ae:
                 error = f"InitializationFunctionMissing: No initialize function in {name}! Add missing function using template (run script as main for template)"

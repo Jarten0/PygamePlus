@@ -114,38 +114,50 @@ class gameObject:
         """Takes in a name and a prefab and returns an instance of the prefab. \nYou can also feed in args/keyword args that will go directly to the prefabs's initializer\nThe prefab will be in charge of initializing all of the components, so if it needs any arguments be sure to feed them in."""
 
         if isinstance(prefabInput, type(None)): 
-            prefab = cls.gameObject.getPrefab("components\\BasicObject")
+            prefab = cls.getPrefab("components\\BasicObject")
         elif isinstance(prefabInput, str): 
-            prefab = cls.gameObject.getPrefab(prefabInput)
+            prefab = cls.getPrefab(prefabInput)
         elif isinstance(prefabInput, type): 
             prefab = prefabInput
         else: exit("Invalid prefab input type! Must be either a string, the prefab class, or None for a basic object") 
 
-        if nameInput == None: 
-            name = NewPrefab.NextID(cls.globalObjectList, 'New Object')
-        elif nameInput in cls.globalObjectList: 
-            name = NewPrefab.NextID(cls.globalObjectList, nameInput)
-        else: 
-            name = nameInput
+        name = nameInput
 
-        if not 'prefabID' in dir(prefab): exit(name+f" initialization did not get a prefab, instead got {prefab} which is not a prefab class; make sure your input is either a prefab class or leads to a prefab and not a component")
-        if not 'init' in dir(prefab): exit(name+"("+prefab.__name__+")"+": Invalid prefab initialization; prefab is missing init function")
+        if not 'prefabID' in dir(prefab): exit(str(name)+f" initialization did not get a prefab, instead got {prefab} which is not a prefab class; make sure your input is either a prefab class or leads to a prefab and not a component")
+        if not 'init' in dir(prefab): exit(str(name)+"("+prefab.__name__+")"+": Invalid prefab initialization; prefab is missing init function")
 
         try: 
-            createdObject = prefab(name, parent=cls, Scene=cls.Scene, *args, **kwargs)
+            createdObject = prefab(name, parent=cls, Scene=None, *args, **kwargs)
         
         except: print("\n\n!!!!!!!!!!\n\n", prefab.__name__, " create error: Something went wrong, go fix it.\n", sep=''); raise
         if not isinstance(createdObject, prefab): print(createdObject.NAME, prefab.__name__); raise Exception(f"{prefab.__name__}\n\n\n{nameInput}:{prefabInput} create error; It should return an object. Check to see if it is properly returning a value. ") # type: ignore
         
-        cls.globalObjectList[name] = createdObject
         createdObject.Tags = tagsInput
 
-        if parentInput == None or 'prefabID' in dir(parentInput):
-            createdObject.parent = parentInput
-        else: createdObject.parent = None; print(name, "gameObject creator func was given a non-gameObject parent.")
 
+        if not parentInput == None or 'prefabID' in dir(parentInput):
+            createdObject.parent = None; print(name, "gameObject creator func was given a non-gameObject parent.")
+            print(f"Created {name} object:{createdObject} in global scope!!")
+            return createdObject            
+        
+        createdObject.parent = parentInput
+        if isinstance(createdObject.parent, type(None)):
+            print(f"Created {name} object:{createdObject} in global scope!!")
+            return createdObject
+    
+
+        if nameInput == None: 
+            name = NextID(cls.globalObjectList, 'New Object')
+        elif nameInput in cls.globalObjectList: 
+            name = NextID(cls.globalObjectList, nameInput)
+        else: 
+            name = nameInput
+        
+        createdObject.parent:Any.enclosedObjects[name] = createdObject
+    
         print(f"Created {name} object:{createdObject} in global scope!!")
         return createdObject
+    
     
 class Component:
     Components:    dict[int,     type  ] = {}
@@ -209,15 +221,18 @@ class Render():
 
 
     scroll = 0
-    selectedObj = None
+    selectedObject = None
 
     @classmethod
-    def fontArray(cls, name, size): 
-        array = {}
+    def fontArray(cls, name, size): #type: ignore 
+        array: dict[int, pyg.font.Font] = {}
         for i in range(1, size): 
             array[i] = pyg.font.Font(name, i)
+        return array
 
-    fonts = {'freesansbold.ttf': fontArray(self, 'freesansbold.ttf', 50)}
+    @classmethod
+    def init(cls):
+        cls.fonts: dict[str, dict[int, pyg.font.Font]] = {'freesansbold.ttf': cls.fontArray('freesansbold.ttf', 50)}
 
     @classmethod
     def _renderDev(cls):
@@ -250,8 +265,8 @@ class Render():
         i += 32
 
 
-        if cls.selectedObject == False: return
-        cls._dreawText("Inspecting", cls.selectedObject.name)
+        if cls.selectedObject == None: return
+        cls._drawText("Inspecting", cls.selectedObject.name)
         i += 32
 
         for component in cls.selectedObject.components:
@@ -295,13 +310,11 @@ class Render():
                 int(xl), int(yl)))
 
     @classmethod
-    def _drawText(cls, string="\n", *args: tuple[str], sep=" ", x=1020, y=0, xl=600, yl=1000, size=20, font='freesansbold.ttf', color: tuple[int, int, int] = (255,255,255)):
+    def _drawText(cls, string="\n", *args: tuple[str], sep=" ", x=1020, y=0, xl=600, yl=1000, size=20, font='freesansbold.ttf', color: tuple[int, int, int] = (200,200,200)):
         for i in args: 
             string += sep + str(i)
-        cls.Screen.blit(
-            cls.fonts[font][size].render(
-                string, True, color, pyg.Rect(
-                    x, y, xl, yl)))
+            pyg.font.Font().render
+        cls.Screen.blit(cls.fonts[font][size].render(string, True, color), pyg.Rect(x, y, xl, yl))
 
 def _sceneStart() -> str:
     global Scene, sky, devInterface, \
@@ -311,10 +324,11 @@ def _sceneStart() -> str:
 
     Scene = gameObject.newScene("MainScene")
     Component.Scene = Scene
+    Component.Components, Component.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames = ComponentManager.init()
     devInterface = gameObject.newObject("devInterface", "dev\\devInterface")
 
-    Component.Components, Component.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames = ComponentManager.init()
 
+    Render.init()
     Input.init()
     Camera.init()
     # CutsceneManager.init()
@@ -324,7 +338,7 @@ def _sceneStart() -> str:
     Character = Scene.newObject(nameInput="Character", prefabInput='characterPrefab\\Character')
     Render.selectedObj = Character
     
-    Mouse = Scene.newObject('Mouse', 'components\\Mouse')
+    Mouse = Scene.newObject('Mouse', 'components\\MousePrefab')
 
     return "Done"
 
@@ -354,7 +368,6 @@ async def _main() -> _NoReturn|None:
     global logInConsole, Clock, ReadyToGo
     if not isinstance(settings, dict): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
     logInConsole = settings['LogInConsole']
-    delta = 1
     pyg.init()
 
     Render.Screen = pyg.display.set_mode((settings["Screen"]["screen_width"], settings["Screen"]["screen_height"]))
@@ -363,9 +376,17 @@ async def _main() -> _NoReturn|None:
     pyg.display.set_caption('Platformer')
 
     Clock = pyg.time.Clock()
-    
+    while True:
+        try:
+            await globalLoop()
+        except OverflowError as oe: pass
+        except: raise
+            
+
+async def globalLoop() -> _NoReturn:
     await asyncio.gather(_loadingScreen(programPath), _loadStuff())
 
+    delta = 1
     try:
         while True:        
             start = time.time()
@@ -382,11 +403,16 @@ async def _main() -> _NoReturn|None:
             system('cls')
             print(f"tick took {end - start} seconds")
     except: 
-        Render._drawText("Fatal error occured. Please press the backtick (`) to exit.")
-        pyg.display.flip()
+        Render._drawRect((0,0,0), 0,0,2000,2000)
+        Render._drawText("""Fatal error occured. Please press the backtick (`) to exit and read the error in console or (TAB) to attempt to restart.""", x=0, size=20)
         while True:
-            if Input.getDown("`"):
+            Input.update()
+            if Input.getDown("EXIT"):
                 raise
+            elif Input.getDown("RESTART"):
+                raise OverflowError
+            pyg.display.flip()
+
 try:
     if __name__ == "__main__": asyncio.run(_main())
 except SystemExit:

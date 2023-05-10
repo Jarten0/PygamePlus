@@ -1,31 +1,19 @@
 # pyright: reportGeneralTypeIssues=false
 
-from main import Component, newPrefab, newComponent
+from main import newPrefab, newComponent
 from random import randint as r
 @newPrefab
-class ButtonObj: # type: ignore
+class ButtonObj:
     def init(self, 
         x=0, y=0,
         xl=50, yl=50,
         color = (r(0, 255), r(0, 255), r(0, 255)),
-
         ):
-        Transform = self.newComponent("components\\Renderer",
-            x, y)
-        Renderer = self.newComponent("Renderer\\Renderer",
-            Transform,
-            xl,yl,
-            )
-        Collider = self.newComponent("Collider\\Collider",
-            Transform,
-            50, 50                         
-        )
 
-        return {
-            "Transform": Transform,
-            "Renderer": Renderer,
-            "Collider": Collider
-        }
+        self.newComponent("components\\Transform", x, y)
+        self.newComponent("Renderer\\Renderer", xl,yl)
+        self.newComponent("Collider\\Collider", 50, 50)
+
 
 @newComponent
 class Button:
@@ -35,7 +23,8 @@ class Button:
 @newPrefab
 class devInterface(): 
     def init(self): 
-        devScript = self.newComponent()
+        self.newComponent(devScript)
+
 
 @newComponent
 class devScript:
