@@ -29,10 +29,10 @@ def _findNextAvailableID(List_:dict, randomize:bool = False) -> int:
     raise Exception("This list is really big. Like, REALLY BIG. Bigger than 10^10 items. Thats more than 80 GIGABYTES. What in the WORLD did you do to fill it up THIS much?")
 
 def init():
-    from main import ComponentInterface, gameObject
+    from main import ComponentInterface, gameObjectInterface
     import typing, main
     Components, ComponentNames = ComponentInterface.Components, ComponentInterface.ComponentNames
-    Prefabs, PrefabNames = gameObject.Prefabs, gameObject.PrefabNames
+    Prefabs, PrefabNames = gameObjectInterface.Prefabs, gameObjectInterface.PrefabNames
     blacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__',}
     pfbblacklist = {'__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__spec__',}
     filesChecked = []
@@ -50,17 +50,17 @@ def init():
     for directory in componentDirectories:
         for file in os.listdir(os.getcwd()+directory):
             filesChecked.append(file)
-            _getComponentsFromFile(directory, file, blacklist, Components, ComponentNames, main)
+            _getComponentsFromFile(directory, file, blacklist, main)
 
     for directory in prefabDirectories:
         for file in os.listdir(os.getcwd()+directory):
             filesCheckedTwo.append(file)
-            _getPrefabsFromFile(directory, file, pfbblacklist, Prefabs, PrefabNames, main)
+            _getPrefabsFromFile(directory, file, pfbblacklist, main)
 
     print("Checked all of these files:\n", filesChecked, "\n", filesCheckedTwo)
     return Components, ComponentNames, Prefabs, PrefabNames 
 
-def _getComponentsFromFile(directory, file, blacklist, Components, ComponentNames, main:Any=None) -> None:
+def _getComponentsFromFile(directory, file, blacklist, main) -> None:
     if file in {"templateComponent.py", "__pycache__"}: return
 
     moduleSpec = importlib.util.spec_from_file_location(name=file, location=os.getcwd() + directory + "\\" + file)
@@ -82,16 +82,16 @@ def _getComponentsFromFile(directory, file, blacklist, Components, ComponentName
         file = file.removesuffix(".py")
         main.addComponent(component, file + "\\" + componentStr, component.componentID)
 
-def _getPrefabsFromFile(directory, file, blacklist, Components, ComponentNames, main:Any=None) -> None:
+def _getPrefabsFromFile(directory, file, blacklist, main) -> None:
     if file in {"templatePrefab.py", "__pycache__"}: return
 
     if ".toml" in file:
-        with open(os.getcwd()+directory+"\\"+file) as f:
+        with open(os.getcwd()+directory+"\\"+file, "rb") as f:
             prefab = tomllib.load(f)
         
         @newPrefab
         class TomlPrefab:
-            def init(self):
+            def Start(self):
                 for dict_ in prefab:
                     if 'tuple' in prefab[dict_]:
                         for tattr in prefab[dict_]['tuple']:
@@ -101,38 +101,41 @@ def _getPrefabsFromFile(directory, file, blacklist, Components, ComponentNames, 
                     kwargs = {}
                     for attr_ in prefab[dict_]:
                         kwargs[attr_] = prefab[dict_][attr_]
-                    self.newComponent(dict_, **kwargs)
+                    self.newComponent(dict_, **kwargs) # type: ignore
+        file = file.removesuffix(".toml")
+        main.addPrefab(TomlPrefab, 'TomlPrefab' + "\\" + file, TomlPrefab.prefabID)
+        
+        
 
-    moduleSpec = importlib.util.spec_from_file_location(name=file, location=os.getcwd() + directory + "\\" + file)
-    
-    if isinstance(moduleSpec, type(None)): return
-    if isinstance(moduleSpec.loader, None.__class__): return
 
-    module = importlib.util.module_from_spec(moduleSpec)
-    moduleSpec.loader.exec_module(module)
 
-    for prefabStr in set(dir(module)):
+    elif ".py" in file:
+        moduleSpec = importlib.util.spec_from_file_location(name=file, location=os.getcwd() + directory + "\\" + file)
+        
+        if isinstance(moduleSpec, type(None)): return
+        if isinstance(moduleSpec.loader, None.__class__): return
 
-        prefab = getattr(module, prefabStr)
-        if not 'prefabID' in dir(prefab): continue
+        module = importlib.util.module_from_spec(moduleSpec)
+        moduleSpec.loader.exec_module(module)
 
-        if prefabStr in blacklist: continue
-        blacklist.add(prefabStr) 
+        for prefabStr in set(dir(module)):
+
+            prefab = getattr(module, prefabStr)
+            if not 'prefabID' in dir(prefab): continue
+
+            if prefabStr in blacklist: continue
+            blacklist.add(prefabStr) 
 
  
 
-        file = file.removesuffix(".py")
-        main.addPrefab(prefab, file + "\\" + prefabStr, prefab.prefabID)
+            file = file.removesuffix(".py")
+            main.addPrefab(prefab, file + "\\" + prefabStr, prefab.prefabID)
 
-        if 'start__' in dir(prefab):
-            prefab.start__()
-
-
-def newPrefab(initialPrefab, *args, **kwargs) -> Any:
+def newPrefab(initialPrefab, *args, **kwargs):
     name = initialPrefab.__name__
     class Prefab(initialPrefab):
-        from main import gameObject, RenderQueue, NextID, Render, Component
-        _Prefabs, _PrefabNames = gameObject.getAllPrefabs()
+        from main import gameObjectInterface, _RenderQueue, NextID, _RenderInterface, ComponentInterface
+        _Prefabs, _PrefabNames = gameObjectInterface.getAllPrefabs()
         prefabID = _findNextAvailableID(_Prefabs, randomize=True)
         NAME = initialPrefab.__name__
 
@@ -163,8 +166,8 @@ def newPrefab(initialPrefab, *args, **kwargs) -> Any:
             The prefab will be in charge of initializing all of the components, so if it needs any arguments
             be sure to feed them in."""
 
-            if isinstance(prefabInput, type(None)): prefab = self.gameObject.getPrefab("components\\BasicObject")
-            elif isinstance(prefabInput, str): prefab = self.gameObject.getPrefab(prefabInput)
+            if isinstance(prefabInput, type(None)): prefab = self.gameObjectInterface.getPrefab("components\\BasicObject")
+            elif isinstance(prefabInput, str): prefab = self.gameObjectInterface.getPrefab(prefabInput)
             elif isinstance(prefabInput, type): prefab = prefabInput
             else: exit("Invalid prefab input type! Must be either a string, the prefab class, or None for a basic object") 
 
@@ -250,16 +253,16 @@ def newPrefab(initialPrefab, *args, **kwargs) -> Any:
             if 'inverseUpdate' in dir(objComponent):
                 objComponent.inverseUpdate()
             if 'Render' in dir(objComponent):
-                Prefab.RenderQueue.add(objComponent)    
+                Prefab._RenderQueue.add(objComponent)    
 
         def RunActiveFuncsOn(self, objComponent):
             if 'Update' in dir(objComponent):
                 objComponent.Update()
 
             if 'Render' in dir(objComponent):
-                Prefab.RenderQueue.add(objComponent)
+                Prefab._RenderQueue.add(objComponent)
 
-        def newComponent(self, class_:type|str, *args, **kwargs) -> object:
+        def newComponent(self, class_:type|str, *args, **kwargs):
             """Creates a component instance using its built in initializer
 
         \n  Input the components class from its module by using Component.get statments
@@ -275,7 +278,7 @@ def newPrefab(initialPrefab, *args, **kwargs) -> Any:
             if isinstance(class_, str):
                 try:
                     class_ = self.getComponent(class_)
-                except KeyError: rais                
+                except KeyError: raise
 
             c = class_(self.Scene, self, *args, **kwargs)
             self.components[c.NAME] = c
@@ -311,7 +314,7 @@ def newPrefab(initialPrefab, *args, **kwargs) -> Any:
     newPrefab.__name__ = name+"(Prefab)"
     return Prefab
 
-def newComponent(initialComponent) -> Any:
+def newComponent(initialComponent):
     """Add this decorater to your class to automatically add in component functionality.
     \nSome specific useful functions:
     \nStart(self): Will run on creation of component, used to initialize values and set flags and whatnot.
@@ -323,15 +326,15 @@ def newComponent(initialComponent) -> Any:
     if not 'requiredDependencies' in dir(initialComponent):
         initialComponent.requiredDependencies = {}
 
-    class NewComponent(initialComponent):  
+    class Component(initialComponent):  
         missLog_ = []
         if not "requiredDependencies" in dir(initialComponent): requiredDependencies = {} 
         if not "optionalArguments" in dir(initialComponent): optionalArguments = {}
         if not 'Start' in dir(initialComponent): 
             def Start(self): pass
 
-        from main import gameObject, Component
-        _Components, _ComponentNames = Component.getAll()
+        from main import gameObjectInterface, ComponentInterface
+        _Components, _ComponentNames = ComponentInterface.getAll()
         componentID = _findNextAvailableID(_Components, randomize=True)
         NAME = initialComponent.__name__
 
@@ -344,28 +347,28 @@ def newComponent(initialComponent) -> Any:
                     cls.missLog_.append(cls.requiredDependencies[reqDependency])
                     continue
 
-                if not isinstance(parentObj.components[reqDependency], cls.requiredDependencies[reqDependency]):
-                    cls.missLog_.append(cls.requiredDependencies[reqDependency])
-                    continue
+                # if not isinstance(parentObj.components[reqDependency], cls.requiredDependencies[reqDependency]):
+                #     cls.missLog_.append(cls.requiredDependencies[reqDependency])
+                #     continue
                 continue
 
-            return super(NewComponent, cls).__new__(cls)
+            return super(Component, cls).__new__(cls)
         
         def __init__(self, Scene, parentObj, *args, **kwargs) -> None:
             self.Scene = Scene
             self.parent = parentObj
 
-            for missedComponent in NewComponent.missLog_:
+            for missedComponent in Component.missLog_:
                 try:
                     self.parent.newComponent(missedComponent)
                 except:
                     print("Dependency Adder failed! Make sure that:")
-                    for missedComponent in NewComponent.missLog_:
+                    for missedComponent in Component.missLog_:
                         print(missedComponent.__name__)
                     print("Are all present inside of:", name)
                     raise
         
             self.Start(*args, **kwargs)    
 
-    NewComponent.__name__ = name+"(Component)"
-    return NewComponent
+    Component.__name__ = name+"(Component)"
+    return Component

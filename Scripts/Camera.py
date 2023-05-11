@@ -15,14 +15,14 @@ class _cam():
     @classmethod
     def _init(cls) -> None:
         import main
-        from main import settings, gameObject, Component#, level
+        from main import _settings, gameObjectInterface, ComponentInterface#, level
         from Scripts.Components.components import Transform
-        _cam._Settings = settings
+        _cam._Settings = _settings
         _cam._xOffset = 0
         _cam._yOffset = 0
         # _cam._level = level
-        _cam._Transform = Component.new('components\\Transform', Transform)
-        _cam._focusPointTransform = Component.new('components\\Transform', Transform)
+        _cam._Transform = ComponentInterface.new('components\\Transform', Transform)
+        _cam._focusPointTransform = ComponentInterface.new('components\\Transform', Transform)
 
 def setFocusPoint(_obj:object|None = None, xPos:float=0, yPos:float=0):
     if isinstance(_obj, type(None)):

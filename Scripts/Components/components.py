@@ -11,7 +11,7 @@ from Scripts import Board
 
 from os         import getcwd
 from typing import Any
-from main import gameObject, Component
+from main import gameObjectInterface, ComponentInterface
 
 @newPrefab
 class BasicObject:
@@ -98,12 +98,12 @@ class Transform():
                     
 
     def Start(self,
-            xPos:float=0, yPos:float=0, zPosition:int=0, 
+            xPos:float=0, yPos:float=0, zPos:int=0, 
             xVel:float=0, yVel:float=0, rotation:float = 0, 
             ) -> None:
         self.xPos = xPos
         self.yPos = yPos
-        self.zPos = zPosition
+        self.zPos = zPos
         self.xVel = xVel
         self.yVel = yVel
         self.Rotation = rotation
@@ -145,7 +145,7 @@ class ConfigData():
             raise fnfe
 
         except:
-            print("\n"*10, dirFileName, fileType, args, kwargs)
+            print("\n"*10, dirFileName, fileType)
             raise
 
     def loadFile(self, fileName) -> dict[str, Any]:

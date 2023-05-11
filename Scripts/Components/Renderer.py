@@ -4,7 +4,7 @@ from Scripts.Components.components import Transform
 from Scripts.componentManager import newComponent
 
 
-import pygame as pyg
+import pygame as pyg #type: ignore
 
 
 from os import getcwd
@@ -64,8 +64,6 @@ class Renderer():
     }
     
     def Start(self,
-        Scene,
-        parent,
         path: str|None = None,
         tier: int = 3,
         xOffset:float=0, yOffset:float=0,
@@ -89,7 +87,7 @@ class Renderer():
 
         self.mode = 'rect'
         self.area    = ()
-        self.Transform = parent.Transform
+        self.Transform = self.parent.Transform
         self.tier    = tier
         self.xOffset, self.yOffset, self.xLength, self.yLength = \
             xOffset, yOffset, xLength, yLength

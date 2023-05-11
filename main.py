@@ -1,28 +1,27 @@
 # pyright: reportGeneralTypeIssues=false
 
 if __name__ == "__main__": 
-    logInConsole = True; print("\n"*60)
+    _logInConsole = True; print("\n"*60)
     from os import system
     system('pip3 install pygame --pre')
     system('cls')
-else: logInConsole = False
+else: _logInConsole = False
 
 
-import os, time, asyncio, pygame as pyg #type: ignore
-from copy import deepcopy
+import os, time, asyncio as _asyncio, pygame as pyg #type: ignore
 from sys import exit
 from typing import NoReturn as _NoReturn, Any
 from Scripts import FileManager, Board, Camera, Input, Level, Timer, dev
 from Scripts.componentManager import newComponent, newPrefab
-level: Any  = Level.new("Level uno", 2000, 2000)
-ReadyToGo: bool = False
-programPath: str    = os.getcwd()
-FreezeFrames: int   = 0
-logInConsole: bool  = True
-selectedObject      = False
-settings: dict[str, Any]    = FileManager.load(programPath+"\\ConfigFiles\\debugSettings.toml", 'toml', _returnType=dict)
-RenderQueue: set [object|dict]  = set({})
 
+_level: Any  = Level.new("Level uno", 2000, 2000)
+_ReadyToGo: bool = False
+_programPath: str    = os.getcwd()
+_FreezeFrames: int   = 0
+_logInConsole: bool  = True
+_selectedObject      = False
+_settings: dict[str, Any]    = FileManager.load(_programPath+"\\ConfigFiles\\debugSettings.toml", 'toml', _returnType=dict)
+_RenderQueue: set [object|dict]  = set({})
 
 def NextID(itemList:dict, name:str|int='') -> str:
     name = str(name)
@@ -37,36 +36,38 @@ def addComponent(component, name, id) -> None:
     ComponentInterface.Components[id] = component
     ComponentInterface.ComponentNames[name] = id
 
-def addPrefab(prefab, name, id):
+def addPrefab(prefab, name, id) -> None:
     if not 'prefabID' in dir(prefab): exit("Do not use the add prefab function")
-    gameObject.Prefabs[id] = prefab
-    gameObject.PrefabNames[name] = id
+    gameObjectInterface.Prefabs[id] = prefab
+    gameObjectInterface.PrefabNames[name] = id
 
-class frameworkInitializer:
-    async def _loadingScreen(programPath) -> None:
+class _frameworkInitializer:
+    @classmethod
+    async def _loadingScreen(cls, programPath) -> None:
         """Manually displays a loading screen to keep busy while the game starts up"""
         loadingImage = pyg.image.load(programPath+'\\Assets\\Images\\loading.png')
         state = 0
         i = 0
-        while ReadyToGo == False and i < 99:
+        while _ReadyToGo == False and i < 99:
             i += 1
-            Render.Screen.fill((0,0,0))
-            Render.Screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
+            _RenderInterface.Screen.fill((0,0,0))
+            _RenderInterface.Screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
             pyg.display.flip()
-            await asyncio.sleep(0.05)
+            await _asyncio.sleep(0.05)
             state += 1
             if state >= 8:
                 state = 0
 
-    async def _loadStuff() -> None:
-        await asyncio.sleep(0.2)
-        global ReadyToGo
+    @classmethod
+    async def _loadStuff(cls) -> None:
+        await _asyncio.sleep(0.2)
+        global _ReadyToGo
         try:
             _sceneStart()
         except: print("OhNo"); raise
-        ReadyToGo = True
+        _ReadyToGo = True
 
-class gameObject:
+class gameObjectInterface:
     Scenes:     dict[str,     type  ] = {}
     currentScene                      = None
     Prefabs:    dict[int,     type  ] = {}
@@ -99,11 +100,11 @@ class gameObject:
     @classmethod
     def newScene(cls, sceneName:str="New Scene"):
         from Scripts.Components.components import Scene as sc        
-        if sceneName in gameObject.Scenes: 
-            sceneName = NextID(gameObject.Scenes, sceneName)
+        if sceneName in gameObjectInterface.Scenes: 
+            sceneName = NextID(gameObjectInterface.Scenes, sceneName)
         Scene = sc(sceneName, None, None)
-        gameObject.Scenes[sceneName] = Scene
-        gameObject.currentScene = Scene
+        gameObjectInterface.Scenes[sceneName] = Scene
+        gameObjectInterface.currentScene = Scene
         return Scene
 
     @classmethod
@@ -160,7 +161,6 @@ class gameObject:
         print(f"Created {name} object:{createdObject} in global scope!!")
         return createdObject
     
-    
 class ComponentInterface:
     """This serves as an interface for keeping track of all of the loaded components and provides methods for accessing some advanced features"""
     Components:    dict[int,     type  ] = {}
@@ -199,7 +199,7 @@ class ComponentInterface:
     def getAll(cls) -> tuple[dict[int, type], dict[str, int]]:
         return cls.Components, cls.ComponentNames
 
-class Render():
+class _RenderInterface():
     Screen: pyg.Surface
 
     @classmethod
@@ -209,16 +209,16 @@ class Render():
 
         readyRenderQueue = cls._sortRenderQueue(renderQueue)
         
-        asyncioRenderTasks = []
+        _asyncioRenderTasks = []
         cls.Screen.fill((50, 50, 50))
         for i in reversed(readyRenderQueue):
             if 'Render' in dir(readyRenderQueue[i]):
-                asyncioRenderTasks.append( asyncio.create_task( cls._renderWithObj(readyRenderQueue[i]) )) 
+                _asyncioRenderTasks.append( _asyncio.create_task( cls._renderWithObj(readyRenderQueue[i]) )) 
             else:
                 print(f"RenderQueue: {readyRenderQueue[i].__name__} does not have a function for rendering and thus failed to render.")
-        if len(asyncioRenderTasks) > 0:
-            await asyncio.wait(asyncioRenderTasks)
-        if settings['devMode']:
+        if len(_asyncioRenderTasks) > 0:
+            await _asyncio.wait(_asyncioRenderTasks)
+        if _settings['devMode']:
             cls._renderDev()
         pyg.display.flip()
 
@@ -240,7 +240,7 @@ class Render():
     @classmethod
     def _renderDev(cls):
         cls._drawRect((0,0,0), 1000, 0, 600, 1000)
-        ids, prefabs = gameObject.getAllPrefabs()
+        ids, prefabs = gameObjectInterface.getAllPrefabs()
         cids, components = ComponentInterface.getAll()
         SCROLLSPEED = 5
         if Input.getHeld("DOWN"): cls.scroll -= 5
@@ -325,21 +325,21 @@ def _sceneStart() -> str:
 
     from Scripts import componentManager as ComponentManager, cutsceneManager as CutsceneManager
 
-    Scene = gameObject.newScene("MainScene")
+    Scene = gameObjectInterface.newScene("MainScene")
     ComponentInterface.Scene = Scene
-    ComponentInterface.Components, ComponentInterface.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames = ComponentManager.init()
-    devInterface = gameObject.newObject("devInterface", "dev\\devInterface")
+    ComponentInterface.Components, ComponentInterface.ComponentNames, gameObjectInterface.Prefabs, gameObjectInterface.PrefabNames = ComponentManager.init()
+    devInterface = gameObjectInterface.newObject("devInterface", "dev\\devInterface")
 
 
-    Render.init()
+    _RenderInterface.init()
     Input.init()
     Camera.init()
     # CutsceneManager.init()
 
-    missingImage = pyg.image.load(programPath+"\\Assets\\Images\\MissingImage.png").convert()
+    missingImage = pyg.image.load(_programPath+"\\Assets\\Images\\MissingImage.png").convert()
 
-    Character = Scene.newObject(nameInput="Character", prefabInput='characterPrefab\\Character')
-    Render.selectedObj = Character
+    Character = Scene.newObject(nameInput="Character", prefabInput='TomlPrefab\\characterTomlPrefab')
+    _RenderInterface.selectedObj = Character
     
     Mouse = Scene.newObject('Mouse', 'components\\MousePrefab')
 
@@ -353,7 +353,7 @@ async def _sceneTick(delta):
     Scene.delta = delta
 
 
-    if settings['devMode']:
+    if _settings['devMode']:
         devInterface.updateObjects()
 
 
@@ -368,35 +368,34 @@ async def _sceneTick(delta):
     return 'complete'
 
 async def _main() -> _NoReturn|None:
-    global logInConsole, Clock, ReadyToGo
-    if not isinstance(settings, dict): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
-    logInConsole = settings['LogInConsole']
+    global _logInConsole, Clock, _ReadyToGo
+    if not isinstance(_settings, dict): raise Exception('Critical file missing!: \\ConfigFiles\\settings.toml')
+    _logInConsole = _settings['LogInConsole']
     pyg.init()
 
-    Render.Screen = pyg.display.set_mode((settings["Screen"]["screen_width"], settings["Screen"]["screen_height"]))
+    _RenderInterface.Screen = pyg.display.set_mode((_settings["Screen"]["screen_width"], _settings["Screen"]["screen_height"]))
 
-    pyg.display.set_icon(pyg.image.load(programPath+"\\Assets\\Images\\hehe.png").convert())
+    pyg.display.set_icon(pyg.image.load(_programPath+"\\Assets\\Images\\hehe.png").convert())
     pyg.display.set_caption('Platformer')
 
     Clock = pyg.time.Clock()
     while True:
         try:
-            await globalLoop()
+            await _globalLoop()
         except OverflowError as oe: pass
         except: raise
             
-
-async def globalLoop() -> _NoReturn:
-    await asyncio.gather(_loadingScreen(programPath), _loadStuff())
+async def _globalLoop() -> _NoReturn:
+    await _asyncio.gather(_frameworkInitializer._loadingScreen(_programPath), _frameworkInitializer._loadStuff())
 
     delta = 1
     try:
         while True:        
             start = time.time()
 
-            done = await asyncio.gather(
+            done = await _asyncio.gather(
                 _sceneTick(delta), 
-                Render._drawCurrentFrame(RenderQueue))
+                _RenderInterface._drawCurrentFrame(_RenderQueue))
                 
             try: raise
             except RuntimeError as re: pass
@@ -406,8 +405,8 @@ async def globalLoop() -> _NoReturn:
             system('cls')
             print(f"tick took {end - start} seconds")
     except: 
-        Render._drawRect((0,0,0), 0,0,2000,2000)
-        Render._drawText("""Fatal error occured. Please press the backtick (`) to exit and read the error in console or (TAB) to attempt to restart.""", x=0, size=20)
+        _RenderInterface._drawRect((0,0,0), 0,0,2000,2000)
+        _RenderInterface._drawText("""Fatal error occured. Please press the backtick (`) to exit and read the error in console or (TAB) to attempt to restart.""", x=0, size=20)
         while True:
             Input.update()
             if Input.getDown("EXIT"):
@@ -417,7 +416,5 @@ async def globalLoop() -> _NoReturn:
             pyg.display.flip()
 
 try:
-    if __name__ == "__main__": asyncio.run(_main())
-except SystemExit:
-    exit()
-print("Hi")
+    if __name__ == "__main__": _asyncio.run(_main())
+except SystemExit: exit()

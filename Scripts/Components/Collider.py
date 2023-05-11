@@ -38,6 +38,7 @@ class Collider():
         collisionTags:set=set(),
         ) -> None:
 
+        self.Transform = self.parent.Transform
         BoxCollider = {
         Collider.Hitbox( #overall
             self.Transform,

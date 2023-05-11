@@ -19,9 +19,9 @@ class Character():
     }
             
     def Start(self) -> None:
-        from main import settings
-        configFile = self.ConfigData.configFile
-        self.settings = settings
+        from main import _settings
+        configFile = self.parent.ConfigData.configFile
+        self.settings = _settings
         
         self.allowControl = True
         self.st = False
@@ -43,7 +43,7 @@ class Character():
         self.dashSpeed = configFile['dash']['dashSpeed']
         self.dashList = [False, False, False, False]
         self.dashSlow = configFile['dash']['dashDeceleration']
-        self.color = self.Renderer.colors["red"] # type: ignore
+        self.color = self.parent.Renderer.colors["red"] # type: ignore
         self.DCsuper = 0
         self.DChyper = 0
 
@@ -108,7 +108,7 @@ class Character():
 
         #Actions
         if Input.getHeld("jump"):
-            if Timer.getValue("CoyoteTime", False) < settings['coyoteTime'] or self.RigidBody.grounded:
+            if Timer.getValue("CoyoteTime", False) < _settings['coyoteTime'] or self.RigidBody.grounded:
                 self.jump()
 
         elif Input.getHeld("jump") \
@@ -137,7 +137,7 @@ class Character():
         #Wrap the character around if they reach the end, but only one way
         if self.Transform.xPos < 0:
             self.Transform.xPos = 0
-        elif self.Transform.xPos > settings.screen_width + level.length: # type: ignore
+        elif self.Transform.xPos > _settings.screen_width + _level.length: # type: ignore
             self.Transform.xPos = 0
 """
     def die(self):
