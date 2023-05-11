@@ -1,0 +1,12 @@
+["components\\Transform"] 
+x = 100
+y = 100
+
+["Renderer\\Renderer"] 
+mode = "text"
+xl = 50
+yl = 50
+
+["Collider\\Collider"] 
+xl = 50 
+yl = 50

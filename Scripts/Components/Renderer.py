@@ -64,14 +64,22 @@ class Renderer():
     }
     
     def Start(self,
+        mode: str = 'rect',
         path: str|None = None,
         tier: int = 3,
         xOffset:float=0, yOffset:float=0,
         xLength:float=0, yLength:float=0,
         color:tuple[int, int, int]=colors["gray"],
+        
         surface:pyg.Surface|None = None,
+        
+        displayText:str = None,
+        textSize = 20, 
+        textFont = 'freesansbold.ttf', 
+
         alpha: int = 0,
-        surfaceRows:int = 1, surfaceColumns:int = 1,
+        surfaceRows:int = 1, 
+        surfaceColumns:int = 1,
         autoCulling:bool = True,
         ) -> None:
 
@@ -81,20 +89,23 @@ class Renderer():
         elif isinstance(path, str):
             self.surface = pyg.image.load(getcwd()+path)
         else:
-            if surface == None:
+            if surface == None or not mode == 'rect':
                 exit("No available path or surface"+ str(path))
             self.surface = surface
 
-        self.mode = 'rect'
+        self.mode = mode
+        
+        self.displayText = displayText
+        self.textSize = textSize
+        self.textFont = textFont
+
         self.area    = ()
+        
         self.Transform = self.parent.Transform
+
         self.tier    = tier
         self.xOffset, self.yOffset, self.xLength, self.yLength = \
             xOffset, yOffset, xLength, yLength
-        self.xOffset = xOffset
-        self.yOffset = yOffset
-        self.xLength = xLength
-        self.yLength = yLength
         self.color   = color
         self.alpha   = alpha
         self.autoCull = autoCulling
@@ -107,17 +118,23 @@ class Renderer():
     def Update(self):
         print("Am updating")
 
-    def Render(self, Screen: pyg.Surface, Camera, **kwargs):
+    def Render(self, RenderInterface, Camera, **kwargs):
         if self.mode == 'rect':            
-            pyg.draw.rect(Screen, self.color, 
+            pyg.draw.rect(RenderInterface.Screen, self.color, 
                (int(self.Transform.xPos + self.xOffset,) - int(Camera.xPosition), int(self.Transform.yPos + self.yOffset,) - 
                 int(Camera.yPos), int(self.xLength), int(self.yLength))
             )
-
-
             return
         
-        Screen.blit(
+        elif self.mode == 'text':
+            RenderInterface._drawText(
+                x=self.parent.Transform.xPos+self.xOffset, 
+                y=self.parent.Transform.yPos+self.yOffset, 
+                xl=self.xLength, yl=self.yLength, 
+                size=self.textSize, font=self.textFont, 
+                color = self.color)
+            return
+        RenderInterface.Screen.blit(
             source = self.surface,
             dest = (int(self.Transform.xPos) - int(self.xOffset) - Camera.xPos,
                     int(self.Transform.yPos) - int(self.yOffset) - Camera.yPos))
@@ -131,3 +148,6 @@ class Renderer():
             self.flags[direction] = value
 
         except KeyError as ke: return ke
+
+    def setText(self, string):
+        self.displayText = string

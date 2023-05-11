@@ -302,7 +302,7 @@ class _RenderInterface():
 
     @classmethod     
     async def _renderWithObj(cls, rendererObj) -> None:
-        rendererObj.Render(Screen=cls.Screen, Camera=Camera)
+        rendererObj.Render(cls, Camera)
 
     @classmethod
     def _drawRect(cls, color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
