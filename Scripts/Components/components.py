@@ -15,19 +15,19 @@ from main import gameObject, Component
 
 @newPrefab
 class BasicObject:
-    def init(self, *args, **kwargs):
+    def Start(self, *args, **kwargs):
         pass
 
 @newPrefab
 class Scene:
-    def init(self, *args, **kwargs):
+    def Start(self):
         self.SceneTags:dict[str, dict[str, object]] = {}
         self.delta = 0
         self.settings = ConfigData.loadFile(ConfigData, "\\debugSettings")
 
 @newPrefab
 class Tag:
-    def init(self, name, *args, **kwargs):
+    def Start(self, name):
         self.NAME = name
         
 
@@ -97,10 +97,10 @@ class Transform():
             raise TypeError(f"Unsupported operation between 'Vector' and '{type(other)}'")
                     
 
-    def init(self,
+    def Start(self,
             xPos:float=0, yPos:float=0, zPosition:int=0, 
             xVel:float=0, yVel:float=0, rotation:float = 0, 
-            *args, **kwargs) -> None:
+            ) -> None:
         self.xPos = xPos
         self.yPos = yPos
         self.zPos = zPosition
@@ -108,7 +108,7 @@ class Transform():
         self.yVel = yVel
         self.Rotation = rotation
     
-    def update(self) -> None:
+    def Update(self) -> None:
         self.xPos += self.xVel
         self.yPos += self.yVel
 
@@ -118,7 +118,7 @@ class Transform():
 
 @newComponent
 class DependenciesTemplate():
-    def init(self, *args, **kwargs) -> None: pass
+    pass
 
 @newComponent
 class ConfigData():
@@ -130,7 +130,7 @@ class ConfigData():
     """
     
     from tomllib    import load
-    def init(self, dirFileName: str = "settings", fileType: str = "toml", *args, **kwargs) -> None:
+    def Start(self, dirFileName: str = "settings", fileType: str = "toml") -> None:
         try:
             if not list(dirFileName)[0] == "\\": dirFileName = "\\" + dirFileName
             self.fileName = dirFileName
@@ -154,12 +154,12 @@ class ConfigData():
 
 @newPrefab
 class MousePrefab:
-    def init(self):
+    def Start(self):
         self.newComponent(Mouse)
 
 @newComponent
 class Mouse():
-    def init(self) -> None:
+    def Start(self) -> None:
         from Scripts import Camera
         self.Camera = Camera
         self.placestage = 0
@@ -173,7 +173,7 @@ class Mouse():
         self.yPos = round((self.pos[1]), 0)
         self.list = pyg.mouse.get_pressed(num_buttons=5)
 
-    def update(self):
+    def Update(self):
         self.pos =  pyg.mouse.get_pos()
         cameraXOffset, cameraYOffset = self.Camera.getObject()
         self.pos = (self.pos[0] + cameraXOffset, self.pos[1] + cameraYOffset)

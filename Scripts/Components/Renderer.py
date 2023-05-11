@@ -63,8 +63,9 @@ class Renderer():
     "gray":  (30,  30,  30 ),
     }
     
-    def init(self,
-        Transform,
+    def Start(self,
+        Scene,
+        parent,
         path: str|None = None,
         tier: int = 3,
         xOffset:float=0, yOffset:float=0,
@@ -74,7 +75,7 @@ class Renderer():
         alpha: int = 0,
         surfaceRows:int = 1, surfaceColumns:int = 1,
         autoCulling:bool = True,
-        **kwargs) -> None:
+        ) -> None:
 
         if path == None:
             self.path = "\\Assets\\Images\\MissingImage.png"
@@ -88,7 +89,7 @@ class Renderer():
 
         self.mode = 'rect'
         self.area    = ()
-        self.Transform = Transform
+        self.Transform = parent.Transform
         self.tier    = tier
         self.xOffset, self.yOffset, self.xLength, self.yLength = \
             xOffset, yOffset, xLength, yLength
@@ -105,10 +106,10 @@ class Renderer():
         "flipVertical"  : False,
         }
 
-    def update(self):
+    def Update(self):
         print("Am updating")
 
-    def render(self, Screen: pyg.Surface, Camera, **kwargs):
+    def Render(self, Screen: pyg.Surface, Camera, **kwargs):
         if self.mode == 'rect':            
             pyg.draw.rect(Screen, self.color, 
                (int(self.Transform.xPos + self.xOffset,) - int(Camera.xPosition), int(self.Transform.yPos + self.yOffset,) - 

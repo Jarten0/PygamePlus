@@ -1,6 +1,6 @@
 SceneType = "main"
 LogInConsole = false
-devMode = False
+devMode = false
 
 [Camera]
 speed = 10

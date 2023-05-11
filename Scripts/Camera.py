@@ -31,7 +31,7 @@ def setFocusPoint(_obj:object|None = None, xPos:float=0, yPos:float=0):
     else:
         _cam._focusPointTransform = _obj
 
-def update() -> None:
+def Update() -> None:
     if Input.getHeld("LEFT"):
         _cam._xOffset -= 10
     elif Input.getHeld("RIGHT"):

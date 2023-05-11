@@ -32,11 +32,11 @@ class Collider():
                 return True
             return False
 
-    def init(self,
+    def Start(self,
         xLength:int=50, yLength:int=50,
         hitboxs:set|str='BoxCollider',
         collisionTags:set=set(),
-        **kwargs) -> None:
+        ) -> None:
 
         BoxCollider = {
         Collider.Hitbox( #overall
@@ -82,7 +82,7 @@ class Collider():
         self.collideList: list[tuple[object, list[bool]]] = []
         self.collisionTags=collisionTags
 
-    def update(self) -> None:
+    def Update(self) -> None:
         self.collideList = []
         if self.active == False: return
         
@@ -120,12 +120,10 @@ class RigidBody():
     }
 
 
-    def init(self,
-            mass:int=0,
-            **kwargs) -> None:
+    def Start(self, mass:int=0) -> None:
         self.mass = mass
     
-    def update(self) -> None:
+    def Update(self) -> None:
         if not self.grounded:
             if self.Transform.yVel < self.mass:
                 self.Transform.yVel += self.mass / 100

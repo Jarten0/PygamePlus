@@ -17,15 +17,8 @@ class Character():
         'Collider'  : Scripts.Components.Collider.Collider,      
         'RigidBody' : Scripts.Components.Collider.RigidBody,
     }
-    optionalArguments = {
-        'ConfigData',    
-        'Transform',      
-        'Renderer',      
-        'Collider',      
-        'RigidBody',
-    }
             
-    def init(self, *args, **kwargs) -> None:
+    def Start(self) -> None:
         from main import settings
         configFile = self.ConfigData.configFile
         self.settings = settings
@@ -54,7 +47,7 @@ class Character():
         self.DCsuper = 0
         self.DChyper = 0
 
-    def update(self) -> None:
+    def Update(self) -> None:
         print(Input.getHeld('left'), "AM CHAR")
         if Input.getHeld('left'):
             self.Transform.xVel -= self.speed * self.Scene.delta

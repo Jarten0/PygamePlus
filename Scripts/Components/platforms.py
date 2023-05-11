@@ -25,17 +25,14 @@ class Platform:
     requiredDependencies={
         "Transform" : MainComponent.Transform ,
         "Collider"  : Scripts.Components.Collider.Collider ,
+        "Renderer"  : Scripts.Components.Renderer.Renderer ,
     }
 
-    def init(self, Transform:MainComponent.Transform, Collider:Scripts.Components.Collider.Collider, 
-    xLength:int=0, yLength:int=0, platformType:int=0, Renderer:Scripts.Components.Renderer.Renderer|None = None, **kwargs) -> None: # type: ignore
-        self.Transform = Transform
-        self.Collider = Collider
-        self.Renderer = Renderer 
+    def Start(self, Scene, parent, xLength:int=0, yLength:int=0, platformType:int=0) -> None: # type: ignore
+        self.Transform = parent.Transform
+        self.Collider = parent.Collider
+        self.Renderer = parent.Renderer 
 
         self.xLength = xLength
         self.yLength = yLength
         self.type  = platformType
-
-    def update__(self) -> None:
-        pass

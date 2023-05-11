@@ -1,11 +1,12 @@
 # pyright: reportGeneralTypeIssues=false
 
-if __name__ == "__main__": logInConsole = True; print("\n"*60)
+if __name__ == "__main__": 
+    logInConsole = True; print("\n"*60)
+    from os import system
+    system('pip3 install pygame --pre')
+    system('cls')
 else: logInConsole = False
 
-from os import system
-system('pip3 install pygame')
-system('cls')
 
 import os, time, asyncio, pygame as pyg #type: ignore
 from copy import deepcopy
@@ -13,14 +14,14 @@ from sys import exit
 from typing import NoReturn as _NoReturn, Any
 from Scripts import FileManager, Board, Camera, Input, Level, Timer, dev
 from Scripts.componentManager import newComponent, newPrefab
+level: Any  = Level.new("Level uno", 2000, 2000)
+ReadyToGo: bool = False
 programPath: str    = os.getcwd()
 FreezeFrames: int   = 0
 logInConsole: bool  = True
-ReadyToGo: bool     = False
 selectedObject      = False
-level: Any          = Level.new("Level uno", 2000, 2000)
-settings: dict[str, Any] = FileManager.load(programPath+"\\ConfigFiles\\debugSettings.toml", 'toml', _returnType=dict)
-RenderQueue:   set [object|dict]     = set({})
+settings: dict[str, Any]    = FileManager.load(programPath+"\\ConfigFiles\\debugSettings.toml", 'toml', _returnType=dict)
+RenderQueue: set [object|dict]  = set({})
 
 
 def NextID(itemList:dict, name:str|int='') -> str:
@@ -33,36 +34,37 @@ def NextID(itemList:dict, name:str|int='') -> str:
 def addComponent(component, name, id) -> None:
     """Adds a new component to the list. NOT TO BE USED BY USER, but by the component dependency wrapper."""
     if not 'componentID' in dir(component): exit("Do not use the add component function")
-    Component.Components[id] = component
-    Component.ComponentNames[name] = id
+    ComponentInterface.Components[id] = component
+    ComponentInterface.ComponentNames[name] = id
 
 def addPrefab(prefab, name, id):
     if not 'prefabID' in dir(prefab): exit("Do not use the add prefab function")
     gameObject.Prefabs[id] = prefab
     gameObject.PrefabNames[name] = id
 
-async def _loadingScreen(programPath) -> None:
-    """Manually displays a loading screen to keep busy while the game starts up"""
-    loadingImage = pyg.image.load(programPath+'\\Assets\\Images\\loading.png')
-    state = 0
-    i = 0
-    while ReadyToGo == False and i < 99:
-        i += 1
-        Render.Screen.fill((0,0,0))
-        Render.Screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
-        pyg.display.flip()
-        await asyncio.sleep(0.05)
-        state += 1
-        if state >= 8:
-            state = 0
+class frameworkInitializer:
+    async def _loadingScreen(programPath) -> None:
+        """Manually displays a loading screen to keep busy while the game starts up"""
+        loadingImage = pyg.image.load(programPath+'\\Assets\\Images\\loading.png')
+        state = 0
+        i = 0
+        while ReadyToGo == False and i < 99:
+            i += 1
+            Render.Screen.fill((0,0,0))
+            Render.Screen.blit(source=loadingImage, dest=(10, 10), area=pyg.Rect(state*64, 0, 64, 64))
+            pyg.display.flip()
+            await asyncio.sleep(0.05)
+            state += 1
+            if state >= 8:
+                state = 0
 
-async def _loadStuff() -> None:
-    await asyncio.sleep(0.2)
-    global ReadyToGo
-    try:
-        _sceneStart()
-    except: print("OhNo"); raise
-    ReadyToGo = True
+    async def _loadStuff() -> None:
+        await asyncio.sleep(0.2)
+        global ReadyToGo
+        try:
+            _sceneStart()
+        except: print("OhNo"); raise
+        ReadyToGo = True
 
 class gameObject:
     Scenes:     dict[str,     type  ] = {}
@@ -124,7 +126,7 @@ class gameObject:
         name = nameInput
 
         if not 'prefabID' in dir(prefab): exit(str(name)+f" initialization did not get a prefab, instead got {prefab} which is not a prefab class; make sure your input is either a prefab class or leads to a prefab and not a component")
-        if not 'init' in dir(prefab): exit(str(name)+"("+prefab.__name__+")"+": Invalid prefab initialization; prefab is missing init function")
+        if not 'Start' in dir(prefab): exit(str(name)+"("+prefab.__name__+")"+": Invalid prefab initialization; prefab is missing init function")
 
         try: 
             createdObject = prefab(name, parent=cls, Scene=None, *args, **kwargs)
@@ -159,7 +161,8 @@ class gameObject:
         return createdObject
     
     
-class Component:
+class ComponentInterface:
+    """This serves as an interface for keeping track of all of the loaded components and provides methods for accessing some advanced features"""
     Components:    dict[int,     type  ] = {}
     ComponentNames:dict[str,     int   ] = {}
     Scene = None
@@ -209,7 +212,7 @@ class Render():
         asyncioRenderTasks = []
         cls.Screen.fill((50, 50, 50))
         for i in reversed(readyRenderQueue):
-            if 'render' in dir(readyRenderQueue[i]):
+            if 'Render' in dir(readyRenderQueue[i]):
                 asyncioRenderTasks.append( asyncio.create_task( cls._renderWithObj(readyRenderQueue[i]) )) 
             else:
                 print(f"RenderQueue: {readyRenderQueue[i].__name__} does not have a function for rendering and thus failed to render.")
@@ -238,7 +241,7 @@ class Render():
     def _renderDev(cls):
         cls._drawRect((0,0,0), 1000, 0, 600, 1000)
         ids, prefabs = gameObject.getAllPrefabs()
-        cids, components = Component.getAll()
+        cids, components = ComponentInterface.getAll()
         SCROLLSPEED = 5
         if Input.getHeld("DOWN"): cls.scroll -= 5
         if Input.getHeld("UP"): cls.scroll += 5
@@ -299,7 +302,7 @@ class Render():
 
     @classmethod     
     async def _renderWithObj(cls, rendererObj) -> None:
-        rendererObj.render(Screen=cls.Screen, Camera=Camera)
+        rendererObj.Render(Screen=cls.Screen, Camera=Camera)
 
     @classmethod
     def _drawRect(cls, color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
@@ -323,8 +326,8 @@ def _sceneStart() -> str:
     from Scripts import componentManager as ComponentManager, cutsceneManager as CutsceneManager
 
     Scene = gameObject.newScene("MainScene")
-    Component.Scene = Scene
-    Component.Components, Component.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames = ComponentManager.init()
+    ComponentInterface.Scene = Scene
+    ComponentInterface.Components, ComponentInterface.ComponentNames, gameObject.Prefabs, gameObject.PrefabNames = ComponentManager.init()
     devInterface = gameObject.newObject("devInterface", "dev\\devInterface")
 
 

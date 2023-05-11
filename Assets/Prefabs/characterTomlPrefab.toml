@@ -1,0 +1,26 @@
+['components\\ConfigData']
+dirFileName = 'CharacterProperties'
+fileType = "toml"
+
+['components\\Transform']
+xPos = 0
+yPos = 0     
+zPos = 0
+
+['Renderer\\Renderer']
+tuple.color = [255, 0, 0]
+xOffset = 0
+yOffset = 0
+xLength = 50
+yLength = 20
+path = "\\Assets\\Images\\hehe.png"
+tier = 5
+
+['Collider\\Collider']
+xLength = 0
+yLength = 20
+
+['Collider\\RigidBody']
+mass = 5
+
+['character\\Character']
