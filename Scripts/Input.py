@@ -1,4 +1,4 @@
-import pygame as pyg
+import pygame as pyg #type: ignore
 from Scripts import FileManager, Board
 from typing import Any
 from os import getcwd

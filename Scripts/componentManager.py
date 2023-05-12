@@ -231,8 +231,9 @@ def newPrefab(initialPrefab, *args, **kwargs):
             return obj
 
         def updateObjects(self, flags: str = ''):
+            print(self.Scene.delta)
             for obj in self.enclosedObjects.values():
-                for objComponent in obj.components:
+                for objComponent in obj.components.values():
                     if 'componentID' not in dir(objComponent): continue
                     if isinstance(objComponent, type): continue
                     if flags == 'SetAllToActive': 
@@ -357,6 +358,7 @@ def newComponent(initialComponent):
         def __init__(self, Scene, parentObj, *args, **kwargs) -> None:
             self.Scene = Scene
             self.parent = parentObj
+            self.active = True
 
             for missedComponent in Component.missLog_:
                 try:
@@ -367,8 +369,8 @@ def newComponent(initialComponent):
                         print(missedComponent.__name__)
                     print("Are all present inside of:", name)
                     raise
-        
+            self.attrBlacklist = dir(self)
             self.Start(*args, **kwargs)    
 
-    Component.__name__ = name+"(Component)"
+    Component.__name__ = name+"(ComponentRoot)"
     return Component

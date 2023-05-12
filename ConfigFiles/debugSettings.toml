@@ -1,6 +1,6 @@
 SceneType = "Debug"
 LogInConsole = true
-devMode = true
+devMode = false
 active = true
 
 [Camera]

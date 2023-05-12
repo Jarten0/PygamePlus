@@ -109,8 +109,8 @@ class Transform():
         self.Rotation = rotation
     
     def Update(self) -> None:
-        self.xPos += self.xVel
-        self.yPos += self.yVel
+        self.xPos += self.xVel * self.parent.Scene.delta
+        self.yPos += self.yVel * self.parent.Scene.delta
 
     def set(self, vector:Vector):
         self.xPos = vector.x
@@ -160,7 +160,8 @@ class MousePrefab:
 @newComponent
 class Mouse():
     def Start(self) -> None:
-        from Scripts import Camera
+        from main import Camera, _settings
+        self._Settings = _settings
         self.Camera = Camera
         self.placestage = 0
         self.select = 1

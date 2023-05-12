@@ -22,6 +22,7 @@ class Character():
         from main import _settings
         configFile = self.parent.ConfigData.configFile
         self.settings = _settings
+        self.Transform = self.parent.Transform
         
         self.allowControl = True
         self.st = False
@@ -48,15 +49,20 @@ class Character():
         self.DChyper = 0
 
     def Update(self) -> None:
-        print(Input.getHeld('left'), "AM CHAR")
+        delta = self.parent.Scene.delta
+        print(Input.getHeld('left'), "AM CHAR", )
         if Input.getHeld('left'):
-            self.Transform.xVel -= self.speed * self.Scene.delta
+            self.Transform.xVel -= self.speed
         if Input.getHeld('right'):
-            self.Transform.xVel += self.speed * self.Scene.delta
+            self.Transform.xVel += self.speed 
         if Input.getHeld('up'):
-            self.Transform.yVel -= self.speed * self.Scene.delta
+            self.Transform.yVel -= self.speed 
         if Input.getHeld('down'):
-            self.Transform.yVel += self.speed * self.Scene.delta
+            self.Transform.yVel += self.speed 
+
+        if Input.getHeld("jump"):
+            self.Transform.yVel = self.jumppower
+
         return
         #Makes checks to see if the character is able to reset the dash
         if Timer.getValue('dashcool', inc=False) \

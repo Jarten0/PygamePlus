@@ -6,7 +6,7 @@ from random import randint as r
 @newComponent
 class Button:
     def Start(self, mode):
-        
+        pass
 
 @newPrefab
 class devInterface(): 

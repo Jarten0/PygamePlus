@@ -122,18 +122,23 @@ class gameObjectInterface:
             prefab = cls.getPrefab(prefabInput)
         elif isinstance(prefabInput, type): 
             prefab = prefabInput
-        else: exit("Invalid prefab input type! Must be either a string, the prefab class, or None for a basic object") 
+        else: 
+            exit("Invalid prefab input type! Must be either a string, the prefab class, or None for a basic object") 
 
         name = nameInput
 
-        if not 'prefabID' in dir(prefab): exit(str(name)+f" initialization did not get a prefab, instead got {prefab} which is not a prefab class; make sure your input is either a prefab class or leads to a prefab and not a component")
-        if not 'Start' in dir(prefab): exit(str(name)+"("+prefab.__name__+")"+": Invalid prefab initialization; prefab is missing init function")
+        if not 'prefabID' in dir(prefab): 
+            exit(str(name)+f" initialization did not get a prefab, instead got {prefab} which is not a prefab class; make sure your input is either a prefab class or leads to a prefab and not a component")
+        if not 'Start' in dir(prefab): 
+            exit(str(name)+"("+prefab.__name__+")"+": Invalid prefab initialization; prefab is missing init function")
 
         try: 
             createdObject = prefab(name, parent=cls, Scene=None, *args, **kwargs)
         
-        except: print("\n\n!!!!!!!!!!\n\n", prefab.__name__, " create error: Something went wrong, go fix it.\n", sep=''); raise
-        if not isinstance(createdObject, prefab): print(createdObject.NAME, prefab.__name__); raise Exception(f"{prefab.__name__}\n\n\n{nameInput}:{prefabInput} create error; It should return an object. Check to see if it is properly returning a value. ") # type: ignore
+        except: 
+            print("\n\n!!!!!!!!!!\n\n", prefab.__name__, " create error: Something went wrong, go fix it.\n", sep=''); raise
+        if not isinstance(createdObject, prefab): 
+            print(createdObject.NAME, prefab.__name__); raise Exception(f"{prefab.__name__}\n\n\n{nameInput}:{prefabInput} create error; It should return an object. Check to see if it is properly returning a value. ") # type: ignore
         
         createdObject.Tags = tagsInput
 
@@ -205,7 +210,7 @@ class _RenderInterface():
     @classmethod
     async def _drawCurrentFrame(cls, renderQueue:set) -> None:
         
-        renderQueue = Scene.RenderQueue
+        renderQueue = Scene._RenderQueue
 
         readyRenderQueue = cls._sortRenderQueue(renderQueue)
         
@@ -224,6 +229,7 @@ class _RenderInterface():
 
 
     scroll = 0
+    scrollspeed = 0
     selectedObject = None
 
     @classmethod
@@ -242,12 +248,14 @@ class _RenderInterface():
         cls._drawRect((0,0,0), 1000, 0, 600, 1000)
         ids, prefabs = gameObjectInterface.getAllPrefabs()
         cids, components = ComponentInterface.getAll()
-        SCROLLSPEED = 5
-        if Input.getHeld("DOWN"): cls.scroll -= 5
-        if Input.getHeld("UP"): cls.scroll += 5
+        SCROLLSPEED = 10
+        
+        if Input.getHeld("DOWN"): cls.scroll -= SCROLLSPEED - cls.scrollspeed; cls.scrollspeed -= 1
+        elif Input.getHeld("UP"): cls.scroll += SCROLLSPEED + cls.scrollspeed; cls.scrollspeed += 1
+        else: cls.scrollspeed = 0
         print(Input.getHeld("UP"), Input.getHeld("DOWN"))
         
-        i = cls.scroll
+        i = cls.scroll 
         cls._drawText("Prefabs: ", y=i)
         for prefab in prefabs:
             i += 20
@@ -269,17 +277,27 @@ class _RenderInterface():
 
 
         if cls.selectedObject == None: return
-        cls._drawText("Inspecting", cls.selectedObject.name)
+        cls._drawText("Inspecting", str(cls.selectedObject.NAME), y=i)
         i += 32
 
-        for component in cls.selectedObject.components:
+        print("\n"*100)
+        for component in cls.selectedObject.components.values():
             cls._drawText(component.NAME, ":", y=i)
             i += 20
             for attr in dir(component):
-                if attr in {'NAME'}: continue
-                cls._drawText("  ", attr, ":", getattr(component, attr))
+                if list(attr)[0] == '_':
+                    continue
+                if attr in component.attrBlacklist: continue
+                cls._drawText("  ", attr, ":", str(getattr(component, attr)), y=i)
+                # print(attr, )#":", str(getattr(component, attr)))
                 i += 20
             i += 12
+        # cls.breakvalue += 1
+        # if cls.breakvalue > 10:
+        #     while True: pass
+
+    breakvalue = 0
+    from blacklist import blacklist
 
 
 
@@ -308,12 +326,13 @@ class _RenderInterface():
     def _drawRect(cls, color: tuple[int, int, int], x: float|int, y: float|int, xl: float|int, yl: float|int) -> None:
         pyg.draw.rect(
             cls.Screen, color, (
-                int(x) - int(Camera.xPosition), 
-                int(y) - int(Camera.yPos), 
+                int(x),# - int(Camera.xPosition), 
+                int(y),# - int(Camera.yPos), 
                 int(xl), int(yl)))
 
     @classmethod
     def _drawText(cls, string="\n", *args: tuple[str], sep=" ", x=1020, y=0, xl=600, yl=1000, size=20, font='freesansbold.ttf', color: tuple[int, int, int] = (200,200,200)):
+        if y > 1000 or y < -20: print("Optimized!"); return
         for i in args: 
             string += sep + str(i)
             pyg.font.Font().render
@@ -339,23 +358,33 @@ def _sceneStart() -> str:
     missingImage = pyg.image.load(_programPath+"\\Assets\\Images\\MissingImage.png").convert()
 
     Character = Scene.newObject(nameInput="Character", prefabInput='TomlPrefab\\characterTomlPrefab')
-    _RenderInterface.selectedObj = Character
+    _RenderInterface.selectedObject = Character
     
     Mouse = Scene.newObject('Mouse', 'components\\MousePrefab')
 
     return "Done"
 
 async def _sceneTick(delta):
-    if Input.getDown('EXIT'):
-        exit(system('cls'))
     Input.update()
     Timer.tick()
     Scene.delta = delta
 
 
+
+    if Input.getDown('EXIT'):
+        exit(system('cls'))
+    elif Input.getDown("RESTART"):
+        _settings["devMode"] = True
+        Scene.updateObjects("SetAllToInactive")
+        return 'early'
+
+    elif Input.getDown("jump"):
+        _settings["devMode"] = False
+
+
+
     if _settings['devMode']:
         devInterface.updateObjects()
-
 
     if Input.getDown("jump"):
         Scene.updateObjects("SetAllToActive")
@@ -393,6 +422,7 @@ async def _globalLoop() -> _NoReturn:
         while True:        
             start = time.time()
 
+            system('cls')
             done = await _asyncio.gather(
                 _sceneTick(delta), 
                 _RenderInterface._drawCurrentFrame(_RenderQueue))
@@ -402,7 +432,6 @@ async def _globalLoop() -> _NoReturn:
 
             end = time.time()
             delta = end - start
-            system('cls')
             print(f"tick took {end - start} seconds")
     except: 
         _RenderInterface._drawRect((0,0,0), 0,0,2000,2000)

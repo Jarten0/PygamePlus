@@ -123,27 +123,28 @@ class RigidBody():
 
     def Start(self, mass:int=0) -> None:
         self.mass = mass
+        self.grounded = False
     
     def Update(self) -> None:
         if not self.grounded:
-            if self.Transform.yVel < self.mass:
-                self.Transform.yVel += self.mass / 100
-                if self.Transform.yVel > self.mass:
-                    self.Transform.yVel = self.mass
+            if self.parent.Transform.yVel < self.mass:
+                self.parent.Transform.yVel += self.mass / 10
+                if self.parent.Transform.yVel > self.mass:
+                    self.parent.Transform.yVel = self.mass
 
         self.grounded = False
-        for i in self.Collider.collideList:
+        for i in self.parent.Collider.collideList:
             item, lis = i
             if lis[1]:
                 self.grounded = True
-                self.Transform.yVel = 0
-                self.Transform.yPos = item.yPos - self.Collider.yLength
+                self.parent.transform.yVel = 0
+                self.parent.transform.yPos = item.yPos - self.Collider.yLength
             if lis[2]:
-                self.Transform.yVel = 0
-                self.Transform.yPos = item.yPos + item.Collider.yLength
+                self.parent.transform.yVel = 0
+                self.parent.transform.yPos = item.yPos + item.Collider.yLength
             if lis[3]:
-                self.Transform.xVel = 0
-                self.Transform.xPos = item.xPos + self.Collider.xLength
+                self.parent.transform.xVel = 0
+                self.parent.transform.xPos = item.xPos + self.Collider.xLength
             if lis[4]:
-                self.Transform.xVel = 0
-                self.Transform.xPos = item.yPos - item.Collider.yLength
+                self.parent.transform.xVel = 0
+                self.parent.transform.xPos = item.yPos - item.Collider.yLength

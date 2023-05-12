@@ -58,7 +58,7 @@ def Update() -> None:
     #     _xPosition = _cam._level.xLength - _cam._Settings['screen_width']
 
 def getObject() -> tuple[int|float, int|float]:
-    return (_cam._Transform.xPosition, _cam._Transform.yPosition)
+    return (_cam._Transform.xPos, _cam._Transform.yPos)
 
 def init() -> None:
     _cam._init()
